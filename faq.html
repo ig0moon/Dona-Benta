@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dúvidas Frequentes — Dona Benta</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .faq-lista { max-width: 760px; margin: 0 auto; }
+  .faq-item {
+    background: var(--branco);
+    border-radius: var(--raio-md);
+    margin-bottom: 12px;
+    box-shadow: var(--sombra-suave);
+    overflow: hidden;
+  }
+  .faq-pergunta {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    text-align: left;
+    background: none;
+    font-weight: 600;
+    color: var(--marrom);
+    font-size: 1rem;
+  }
+  .faq-pergunta .material-symbols-outlined {
+    color: var(--dourado-escuro);
+    transition: transform 0.25s ease;
+  }
+  .faq-item.aberto .faq-pergunta .material-symbols-outlined { transform: rotate(45deg); }
+  .faq-resposta {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    padding: 0 24px;
+    color: var(--marrom-claro);
+    font-size: 0.94rem;
+    line-height: 1.7;
+  }
+  .faq-item.aberto .faq-resposta {
+    max-height: 300px;
+    padding: 0 24px 22px;
+  }
+
+  .faq-cta {
+    max-width: 760px;
+    margin: 48px auto 0;
+    background: var(--azul-bebe);
+    border-radius: var(--raio-lg);
+    padding: 40px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<section class="pagina-header">
+  <div class="container">
+    <span class="eyebrow">Ajuda</span>
+    <h1>Perguntas frequentes</h1>
+    <p>Tudo o que você precisa saber antes de fazer seu pedido.</p>
+  </div>
+</section>
+
+<section class="secao">
+  <div class="container">
+    <div class="faq-lista" id="faqLista"></div>
+
+    <div class="faq-cta">
+      <h2 style="font-size: 1.5rem; margin-bottom: 10px;">Ainda tem dúvidas?</h2>
+      <p style="color: var(--marrom-claro); margin-bottom: 20px;">Fale diretamente com a gente pelo WhatsApp.</p>
+      <a href="https://wa.me/5511999999999" target="_blank" rel="noopener" class="btn btn-whatsapp">
+        <span class="material-symbols-outlined">chat</span>
+        Conversar no WhatsApp
+      </a>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/carrinho.js"></script>
+<script src="js/layout.js"></script>
+<script>
+const PERGUNTAS = [
+  { p: 'Como faço um pedido?', r: 'Escolha os produtos no catálogo, adicione ao carrinho e siga para o agendamento. Você vai escolher a data, o horário e a forma de entrega antes de confirmar o pedido pelo WhatsApp.' },
+  { p: 'Com quanto tempo de antecedência devo encomendar?', r: 'Recomendamos pelo menos 2 dias de antecedência para bolos e tortas personalizadas. Para pães e doces do dia a dia, aceitamos encomendas com 1 dia de antecedência.' },
+  { p: 'Vocês fazem entrega?', r: 'Sim! Durante o agendamento você pode escolher entre retirar na loja ou receber no seu endereço. A taxa de entrega é combinada na confirmação pelo WhatsApp.' },
+  { p: 'Quais formas de pagamento são aceitas?', r: 'Aceitamos Pix, cartão (na retirada ou entrega) e dinheiro. Você escolhe a forma de pagamento na hora de finalizar o pedido.' },
+  { p: 'Posso cancelar ou alterar meu pedido?', r: 'Sim, entre em contato pelo WhatsApp o quanto antes. Pedidos já em preparo podem não ser cancelados, dependendo do prazo.' },
+  { p: 'Vocês fazem produtos personalizados?', r: 'Fazemos! Bolos com mensagens, temas e tamanhos especiais podem ser combinados diretamente pelo WhatsApp antes da confirmação.' },
+  { p: 'Como acompanho o status do meu pedido?', r: 'Na página "Meus Pedidos", dentro da sua conta, você acompanha o status atualizado: aguardando confirmação, confirmado, em preparo, pronto ou entregue.' },
+];
+
+document.getElementById('faqLista').innerHTML = PERGUNTAS.map((item, i) => `
+  <div class="faq-item" data-indice="${i}">
+    <button class="faq-pergunta">
+      ${item.p}
+      <span class="material-symbols-outlined">add</span>
+    </button>
+    <div class="faq-resposta"><p>${item.r}</p></div>
+  </div>
+`).join('');
+
+document.querySelectorAll('.faq-pergunta').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.faq-item').classList.toggle('aberto');
+  });
+});
+</script>
+</body>
+</html>

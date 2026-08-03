@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dona Benta — Confeitaria e Padaria Artesanal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="css/style.css">
+<style>
+  /* ===== Hero / Carrossel ===== */
+  .hero {
+    padding: 48px 0 20px;
+  }
+  .hero-intro {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 40px;
+  }
+  .hero-intro .eyebrow { background: rgba(191,221,243,0.6); }
+  .hero-intro h1 {
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    margin-bottom: 14px;
+  }
+  .hero-intro p {
+    color: var(--marrom-claro);
+    font-size: 1.1rem;
+  }
+  .hero-acoes {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-top: 26px;
+    flex-wrap: wrap;
+  }
+
+  .carrossel {
+    position: relative;
+    max-width: 1100px;
+    margin: 0 auto;
+    border-radius: var(--raio-lg);
+    overflow: hidden;
+    box-shadow: var(--sombra-forte);
+    background: var(--branco);
+  }
+  .carrossel-trilho {
+    display: flex;
+    transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .carrossel-slide {
+    min-width: 100%;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    align-items: stretch;
+  }
+  .carrossel-slide .slide-imagem {
+    height: 100%;
+    min-height: 380px;
+    overflow: hidden;
+  }
+  .carrossel-slide .slide-imagem img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .slide-info {
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--azul-bebe);
+  }
+  .slide-info .eyebrow {
+    background: rgba(255,255,255,0.55);
+    align-self: flex-start;
+  }
+  .slide-info h2 {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    margin-bottom: 12px;
+  }
+  .slide-info p {
+    color: var(--marrom-claro);
+    margin-bottom: 20px;
+  }
+  .slide-preco {
+    font-family: var(--fonte-display);
+    font-size: 1.5rem;
+    color: var(--dourado-escuro);
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+
+  .carrossel-seta {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--branco);
+    color: var(--marrom);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--sombra-media);
+    z-index: 10;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .carrossel-seta:hover {
+    background: var(--dourado);
+    color: var(--branco);
+    transform: translateY(-50%) scale(1.08);
+  }
+  .seta-esquerda { left: 18px; }
+  .seta-direita { right: 18px; }
+
+  .carrossel-pontos {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .ponto {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--azul-bebe-escuro);
+    transition: background 0.2s ease, width 0.2s ease;
+  }
+  .ponto.ativo {
+    background: var(--dourado-escuro);
+    width: 28px;
+    border-radius: 999px;
+  }
+
+  @media (max-width: 800px) {
+    .carrossel-slide { grid-template-columns: 1fr; }
+    .carrossel-slide .slide-imagem { min-height: 260px; }
+    .slide-info { padding: 32px 24px; }
+    .carrossel-seta { width: 40px; height: 40px; }
+  }
+
+  /* ===== Categorias ===== */
+  .categorias-grade {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  @media (max-width: 900px) {
+    .categorias-grade { grid-template-columns: repeat(2, 1fr); }
+  }
+  .categoria-cartao {
+    background: var(--branco);
+    border-radius: var(--raio-md);
+    padding: 32px 20px;
+    text-align: center;
+    box-shadow: var(--sombra-suave);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .categoria-cartao:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--sombra-media);
+  }
+  .categoria-cartao .material-symbols-outlined {
+    font-size: 42px;
+    color: var(--dourado-escuro);
+    background: var(--creme-escuro);
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .categoria-cartao h3 {
+    font-size: 1.1rem;
+  }
+
+  /* ===== Destaques (produtos) ===== */
+  .destaques-grade {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 1000px) {
+    .destaques-grade { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .destaques-grade { grid-template-columns: 1fr; }
+  }
+
+  /* ===== Faixa confiança ===== */
+  .faixa {
+    background: var(--marrom);
+    padding: 40px 0;
+  }
+  .faixa-grade {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    text-align: center;
+  }
+  @media (max-width: 700px) {
+    .faixa-grade { grid-template-columns: 1fr; }
+  }
+  .faixa-item {
+    color: var(--creme);
+  }
+  .faixa-item .material-symbols-outlined {
+    font-size: 34px;
+    color: var(--azul-bebe);
+    margin-bottom: 8px;
+  }
+  .faixa-item h4 {
+    color: var(--branco);
+    font-family: var(--fonte-corpo);
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+  }
+  .faixa-item p {
+    font-size: 0.88rem;
+    opacity: 0.75;
+  }
+
+  /* ===== CTA final ===== */
+  .cta-final {
+    background: var(--azul-bebe);
+    border-radius: var(--raio-lg);
+    padding: 56px 40px;
+    text-align: center;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .cta-final h2 { margin-bottom: 12px; }
+  .cta-final p { color: var(--marrom-claro); margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="container hero-intro">
+    <span class="eyebrow">Feito à mão, todos os dias</span>
+    <h1>Sabores que lembram a casa da vovó</h1>
+    <p>Pães, bolos e doces artesanais preparados com receitas de família — encomende online e receba fresquinho.</p>
+  </div>
+
+  <div class="container">
+    <div class="carrossel" id="carrossel">
+      <div class="carrossel-trilho" id="carrosselTrilho">
+        <!-- slides injetados via JS -->
+      </div>
+      <button class="carrossel-seta seta-esquerda" id="setaEsquerda" aria-label="Produto anterior">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <button class="carrossel-seta seta-direita" id="setaDireita" aria-label="Próximo produto">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </div>
+    <div class="carrossel-pontos" id="carrosselPontos"></div>
+  </div>
+</section>
+
+<section class="secao">
+  <div class="container">
+    <div class="secao-titulo">
+      <span class="eyebrow">O que fazemos</span>
+      <h2>Categorias da casa</h2>
+      <p>Do pão de cada dia às tortas de comemoração, tudo saindo do forno com carinho.</p>
+    </div>
+    <div class="categorias-grade">
+      <a href="catalogo.html?categoria=bolos" class="categoria-cartao">
+        <span class="material-symbols-outlined">cake</span>
+        <h3>Bolos</h3>
+      </a>
+      <a href="catalogo.html?categoria=paes" class="categoria-cartao">
+        <span class="material-symbols-outlined">bakery_dining</span>
+        <h3>Pães</h3>
+      </a>
+      <a href="catalogo.html?categoria=doces" class="categoria-cartao">
+        <span class="material-symbols-outlined">cookie</span>
+        <h3>Doces</h3>
+      </a>
+      <a href="catalogo.html?categoria=salgados" class="categoria-cartao">
+        <span class="material-symbols-outlined">lunch_dining</span>
+        <h3>Salgados</h3>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="secao" style="padding-top:0;">
+  <div class="container">
+    <div class="secao-titulo">
+      <span class="eyebrow">Favoritos da casa</span>
+      <h2>Mais pedidos</h2>
+      <p>Uma seleção do que os nossos clientes mais amam.</p>
+    </div>
+    <div class="destaques-grade" id="destaquesGrade">
+      <!-- produtos injetados via JS -->
+    </div>
+  </div>
+</section>
+
+<section class="faixa">
+  <div class="container faixa-grade">
+    <div class="faixa-item">
+      <span class="material-symbols-outlined">eco</span>
+      <h4>Ingredientes selecionados</h4>
+      <p>Sem conservantes, sempre fresquinho</p>
+    </div>
+    <div class="faixa-item">
+      <span class="material-symbols-outlined">schedule</span>
+      <h4>Encomenda com agendamento</h4>
+      <p>Escolha o dia e horário de retirada</p>
+    </div>
+    <div class="faixa-item">
+      <span class="material-symbols-outlined">favorite</span>
+      <h4>Receita de família</h4>
+      <p>Tradição de mais de 20 anos</p>
+    </div>
+  </div>
+</section>
+
+<section class="secao">
+  <div class="container">
+    <div class="cta-final">
+      <h2>Bateu a vontade de um docinho?</h2>
+      <p>Monte seu pedido agora e combine a data de retirada ou entrega.</p>
+      <a href="catalogo.html" class="btn btn-primario">
+        <span class="material-symbols-outlined">storefront</span>
+        Ver catálogo completo
+      </a>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/carrinho.js"></script>
+<script src="js/layout.js"></script>
+<script>
+// ============================================
+// Produtos de modelo (substituir por dados reais do Supabase)
+// ============================================
+const PRODUTOS_MODELO = [
+  {
+    id: 'modelo-1',
+    nome: 'Bolo de Chocolate com Ganache',
+    descricao_curta: 'Camadas fofinhas de chocolate belga com ganache cremosa e raspas de cacau por cima. Perfeito para aniversários e ocasiões especiais.',
+    preco: 89.90,
+    categoria: 'bolos',
+    imagem_url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=900&q=80'
+  },
+  {
+    id: 'modelo-2',
+    nome: 'Pão Artesanal de Fermentação Natural',
+    descricao_curta: 'Casca crocante e miolo macio, fermentado lentamente por 24 horas com fermento natural. Assado em forno de pedra todas as manhãs.',
+    preco: 22.00,
+    categoria: 'paes',
+    imagem_url: 'https://images.unsplash.com/photo-1585478259715-876a6a81fc08?w=900&q=80'
+  },
+  {
+    id: 'modelo-3',
+    nome: 'Caixa de Brigadeiros Gourmet',
+    descricao_curta: 'Doze brigadeiros artesanais em quatro sabores: tradicional, pistache, doce de leite e maracujá. Embalagem para presente.',
+    preco: 45.00,
+    categoria: 'doces',
+    imagem_url: 'https://images.unsplash.com/photo-1548907040-4baa419dea28?w=900&q=80'
+  },
+  {
+    id: 'modelo-4',
+    nome: 'Torta de Frango com Catupiry',
+    descricao_curta: 'Massa amanteigada recheada com frango desfiado e catupiry cremoso. Serve até 8 pessoas, ideal para reuniões em família.',
+    preco: 68.00,
+    categoria: 'salgados',
+    imagem_url: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=900&q=80'
+  },
+  {
+    id: 'modelo-5',
+    nome: 'Croissants Amanteigados',
+    descricao_curta: 'Folhados com manteiga francesa, dourados por fora e amanteigados por dentro. Vendidos em caixa com 6 unidades.',
+    preco: 38.00,
+    categoria: 'paes',
+    imagem_url: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=900&q=80'
+  }
+];
+
+// ============================================
+// Carrossel
+// ============================================
+let slideAtual = 0;
+let temporizadorCarrossel = null;
+
+function montarCarrossel(produtos) {
+  const trilho = document.getElementById('carrosselTrilho');
+  const pontosContainer = document.getElementById('carrosselPontos');
+
+  trilho.innerHTML = produtos.map(p => `
+    <div class="carrossel-slide">
+      <div class="slide-imagem">
+        <img src="${p.imagem_url}" alt="${p.nome}" loading="lazy">
+      </div>
+      <div class="slide-info">
+        <span class="eyebrow">${rotuloCategoria(p.categoria)}</span>
+        <h2>${p.nome}</h2>
+        <p>${p.descricao_curta}</p>
+        <div class="slide-preco">${formatarPreco(p.preco)}</div>
+        <div>
+          <a href="produto.html?id=${p.id}" class="btn btn-primario">
+            <span class="material-symbols-outlined">visibility</span>
+            Ver produto
+          </a>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  pontosContainer.innerHTML = produtos.map((_, i) =>
+    `<button class="ponto ${i === 0 ? 'ativo' : ''}" data-indice="${i}" aria-label="Ir para slide ${i + 1}"></button>`
+  ).join('');
+
+  document.querySelectorAll('.ponto').forEach(ponto => {
+    ponto.addEventListener('click', () => {
+      irParaSlide(Number(ponto.dataset.indice));
+      reiniciarAutoplay();
+    });
+  });
+
+  iniciarAutoplay(produtos.length);
+}
+
+function irParaSlide(indice) {
+  const trilho = document.getElementById('carrosselTrilho');
+  const totalSlides = trilho.children.length;
+  slideAtual = (indice + totalSlides) % totalSlides;
+  trilho.style.transform = `translateX(-${slideAtual * 100}%)`;
+
+  document.querySelectorAll('.ponto').forEach((p, i) => {
+    p.classList.toggle('ativo', i === slideAtual);
+  });
+}
+
+function iniciarAutoplay(totalSlides) {
+  temporizadorCarrossel = setInterval(() => {
+    irParaSlide(slideAtual + 1);
+  }, 5000);
+}
+
+function reiniciarAutoplay() {
+  clearInterval(temporizadorCarrossel);
+  iniciarAutoplay();
+}
+
+document.getElementById('setaDireita').addEventListener('click', () => {
+  irParaSlide(slideAtual + 1);
+  reiniciarAutoplay();
+});
+document.getElementById('setaEsquerda').addEventListener('click', () => {
+  irParaSlide(slideAtual - 1);
+  reiniciarAutoplay();
+});
+
+function rotuloCategoria(cat) {
+  const rotulos = { bolos: 'Bolo', paes: 'Pão', doces: 'Doce', salgados: 'Salgado', tortas: 'Torta' };
+  return rotulos[cat] || 'Produto';
+}
+
+// ============================================
+// Grade de destaques
+// ============================================
+function montarDestaques(produtos) {
+  const grade = document.getElementById('destaquesGrade');
+  grade.innerHTML = produtos.map(p => `
+    <a href="produto.html?id=${p.id}" class="produto-cartao">
+      <div class="produto-imagem">
+        <img src="${p.imagem_url}" alt="${p.nome}" loading="lazy">
+      </div>
+      <div class="produto-info">
+        <h3>${p.nome}</h3>
+        <div class="produto-preco">${formatarPreco(p.preco)}</div>
+      </div>
+    </a>
+  `).join('');
+}
+
+// ============================================
+// Carregamento de dados (Supabase com fallback para modelo)
+// ============================================
+async function carregarProdutosIndex() {
+  let produtos = PRODUTOS_MODELO;
+
+  try {
+    const { data, error } = await db
+      .from('produtos')
+      .select('*')
+      .eq('destaque', true)
+      .eq('disponivel', true)
+      .limit(5);
+
+    if (!error && data && data.length > 0) {
+      produtos = data;
+    }
+  } catch (e) {
+    console.warn('Usando produtos de modelo (Supabase ainda não configurado).');
+  }
+
+  montarCarrossel(produtos);
+  montarDestaques(produtos);
+}
+
+carregarProdutosIndex();
+</script>
+<style>
+  .produto-cartao {
+    background: var(--branco);
+    border-radius: var(--raio-md);
+    overflow: hidden;
+    box-shadow: var(--sombra-suave);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    display: block;
+  }
+  .produto-cartao:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--sombra-media);
+  }
+  .produto-imagem {
+    aspect-ratio: 4/3;
+    overflow: hidden;
+  }
+  .produto-imagem img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .produto-cartao:hover .produto-imagem img {
+    transform: scale(1.06);
+  }
+  .produto-info {
+    padding: 16px 18px 20px;
+  }
+  .produto-info h3 {
+    font-size: 1.02rem;
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+  .produto-preco {
+    font-family: var(--fonte-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--dourado-escuro);
+  }
+</style>
+</body>
+</html>
