@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carrinho — Dona Benta</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .carrinho-layout {
+    display: grid;
+    grid-template-columns: 1.7fr 1fr;
+    gap: 32px;
+    align-items: flex-start;
+    padding: 40px 0 80px;
+  }
+  @media (max-width: 860px) {
+    .carrinho-layout { grid-template-columns: 1fr; }
+  }
+
+  .item-carrinho {
+    display: grid;
+    grid-template-columns: 90px 1fr auto auto;
+    gap: 18px;
+    align-items: center;
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(107,66,38,0.1);
+  }
+  .item-carrinho:last-child { border-bottom: none; }
+  .item-imagem {
+    width: 90px; height: 90px;
+    border-radius: var(--raio-sm);
+    overflow: hidden;
+  }
+  .item-imagem img { width: 100%; height: 100%; object-fit: cover; }
+  .item-nome { font-weight: 600; color: var(--marrom); margin-bottom: 4px; }
+  .item-preco-unit { font-size: 0.85rem; color: var(--marrom-claro); }
+
+  .item-quantidade {
+    display: flex;
+    align-items: center;
+    background: var(--creme-escuro);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .item-quantidade button {
+    width: 34px; height: 34px;
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--marrom);
+  }
+  .item-quantidade button:hover { background: var(--azul-bebe); }
+  .item-quantidade span { min-width: 28px; text-align: center; font-weight: 700; font-size: 0.9rem; }
+
+  .item-remover {
+    color: var(--erro);
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+  }
+  .item-remover:hover { background: rgba(217,108,108,0.12); }
+
+  @media (max-width: 560px) {
+    .item-carrinho { grid-template-columns: 60px 1fr; grid-template-rows: auto auto; }
+    .item-quantidade, .item-remover { grid-column: 2; justify-self: start; }
+  }
+
+  .resumo-cartao { position: sticky; top: 100px; }
+  .resumo-linha {
+    display: flex; justify-content: space-between;
+    padding: 10px 0;
+    font-size: 0.95rem;
+    color: var(--marrom-claro);
+  }
+  .resumo-linha.total {
+    border-top: 1px solid rgba(107,66,38,0.12);
+    margin-top: 8px;
+    padding-top: 16px;
+    font-weight: 700;
+    color: var(--marrom);
+    font-size: 1.15rem;
+  }
+  .resumo-linha.total span:last-child { color: var(--dourado-escuro); font-family: var(--fonte-display); }
+</style>
+</head>
+<body>
+
+<section class="pagina-header">
+  <div class="container">
+    <span class="eyebrow">Seu carrinho</span>
+    <h1>Revise seu pedido</h1>
+    <p>Confira os itens antes de seguir para o agendamento e confirmação.</p>
+  </div>
+</section>
+
+<div class="container">
+  <div class="carrinho-layout" id="carrinhoLayout">
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/carrinho.js"></script>
+<script src="js/layout.js"></script>
+<script>
+function renderizarCarrinho() {
+  const layout = document.getElementById('carrinhoLayout');
+  const itens = lerCarrinho();
+
+  if (itens.length === 0) {
+    layout.innerHTML = `
+      <div class="vazio" style="grid-column: 1 / -1;">
+        <span class="material-symbols-outlined">shopping_bag</span>
+        <h3>Seu carrinho está vazio</h3>
+        <p>Que tal dar uma olhada no nosso catálogo?</p>
+        <a href="catalogo.html" class="btn btn-primario" style="margin-top:16px;">Ver catálogo</a>
+      </div>
+    `;
+    return;
+  }
+
+  const total = totalCarrinho();
+
+  layout.innerHTML = `
+    <div class="cartao">
+      <h3 style="margin-bottom: 8px;">Itens (${itens.reduce((s, i) => s + i.quantidade, 0)})</h3>
+      ${itens.map(item => `
+        <div class="item-carrinho">
+          <div class="item-imagem"><img src="${item.imagem_url}" alt="${item.nome}"></div>
+          <div>
+            <div class="item-nome">${item.nome}</div>
+            <div class="item-preco-unit">${formatarPreco(item.preco)} / unid.</div>
+          </div>
+          <div class="item-quantidade">
+            <button data-menos="${item.produto_id}" aria-label="Diminuir"><span class="material-symbols-outlined" style="font-size:18px;">remove</span></button>
+            <span>${item.quantidade}</span>
+            <button data-mais="${item.produto_id}" aria-label="Aumentar"><span class="material-symbols-outlined" style="font-size:18px;">add</span></button>
+          </div>
+          <button class="item-remover" data-remover="${item.produto_id}" aria-label="Remover item">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="cartao resumo-cartao">
+      <h3 style="margin-bottom: 16px;">Resumo do pedido</h3>
+      <div class="resumo-linha">
+        <span>Subtotal</span>
+        <span>${formatarPreco(total)}</span>
+      </div>
+      <div class="resumo-linha">
+        <span>Entrega / retirada</span>
+        <span>A definir no agendamento</span>
+      </div>
+      <div class="resumo-linha total">
+        <span>Total</span>
+        <span>${formatarPreco(total)}</span>
+      </div>
+      <a href="pedidos.html" class="btn btn-primario btn-bloco" style="margin-top: 20px;">
+        <span class="material-symbols-outlined">event_available</span>
+        Continuar para agendamento
+      </a>
+      <a href="catalogo.html" class="btn btn-outline btn-bloco" style="margin-top: 10px;">
+        Continuar comprando
+      </a>
+    </div>
+  `;
+
+  layout.querySelectorAll('[data-mais]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = itens.find(i => i.produto_id === btn.dataset.mais);
+      alterarQuantidade(item.produto_id, item.quantidade + 1);
+      renderizarCarrinho();
+    });
+  });
+  layout.querySelectorAll('[data-menos]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = itens.find(i => i.produto_id === btn.dataset.menos);
+      alterarQuantidade(item.produto_id, item.quantidade - 1);
+      renderizarCarrinho();
+    });
+  });
+  layout.querySelectorAll('[data-remover]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      removerDoCarrinho(btn.dataset.remover);
+      renderizarCarrinho();
+      mostrarToast('Item removido do carrinho', 'info');
+    });
+  });
+}
+
+renderizarCarrinho();
+</script>
+</body>
+</html>

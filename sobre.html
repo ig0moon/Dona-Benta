@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sobre — Dona Benta</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .sobre-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+    padding: 40px 0 80px;
+  }
+  @media (max-width: 800px) { .sobre-hero { grid-template-columns: 1fr; } }
+  .sobre-hero img {
+    border-radius: var(--raio-lg);
+    box-shadow: var(--sombra-forte);
+    aspect-ratio: 4/5;
+    object-fit: cover;
+    width: 100%;
+  }
+  .sobre-hero h1 { font-size: clamp(2rem, 4vw, 2.8rem); margin-bottom: 16px; }
+  .sobre-hero p { color: var(--marrom-claro); margin-bottom: 16px; font-size: 1.02rem; }
+
+  .valores-grade {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 800px) { .valores-grade { grid-template-columns: 1fr; } }
+  .valor-cartao {
+    text-align: center;
+    padding: 32px 22px;
+  }
+  .valor-cartao .material-symbols-outlined {
+    font-size: 36px;
+    color: var(--dourado-escuro);
+    background: var(--azul-bebe);
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+
+  .timeline {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .timeline-item {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 20px;
+    padding-bottom: 32px;
+    position: relative;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 44px;
+    top: 30px;
+    bottom: -10px;
+    width: 2px;
+    background: var(--azul-bebe);
+  }
+  .timeline-item:last-child::before { display: none; }
+  .timeline-ano {
+    font-family: var(--fonte-display);
+    font-weight: 700;
+    color: var(--dourado-escuro);
+    text-align: right;
+  }
+  .timeline-texto h4 { font-size: 1.05rem; margin-bottom: 4px; }
+  .timeline-texto p { color: var(--marrom-claro); font-size: 0.92rem; }
+</style>
+</head>
+<body>
+
+<section class="pagina-header">
+  <div class="container">
+    <span class="eyebrow">Nossa história</span>
+    <h1>Conheça a Dona Benta</h1>
+    <p>Uma paixão por confeitaria que virou tradição de família.</p>
+  </div>
+</section>
+
+<section class="secao">
+  <div class="container sobre-hero">
+    <img src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&q=80" alt="Confeiteira preparando um bolo na cozinha">
+    <div>
+      <h1>Tudo começou em uma cozinha pequena</h1>
+      <p>A Dona Benta nasceu do sonho de compartilhar receitas de família com toda a vizinhança. O que começou com bolos de aniversário para amigos próximos se tornou uma padaria e confeitaria querida pela comunidade.</p>
+      <p>Hoje, seguimos fiéis à mesma receita de sempre: ingredientes selecionados, processos artesanais e, acima de tudo, muito carinho em cada produto que sai do nosso forno.</p>
+      <a href="catalogo.html" class="btn btn-primario" style="margin-top: 8px;">
+        <span class="material-symbols-outlined">storefront</span>
+        Conhecer o catálogo
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="secao" style="background: var(--creme-escuro); padding: 80px 0;">
+  <div class="container">
+    <div class="secao-titulo">
+      <span class="eyebrow">O que nos move</span>
+      <h2>Nossos valores</h2>
+    </div>
+    <div class="valores-grade">
+      <div class="cartao valor-cartao">
+        <span class="material-symbols-outlined">eco</span>
+        <h3 style="font-size: 1.1rem;">Ingredientes de verdade</h3>
+        <p style="color: var(--marrom-claro); font-size: 0.9rem;">Sem conservantes ou atalhos — só o que é fresco e de qualidade.</p>
+      </div>
+      <div class="cartao valor-cartao">
+        <span class="material-symbols-outlined">handshake</span>
+        <h3 style="font-size: 1.1rem;">Feito à mão</h3>
+        <p style="color: var(--marrom-claro); font-size: 0.9rem;">Cada produto passa pelas mãos da nossa equipe, sem produção em massa.</p>
+      </div>
+      <div class="cartao valor-cartao">
+        <span class="material-symbols-outlined">favorite</span>
+        <h3 style="font-size: 1.1rem;">Receita de família</h3>
+        <p style="color: var(--marrom-claro); font-size: 0.9rem;">Tradições passadas de geração em geração, com um toque especial.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="secao">
+  <div class="container">
+    <div class="secao-titulo">
+      <span class="eyebrow">Nossa jornada</span>
+      <h2>Como chegamos até aqui</h2>
+    </div>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-ano">2004</div>
+        <div class="timeline-texto">
+          <h4>O início em casa</h4>
+          <p>Dona Benta começa a vender bolos para vizinhos e amigos da família.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-ano">2012</div>
+        <div class="timeline-texto">
+          <h4>Primeira loja física</h4>
+          <p>Com a demanda crescendo, abrimos as portas da nossa primeira padaria.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-ano">2026</div>
+        <div class="timeline-texto">
+          <h4>Encomendas online</h4>
+          <p>Agora você pode encomendar seus produtos favoritos direto pelo site.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/carrinho.js"></script>
+<script src="js/layout.js"></script>
+</body>
+</html>

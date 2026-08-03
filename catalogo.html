@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo — Dona Benta</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .filtros {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: -8px auto 40px;
+    max-width: 900px;
+  }
+  .filtro-btn {
+    padding: 10px 20px;
+    border-radius: 999px;
+    background: var(--branco);
+    color: var(--marrom);
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: var(--sombra-suave);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+  .filtro-btn:hover { transform: translateY(-2px); }
+  .filtro-btn.ativo {
+    background: var(--dourado-escuro);
+    color: var(--branco);
+  }
+
+  .busca-linha {
+    max-width: 420px;
+    margin: 0 auto 32px;
+    position: relative;
+  }
+  .busca-linha input {
+    width: 100%;
+    padding: 14px 16px 14px 46px;
+    border-radius: 999px;
+    border: 2px solid rgba(107,66,38,0.12);
+    background: var(--branco);
+    font-family: inherit;
+    font-size: 0.95rem;
+  }
+  .busca-linha input:focus { outline: none; border-color: var(--azul-bebe-escuro); }
+  .busca-linha .material-symbols-outlined {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--marrom-claro);
+  }
+
+  .catalogo-grade {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 1000px) { .catalogo-grade { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 760px) { .catalogo-grade { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .catalogo-grade { grid-template-columns: 1fr; } }
+
+  .produto-cartao {
+    background: var(--branco);
+    border-radius: var(--raio-md);
+    overflow: hidden;
+    box-shadow: var(--sombra-suave);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    display: block;
+  }
+  .produto-cartao:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--sombra-media);
+  }
+  .produto-imagem { aspect-ratio: 4/3; overflow: hidden; position: relative; }
+  .produto-imagem img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .produto-cartao:hover .produto-imagem img { transform: scale(1.06); }
+  .produto-info { padding: 16px 18px 20px; }
+  .produto-info h3 { font-size: 1.02rem; margin-bottom: 8px; line-height: 1.3; }
+  .produto-rodape {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .produto-preco {
+    font-family: var(--fonte-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--dourado-escuro);
+  }
+  .produto-add {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--azul-bebe);
+    color: var(--marrom);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .produto-add:hover { background: var(--dourado); color: var(--branco); transform: scale(1.08); }
+  .esgotado-tag {
+    position: absolute; top: 10px; left: 10px;
+    background: var(--erro); color: var(--branco);
+    font-size: 0.72rem; font-weight: 700;
+    padding: 4px 10px; border-radius: 999px;
+  }
+</style>
+</head>
+<body>
+
+<section class="pagina-header">
+  <div class="container">
+    <span class="eyebrow">Nosso catálogo</span>
+    <h1>Tudo que sai do nosso forno</h1>
+    <p>Escolha entre bolos, pães, doces e salgados feitos artesanalmente.</p>
+  </div>
+</section>
+
+<section class="secao">
+  <div class="container">
+    <div class="busca-linha">
+      <span class="material-symbols-outlined">search</span>
+      <input type="text" id="campoBusca" placeholder="Buscar produto...">
+    </div>
+
+    <div class="filtros" id="filtros">
+      <button class="filtro-btn ativo" data-categoria="todos">
+        <span class="material-symbols-outlined">apps</span> Todos
+      </button>
+      <button class="filtro-btn" data-categoria="bolos">
+        <span class="material-symbols-outlined">cake</span> Bolos
+      </button>
+      <button class="filtro-btn" data-categoria="paes">
+        <span class="material-symbols-outlined">bakery_dining</span> Pães
+      </button>
+      <button class="filtro-btn" data-categoria="doces">
+        <span class="material-symbols-outlined">cookie</span> Doces
+      </button>
+      <button class="filtro-btn" data-categoria="salgados">
+        <span class="material-symbols-outlined">lunch_dining</span> Salgados
+      </button>
+      <button class="filtro-btn" data-categoria="tortas">
+        <span class="material-symbols-outlined">icecream</span> Tortas
+      </button>
+    </div>
+
+    <div id="areaCatalogo">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/carrinho.js"></script>
+<script src="js/layout.js"></script>
+<script>
+const PRODUTOS_MODELO = [
+  { id: 'modelo-1', nome: 'Bolo de Chocolate com Ganache', preco: 89.90, categoria: 'bolos', imagem_url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&q=80', disponivel: true },
+  { id: 'modelo-2', nome: 'Pão Artesanal de Fermentação Natural', preco: 22.00, categoria: 'paes', imagem_url: 'https://images.unsplash.com/photo-1585478259715-876a6a81fc08?w=600&q=80', disponivel: true },
+  { id: 'modelo-3', nome: 'Caixa de Brigadeiros Gourmet', preco: 45.00, categoria: 'doces', imagem_url: 'https://images.unsplash.com/photo-1548907040-4baa419dea28?w=600&q=80', disponivel: true },
+  { id: 'modelo-4', nome: 'Torta de Frango com Catupiry', preco: 68.00, categoria: 'salgados', imagem_url: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=600&q=80', disponivel: true },
+  { id: 'modelo-5', nome: 'Croissants Amanteigados', preco: 38.00, categoria: 'paes', imagem_url: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&q=80', disponivel: true },
+  { id: 'modelo-6', nome: 'Torta de Limão', preco: 62.00, categoria: 'tortas', imagem_url: 'https://images.unsplash.com/photo-1519340333755-56e9c1d04579?w=600&q=80', disponivel: true },
+  { id: 'modelo-7', nome: 'Coxinha de Frango (dúzia)', preco: 36.00, categoria: 'salgados', imagem_url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&q=80', disponivel: false },
+  { id: 'modelo-8', nome: 'Bolo de Cenoura com Cobertura', preco: 55.00, categoria: 'bolos', imagem_url: 'https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=600&q=80', disponivel: true },
+];
+
+let TODOS_PRODUTOS = [];
+let categoriaAtiva = 'todos';
+let termoBusca = '';
+
+async function carregarCatalogo() {
+  let produtos = PRODUTOS_MODELO;
+  try {
+    const { data, error } = await db.from('produtos').select('*').order('criado_em', { ascending: false });
+    if (!error && data && data.length > 0) produtos = data;
+  } catch (e) {
+    console.warn('Usando produtos de modelo (Supabase ainda não configurado).');
+  }
+  TODOS_PRODUTOS = produtos;
+
+  // Categoria via URL (?categoria=bolos)
+  const params = new URLSearchParams(window.location.search);
+  const catUrl = params.get('categoria');
+  if (catUrl) {
+    categoriaAtiva = catUrl;
+    document.querySelectorAll('.filtro-btn').forEach(b => {
+      b.classList.toggle('ativo', b.dataset.categoria === catUrl);
+    });
+  }
+
+  renderizarCatalogo();
+}
+
+function renderizarCatalogo() {
+  const area = document.getElementById('areaCatalogo');
+  let lista = TODOS_PRODUTOS;
+
+  if (categoriaAtiva !== 'todos') {
+    lista = lista.filter(p => p.categoria === categoriaAtiva);
+  }
+  if (termoBusca.trim()) {
+    lista = lista.filter(p => p.nome.toLowerCase().includes(termoBusca.toLowerCase()));
+  }
+
+  if (lista.length === 0) {
+    area.innerHTML = `
+      <div class="vazio">
+        <span class="material-symbols-outlined">search_off</span>
+        <h3>Nenhum produto encontrado</h3>
+        <p>Tente outra busca ou categoria.</p>
+      </div>
+    `;
+    return;
+  }
+
+  area.innerHTML = `
+    <div class="catalogo-grade">
+      ${lista.map(p => `
+        <a href="produto.html?id=${p.id}" class="produto-cartao">
+          <div class="produto-imagem">
+            ${p.disponivel === false ? '<span class="esgotado-tag">Esgotado</span>' : ''}
+            <img src="${p.imagem_url}" alt="${p.nome}" loading="lazy">
+          </div>
+          <div class="produto-info">
+            <h3>${p.nome}</h3>
+            <div class="produto-rodape">
+              <span class="produto-preco">${formatarPreco(p.preco)}</span>
+              <span class="produto-add" data-add="${p.id}" aria-label="Adicionar ao carrinho">
+                <span class="material-symbols-outlined">add_shopping_cart</span>
+              </span>
+            </div>
+          </div>
+        </a>
+      `).join('')}
+    </div>
+  `;
+
+  document.querySelectorAll('[data-add]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const produto = TODOS_PRODUTOS.find(p => p.id === btn.dataset.add);
+      if (produto.disponivel === false) {
+        mostrarToast('Este produto está esgotado no momento', 'erro');
+        return;
+      }
+      adicionarAoCarrinho(produto, 1);
+    });
+  });
+}
+
+document.getElementById('filtros').addEventListener('click', (e) => {
+  const btn = e.target.closest('.filtro-btn');
+  if (!btn) return;
+  categoriaAtiva = btn.dataset.categoria;
+  document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('ativo'));
+  btn.classList.add('ativo');
+  renderizarCatalogo();
+});
+
+document.getElementById('campoBusca').addEventListener('input', (e) => {
+  termoBusca = e.target.value;
+  renderizarCatalogo();
+});
+
+carregarCatalogo();
+</script>
+</body>
+</html>

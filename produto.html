@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Produto — Dona Benta</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .trilha { padding: 24px 0 0; font-size: 0.88rem; color: var(--marrom-claro); }
+  .trilha a:hover { color: var(--dourado-escuro); }
+
+  .produto-detalhe {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: flex-start;
+    padding: 32px 0 80px;
+  }
+  @media (max-width: 860px) {
+    .produto-detalhe { grid-template-columns: 1fr; gap: 32px; }
+  }
+
+  .produto-foto {
+    border-radius: var(--raio-lg);
+    overflow: hidden;
+    box-shadow: var(--sombra-forte);
+    aspect-ratio: 1/1;
+    position: sticky;
+    top: 100px;
+  }
+  @media (max-width: 860px) { .produto-foto { position: static; } }
+  .produto-foto img { width: 100%; height: 100%; object-fit: cover; }
+
+  .produto-categoria-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--azul-bebe);
+    color: var(--marrom);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+  }
+
+  .produto-titulo { font-size: clamp(1.7rem, 3.5vw, 2.4rem); margin-bottom: 8px; }
+
+  .produto-preco-grande {
+    font-family: var(--fonte-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--dourado-escuro);
+    margin: 16px 0 24px;
+  }
+
+  .produto-descricao {
+    color: var(--texto);
+    font-size: 1.02rem;
+    line-height: 1.75;
+    margin-bottom: 28px;
+  }
+
+  .produto-disponibilidade {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    font-weight: 600;
+    font-size: 0.92rem;
+  }
+  .disponivel { color: var(--sucesso); }
+  .indisponivel { color: var(--erro); }
+
+  .quantidade-linha {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .quantidade-seletor {
+    display: flex;
+    align-items: center;
+    background: var(--branco);
+    border-radius: 999px;
+    box-shadow: var(--sombra-suave);
+    overflow: hidden;
+  }
+  .quantidade-seletor button {
+    width: 44px; height: 44px;
+    background: transparent;
+    color: var(--marrom);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    transition: background 0.2s ease;
+  }
+  .quantidade-seletor button:hover { background: var(--azul-bebe); }
+  .quantidade-seletor span {
+    min-width: 36px;
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .produto-acoes { display: flex; gap: 12px; flex-wrap: wrap; }
+  .produto-acoes .btn { flex: 1; min-width: 200px; }
+
+  .produto-extra {
+    margin-top: 32px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(107,66,38,0.1);
+    display: grid;
+    gap: 14px;
+  }
+  .produto-extra-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 0.9rem;
+    color: var(--marrom-claro);
+  }
+  .produto-extra-item .material-symbols-outlined {
+    color: var(--dourado-escuro);
+    font-size: 22px;
+  }
+
+  /* Relacionados */
+  .relacionados-grade {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 900px) { .relacionados-grade { grid-template-columns: repeat(2, 1fr); } }
+  .produto-cartao {
+    background: var(--branco);
+    border-radius: var(--raio-md);
+    overflow: hidden;
+    box-shadow: var(--sombra-suave);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    display: block;
+  }
+  .produto-cartao:hover { transform: translateY(-6px); box-shadow: var(--sombra-media); }
+  .produto-imagem { aspect-ratio: 4/3; overflow: hidden; }
+  .produto-imagem img { width: 100%; height: 100%; object-fit: cover; }
+  .produto-info { padding: 14px 16px 18px; }
+  .produto-info h3 { font-size: 0.98rem; margin-bottom: 6px; }
+  .produto-preco { font-family: var(--fonte-display); font-weight: 700; color: var(--dourado-escuro); }
+</style>
+</head>
+<body>
+
+<div class="container trilha">
+  <a href="index.html">Início</a> / <a href="catalogo.html">Catálogo</a> / <span id="trilhaNome">Produto</span>
+</div>
+
+<div class="container" id="areaProduto">
+  <div class="spinner"></div>
+</div>
+
+<section class="secao" id="secaoRelacionados" style="display:none;">
+  <div class="container">
+    <div class="secao-titulo">
+      <span class="eyebrow">Você também pode gostar</span>
+      <h2>Outros produtos da casa</h2>
+    </div>
+    <div class="relacionados-grade" id="relacionadosGrade"></div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/carrinho.js"></script>
+<script src="js/layout.js"></script>
+<script>
+const PRODUTOS_MODELO = [
+  { id: 'modelo-1', nome: 'Bolo de Chocolate com Ganache', descricao: 'Um clássico que nunca sai de moda: camadas fofinhas de massa de chocolate belga, intercaladas com ganache cremosa feita com chocolate meio amargo, finalizado com raspas de cacau. Ideal para aniversários, comemorações ou para adoçar qualquer dia comum. Serve de 10 a 12 pessoas.', preco: 89.90, categoria: 'bolos', imagem_url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=900&q=80', disponivel: true, estoque: 8 },
+  { id: 'modelo-2', nome: 'Pão Artesanal de Fermentação Natural', descricao: 'Nosso pão de fermentação natural passa por um processo de 24 horas, resultando em casca crocante e miolo macio e alveolado. Assado diariamente em forno de pedra, sem conservantes ou aditivos industriais — só farinha, água, sal e tempo.', preco: 22.00, categoria: 'paes', imagem_url: 'https://images.unsplash.com/photo-1585478259715-876a6a81fc08?w=900&q=80', disponivel: true, estoque: 15 },
+  { id: 'modelo-3', nome: 'Caixa de Brigadeiros Gourmet', descricao: 'Doze brigadeiros artesanais feitos à mão, em quatro sabores: tradicional, pistache, doce de leite com flor de sal e maracujá. Vêm em embalagem especial para presente, perfeitos para agradar em qualquer ocasião.', preco: 45.00, categoria: 'doces', imagem_url: 'https://images.unsplash.com/photo-1548907040-4baa419dea28?w=900&q=80', disponivel: true, estoque: 20 },
+  { id: 'modelo-4', nome: 'Torta de Frango com Catupiry', descricao: 'Massa amanteigada e crocante recheada generosamente com frango desfiado temperado e catupiry cremoso. Um clássico brasileiro, ideal para almoços em família ou reuniões com amigos. Serve até 8 pessoas.', preco: 68.00, categoria: 'salgados', imagem_url: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=900&q=80', disponivel: true, estoque: 5 },
+  { id: 'modelo-5', nome: 'Croissants Amanteigados', descricao: 'Folhados clássicos franceses, feitos com manteiga de alta qualidade e muitas camadas de massa. Dourados por fora, macios e amanteigados por dentro. Vendidos em caixa com 6 unidades, ótimos para o café da manhã.', preco: 38.00, categoria: 'paes', imagem_url: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=900&q=80', disponivel: true, estoque: 10 },
+  { id: 'modelo-6', nome: 'Torta de Limão', descricao: 'Base crocante de biscoito amanteigado, recheio cremoso de limão siciliano e cobertura de merengue maçaricado. Equilíbrio perfeito entre doce e azedinho. Serve até 8 pessoas.', preco: 62.00, categoria: 'tortas', imagem_url: 'https://images.unsplash.com/photo-1519340333755-56e9c1d04579?w=900&q=80', disponivel: true, estoque: 6 },
+  { id: 'modelo-7', nome: 'Coxinha de Frango (dúzia)', descricao: 'Massa lisinha e recheio generoso de frango desfiado com catupiry, fritas na hora do pedido para garantir a crocância perfeita. Vendidas em dúzias.', preco: 36.00, categoria: 'salgados', imagem_url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=900&q=80', disponivel: false, estoque: 0 },
+  { id: 'modelo-8', nome: 'Bolo de Cenoura com Cobertura', descricao: 'O queridinho brasileiro: massa fofinha de cenoura com cobertura generosa de chocolate cremoso. Simples, nostálgico e sempre uma boa pedida.', preco: 55.00, categoria: 'bolos', imagem_url: 'https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=900&q=80', disponivel: true, estoque: 9 },
+];
+
+let produtoAtual = null;
+let quantidadeSelecionada = 1;
+
+function rotuloCategoria(cat) {
+  const rotulos = { bolos: 'Bolo', paes: 'Pão', doces: 'Doce', salgados: 'Salgado', tortas: 'Torta' };
+  return rotulos[cat] || 'Produto';
+}
+
+async function carregarProduto() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  const area = document.getElementById('areaProduto');
+
+  if (!id) {
+    area.innerHTML = paginaNaoEncontrado();
+    return;
+  }
+
+  let produto = null;
+  let todos = PRODUTOS_MODELO;
+
+  try {
+    const { data: dataUnico, error: erroUnico } = await db.from('produtos').select('*').eq('id', id).single();
+    if (!erroUnico && dataUnico) {
+      produto = dataUnico;
+      const { data: dataTodos } = await db.from('produtos').select('*').limit(20);
+      if (dataTodos && dataTodos.length > 0) todos = dataTodos;
+    }
+  } catch (e) {
+    console.warn('Usando dados de modelo (Supabase ainda não configurado).');
+  }
+
+  if (!produto) {
+    produto = PRODUTOS_MODELO.find(p => p.id === id);
+  }
+
+  if (!produto) {
+    area.innerHTML = paginaNaoEncontrado();
+    return;
+  }
+
+  produtoAtual = produto;
+  document.title = `${produto.nome} — Dona Benta`;
+  document.getElementById('trilhaNome').textContent = produto.nome;
+
+  area.innerHTML = `
+    <div class="produto-detalhe">
+      <div class="produto-foto">
+        <img src="${produto.imagem_url}" alt="${produto.nome}">
+      </div>
+      <div>
+        <span class="produto-categoria-tag">
+          <span class="material-symbols-outlined" style="font-size:16px;">local_offer</span>
+          ${rotuloCategoria(produto.categoria)}
+        </span>
+        <h1 class="produto-titulo">${produto.nome}</h1>
+        <div class="produto-preco-grande">${formatarPreco(produto.preco)}</div>
+
+        <div class="produto-disponibilidade ${produto.disponivel === false ? 'indisponivel' : 'disponivel'}">
+          <span class="material-symbols-outlined">${produto.disponivel === false ? 'cancel' : 'check_circle'}</span>
+          ${produto.disponivel === false ? 'Indisponível no momento' : 'Disponível para encomenda'}
+        </div>
+
+        <p class="produto-descricao">${produto.descricao}</p>
+
+        ${produto.disponivel !== false ? `
+          <div class="quantidade-linha">
+            <span style="font-weight:600; color: var(--marrom);">Quantidade:</span>
+            <div class="quantidade-seletor">
+              <button id="btnMenos" aria-label="Diminuir quantidade">
+                <span class="material-symbols-outlined">remove</span>
+              </button>
+              <span id="quantidadeValor">1</span>
+              <button id="btnMais" aria-label="Aumentar quantidade">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+            </div>
+          </div>
+        ` : ''}
+
+        <div class="produto-acoes">
+          <button class="btn btn-primario" id="btnComprar" ${produto.disponivel === false ? 'disabled' : ''}>
+            <span class="material-symbols-outlined">shopping_cart</span>
+            Adicionar ao carrinho
+          </button>
+          <a href="carrinho.html" class="btn btn-outline">
+            <span class="material-symbols-outlined">bolt</span>
+            Comprar agora
+          </a>
+        </div>
+
+        <div class="produto-extra">
+          <div class="produto-extra-item">
+            <span class="material-symbols-outlined">schedule</span>
+            <span>Agende data e horário de retirada ou entrega no checkout.</span>
+          </div>
+          <div class="produto-extra-item">
+            <span class="material-symbols-outlined">soup_kitchen</span>
+            <span>Feito sob encomenda, com ingredientes frescos selecionados.</span>
+          </div>
+          <div class="produto-extra-item">
+            <span class="material-symbols-outlined">chat</span>
+            <span>Dúvidas sobre este produto? <a href="https://wa.me/${NUMERO_WHATSAPP}" target="_blank" rel="noopener" style="color:var(--dourado-escuro); font-weight:600;">Fale conosco no WhatsApp</a>.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  if (produto.disponivel !== false) {
+    document.getElementById('btnMais').addEventListener('click', () => {
+      quantidadeSelecionada++;
+      document.getElementById('quantidadeValor').textContent = quantidadeSelecionada;
+    });
+    document.getElementById('btnMenos').addEventListener('click', () => {
+      if (quantidadeSelecionada > 1) quantidadeSelecionada--;
+      document.getElementById('quantidadeValor').textContent = quantidadeSelecionada;
+    });
+  }
+
+  document.getElementById('btnComprar').addEventListener('click', () => {
+    adicionarAoCarrinho(produto, quantidadeSelecionada);
+  });
+
+  montarRelacionados(todos, produto);
+}
+
+function montarRelacionados(todos, produtoAtual) {
+  const relacionados = todos
+    .filter(p => p.categoria === produtoAtual.categoria && p.id !== produtoAtual.id)
+    .slice(0, 4);
+
+  if (relacionados.length === 0) return;
+
+  document.getElementById('secaoRelacionados').style.display = 'block';
+  document.getElementById('relacionadosGrade').innerHTML = relacionados.map(p => `
+    <a href="produto.html?id=${p.id}" class="produto-cartao">
+      <div class="produto-imagem"><img src="${p.imagem_url}" alt="${p.nome}" loading="lazy"></div>
+      <div class="produto-info">
+        <h3>${p.nome}</h3>
+        <div class="produto-preco">${formatarPreco(p.preco)}</div>
+      </div>
+    </a>
+  `).join('');
+}
+
+function paginaNaoEncontrado() {
+  return `
+    <div class="vazio">
+      <span class="material-symbols-outlined">search_off</span>
+      <h3>Produto não encontrado</h3>
+      <p>O produto que você procura não existe ou foi removido.</p>
+      <a href="catalogo.html" class="btn btn-primario" style="margin-top:16px;">Voltar ao catálogo</a>
+    </div>
+  `;
+}
+
+carregarProduto();
+</script>
+</body>
+</html>
