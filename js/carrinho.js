@@ -1,60 +1,72 @@
 // ============================================
-// DONA BENTA — Lógica do carrinho (localStorage)
+// DONA BENTA — js/carrinho.js
+// Carrinho local (localStorage) — usado em catalogo.html, produto.html, carrinho.html
+// Usa a mesma chave e o mesmo badge geridos por layout.js
 // ============================================
 
+const CHAVE_CARRINHO = 'donaBentaCarrinho';
+
 function lerCarrinho() {
-  return JSON.parse(localStorage.getItem('donaBentaCarrinho') || '[]');
+  try {
+    return JSON.parse(localStorage.getItem(CHAVE_CARRINHO)) || [];
+  } catch {
+    return [];
+  }
 }
 
 function salvarCarrinho(carrinho) {
-  localStorage.setItem('donaBentaCarrinho', JSON.stringify(carrinho));
-  atualizarContagemCarrinho();
+  localStorage.setItem(CHAVE_CARRINHO, JSON.stringify(carrinho));
+  if (typeof atualizarContagemCarrinho === 'function') {
+    atualizarContagemCarrinho();
+  }
 }
 
 function adicionarAoCarrinho(produto, quantidade = 1) {
   const carrinho = lerCarrinho();
-  const existente = carrinho.find(item => item.produto_id === produto.id);
-
+  const existente = carrinho.find(item => item.id === produto.id);
   if (existente) {
     existente.quantidade += quantidade;
   } else {
     carrinho.push({
-      produto_id: produto.id,
+      id: produto.id,
       nome: produto.nome,
       preco: produto.preco,
       imagem_url: produto.imagem_url,
       quantidade
     });
   }
-
   salvarCarrinho(carrinho);
-  mostrarToast(`${produto.nome} adicionado ao carrinho`, 'sucesso');
+  mostrarToast(`${produto.nome} adicionado ao carrinho!`, 'sucesso');
 }
 
 function removerDoCarrinho(produtoId) {
-  const carrinho = lerCarrinho().filter(item => item.produto_id !== produtoId);
+  const carrinho = lerCarrinho().filter(item => item.id !== produtoId);
   salvarCarrinho(carrinho);
 }
 
-function alterarQuantidade(produtoId, novaQuantidade) {
+function atualizarQuantidadeCarrinho(produtoId, quantidade) {
   const carrinho = lerCarrinho();
-  const item = carrinho.find(i => i.produto_id === produtoId);
+  const item = carrinho.find(item => item.id === produtoId);
   if (!item) return;
-
-  if (novaQuantidade <= 0) {
+  if (quantidade <= 0) {
     removerDoCarrinho(produtoId);
     return;
   }
-
-  item.quantidade = novaQuantidade;
+  item.quantidade = quantidade;
   salvarCarrinho(carrinho);
 }
 
 function limparCarrinho() {
-  localStorage.removeItem('donaBentaCarrinho');
-  atualizarContagemCarrinho();
+  localStorage.removeItem(CHAVE_CARRINHO);
+  if (typeof atualizarContagemCarrinho === 'function') {
+    atualizarContagemCarrinho();
+  }
 }
 
 function totalCarrinho() {
-  return lerCarrinho().reduce((soma, item) => soma + (item.preco * item.quantidade), 0);
+  return lerCarrinho().reduce((soma, item) => soma + item.preco * item.quantidade, 0);
+}
+
+function quantidadeTotalCarrinho() {
+  return lerCarrinho().reduce((soma, item) => soma + item.quantidade, 0);
 }

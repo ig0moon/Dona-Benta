@@ -1,228 +1,38 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Entrar — Dona Benta</title>
+<meta charset="UTF-8"><title>Entrar — Dona Benta</title>
 <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 <link rel="stylesheet" href="css/style.css">
-<style>
-  .auth-secao {
-    padding: 60px 0 90px;
-    display: flex;
-    justify-content: center;
-  }
-  .auth-cartao {
-    max-width: 440px;
-    width: 100%;
-  }
-  .auth-topo {
-    text-align: center;
-    margin-bottom: 28px;
-  }
-  .auth-topo .material-symbols-outlined {
-    font-size: 44px;
-    color: var(--dourado-escuro);
-    background: var(--azul-bebe);
-    width: 76px; height: 76px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 14px;
-  }
-  .auth-abas {
-    display: flex;
-    background: var(--creme-escuro);
-    border-radius: 999px;
-    padding: 4px;
-    margin-bottom: 28px;
-  }
-  .auth-aba {
-    flex: 1;
-    text-align: center;
-    padding: 10px;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--marrom-claro);
-    transition: background 0.2s ease, color 0.2s ease;
-  }
-  .auth-aba.ativa { background: var(--branco); color: var(--marrom); box-shadow: var(--sombra-suave); }
-  .form-auth { display: none; }
-  .form-auth.ativo { display: block; }
-  .auth-rodape {
-    text-align: center;
-    margin-top: 18px;
-    font-size: 0.88rem;
-    color: var(--marrom-claro);
-  }
-  .auth-rodape a { color: var(--dourado-escuro); font-weight: 600; }
-  .senha-esqueci { text-align: right; margin-top: -10px; margin-bottom: 18px; }
-  .senha-esqueci a { font-size: 0.85rem; color: var(--marrom-claro); }
-  .senha-esqueci a:hover { color: var(--dourado-escuro); }
-</style>
 </head>
 <body>
-
-<section class="auth-secao">
-  <div class="container">
-    <div class="cartao auth-cartao">
-      <div class="auth-topo">
+<section class="auth-secao"><div class="container"><div class="cartao auth-cartao" id="authContent">
+    <div class="auth-topo">
         <span class="material-symbols-outlined">bakery_dining</span>
-        <h1 style="font-size: 1.6rem;">Bem-vindo(a) de volta</h1>
-        <p style="color: var(--marrom-claro); font-size: 0.92rem;">Entre ou crie sua conta para fazer pedidos</p>
-      </div>
-
-      <div class="auth-abas">
+        <h1>Bem-vindo(a)</h1>
+        <p>Entre ou crie sua conta</p>
+    </div>
+    <div class="auth-abas">
         <button class="auth-aba ativa" id="abaEntrar">Entrar</button>
         <button class="auth-aba" id="abaCadastrar">Criar conta</button>
-      </div>
-
-      <form class="form-auth ativo" id="formEntrar">
-        <div class="campo">
-          <label for="emailEntrar">E-mail</label>
-          <input type="email" id="emailEntrar" required placeholder="seuemail@exemplo.com">
-        </div>
-        <div class="campo">
-          <label for="senhaEntrar">Senha</label>
-          <input type="password" id="senhaEntrar" required placeholder="••••••••">
-        </div>
-        <div class="senha-esqueci"><a href="#" id="linkEsqueciSenha">Esqueci minha senha</a></div>
-        <button type="submit" class="btn btn-primario btn-bloco" id="btnEntrar">
-          <span class="material-symbols-outlined">login</span>
-          Entrar
-        </button>
-      </form>
-
-      <form class="form-auth" id="formCadastrar">
-        <div class="campo">
-          <label for="nomeCadastro">Nome completo</label>
-          <input type="text" id="nomeCadastro" required placeholder="Seu nome">
-        </div>
-        <div class="campo">
-          <label for="telefoneCadastro">Telefone / WhatsApp</label>
-          <input type="tel" id="telefoneCadastro" required placeholder="(11) 99999-9999">
-        </div>
-        <div class="campo">
-          <label for="emailCadastro">E-mail</label>
-          <input type="email" id="emailCadastro" required placeholder="seuemail@exemplo.com">
-        </div>
-        <div class="campo">
-          <label for="senhaCadastro">Senha</label>
-          <input type="password" id="senhaCadastro" required minlength="6" placeholder="Mínimo 6 caracteres">
-        </div>
-        <button type="submit" class="btn btn-primario btn-bloco" id="btnCadastrar">
-          <span class="material-symbols-outlined">person_add</span>
-          Criar conta
-        </button>
-      </form>
-
-      <div class="auth-rodape">
-        Ao continuar, você concorda com nossos <a href="faq.html">termos e políticas</a>.
-      </div>
     </div>
-  </div>
-</section>
-
+    <form class="form-auth ativo" id="formEntrar">
+        <div class="campo"><label>E-mail</label><input type="email" id="emailEntrar" required></div>
+        <div class="campo"><label>Senha</label><input type="password" id="senhaEntrar" required></div>
+        <div class="senha-esqueci"><a href="#" id="linkEsqueciSenha">Esqueci minha senha</a></div>
+        <button type="submit" class="btn btn-primario btn-bloco" id="btnEntrar">Entrar</button>
+    </form>
+    <form class="form-auth" id="formCadastrar">
+        <div class="campo"><label>Nome</label><input type="text" id="nomeCadastro" required></div>
+        <div class="campo"><label>Telefone</label><input type="tel" id="telefoneCadastro" required></div>
+        <div class="campo"><label>E-mail</label><input type="email" id="emailCadastro" required></div>
+        <div class="campo"><label>Senha</label><input type="password" id="senhaCadastro" required></div>
+        <button type="submit" class="btn btn-primario btn-bloco" id="btnCadastrar">Criar conta</button>
+    </form>
+</div></div></section>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
-<script src="js/carrinho.js"></script>
 <script src="js/layout.js"></script>
-<script>
-const abaEntrar = document.getElementById('abaEntrar');
-const abaCadastrar = document.getElementById('abaCadastrar');
-const formEntrar = document.getElementById('formEntrar');
-const formCadastrar = document.getElementById('formCadastrar');
-
-abaEntrar.addEventListener('click', () => {
-  abaEntrar.classList.add('ativa');
-  abaCadastrar.classList.remove('ativa');
-  formEntrar.classList.add('ativo');
-  formCadastrar.classList.remove('ativo');
-});
-
-abaCadastrar.addEventListener('click', () => {
-  abaCadastrar.classList.add('ativa');
-  abaEntrar.classList.remove('ativa');
-  formCadastrar.classList.add('ativo');
-  formEntrar.classList.remove('ativo');
-});
-
-// Redireciona se já estiver logado
-(async () => {
-  const usuario = await usuarioAtual();
-  if (usuario) window.location.href = 'conta.html';
-})();
-
-formEntrar.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('btnEntrar');
-  btn.disabled = true;
-
-  const email = document.getElementById('emailEntrar').value;
-  const senha = document.getElementById('senhaEntrar').value;
-
-  const { data, error } = await db.auth.signInWithPassword({ email, password: senha });
-
-  btn.disabled = false;
-
-  if (error) {
-    mostrarToast('E-mail ou senha incorretos', 'erro');
-    return;
-  }
-
-  mostrarToast('Login realizado com sucesso!', 'sucesso');
-  setTimeout(() => window.location.href = 'conta.html', 800);
-});
-
-formCadastrar.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('btnCadastrar');
-  btn.disabled = true;
-
-  const nome = document.getElementById('nomeCadastro').value;
-  const telefone = document.getElementById('telefoneCadastro').value;
-  const email = document.getElementById('emailCadastro').value;
-  const senha = document.getElementById('senhaCadastro').value;
-
-  const { data, error } = await db.auth.signUp({ email, password: senha });
-
-  if (error) {
-    mostrarToast(error.message || 'Erro ao criar conta', 'erro');
-    btn.disabled = false;
-    return;
-  }
-
-  // Cria o registro de perfil vinculado ao novo usuário
-  if (data.user) {
-    const { error: erroPerfil } = await db.from('perfis').insert({
-      id: data.user.id,
-      nome,
-      telefone,
-      role: 'cliente'
-    });
-    if (erroPerfil) console.error('Erro ao criar perfil:', erroPerfil);
-  }
-
-  btn.disabled = false;
-  mostrarToast('Conta criada! Verifique seu e-mail para confirmar.', 'sucesso');
-  setTimeout(() => window.location.href = 'conta.html', 1200);
-});
-
-document.getElementById('linkEsqueciSenha').addEventListener('click', async (e) => {
-  e.preventDefault();
-  const email = document.getElementById('emailEntrar').value;
-  if (!email) {
-    mostrarToast('Digite seu e-mail no campo acima primeiro', 'info');
-    return;
-  }
-  const { error } = await db.auth.resetPasswordForEmail(email);
-  if (error) {
-    mostrarToast('Erro ao enviar e-mail de recuperação', 'erro');
-  } else {
-    mostrarToast('E-mail de recuperação enviado!', 'sucesso');
-  }
-});
-</script>
+<script src="js/login.js"></script>
 </body>
 </html>

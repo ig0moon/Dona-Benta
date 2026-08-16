@@ -205,7 +205,7 @@
         <span class="material-symbols-outlined">chat</span>
         Confirmar no WhatsApp
       </a>
-      <a href="pedidos-lista.html" class="btn btn-outline btn-bloco" id="btnVerPedidos">Ver meus pedidos</a>
+      <a href="conta.html?aba=pedidos" class="btn btn-outline btn-bloco" id="btnVerPedidos">Ver meus pedidos</a>
     </div>
   </div>
 </div>
@@ -458,9 +458,9 @@ async function confirmarPedido() {
   const usuario = await usuarioAtual();
   const perfil = await perfilAtual();
 
+  // 1. Insere apenas os dados principais na tabela 'pedidos' (sem a coluna 'itens')
   const novoPedido = {
     cliente_id: usuario.id,
-    itens: carrinho.map(i => ({ produto_id: i.produto_id, nome: i.nome, preco: i.preco, quantidade: i.quantidade })),
     valor_total: total,
     status: 'aguardando_confirmacao',
     tipo_entrega: tipoEntregaAtual,
@@ -471,15 +471,37 @@ async function confirmarPedido() {
     forma_pagamento: formaPagamento
   };
 
-  try {
-    const { data, error } = await db.from('pedidos').insert(novoPedido).select().single();
-    if (error) throw error;
-    exibirRecibo(data, perfil);
-  } catch (e) {
-    console.warn('Supabase não configurado — mostrando recibo local de demonstração.');
-    exibirRecibo({ ...novoPedido, id: 'demo-' + Date.now() }, perfil);
+  const { data: pedidoCriado, error: erroPedido } = await db.from('pedidos').insert(novoPedido).select().single();
+
+  if (erroPedido) {
+    console.error('Erro ao criar pedido:', erroPedido);
+    mostrarToast('Erro ao registrar pedido: ' + erroPedido.message, 'erro');
+    btn.disabled = false;
+    return;
   }
 
+  // 2. Insere os itens na tabela relacional 'itens_pedido' usando o id gerado do pedido
+  const itensParaInserir = carrinho.map(i => ({
+    pedido_id: pedidoCriado.id,
+    produto_id: i.id,
+    nome: i.nome,
+    preco: i.preco,
+    quantidade: i.quantidade
+  }));
+
+  const { error: erroItens } = await db.from('itens_pedido').insert(itensParaInserir);
+
+  if (erroItens) {
+    console.error('Erro ao salvar itens do pedido:', erroItens);
+    mostrarToast('Erro ao salvar os itens do pedido.', 'erro');
+    btn.disabled = false;
+    return;
+  }
+
+  // Anexa os itens ao objeto para exibir no recibo visualmente
+  pedidoCriado.itens = carrinho;
+
+  exibirRecibo(pedidoCriado, perfil);
   btn.disabled = false;
 }
 

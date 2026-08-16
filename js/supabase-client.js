@@ -1,63 +1,13 @@
 // ============================================
-// DONA BENTA — Configuração do Supabase
+// DONA BENTA — js/supabase-client.js
+// Cliente Supabase + helpers globais
 // ============================================
-// Substitua pela URL e chave anônima do seu projeto Supabase
-// (Configurações do projeto > API)
 
-const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
-const SUPABASE_ANON_KEY = 'SUA-CHAVE-ANONIMA-AQUI';
+const SUPABASE_URL = 'https://nxigfuivadxjotlqrwux.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_0TIbP0aiCcLnXjM-cRz6pQ_NCQycx5Z';
 
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// ============================================
-// Estrutura de tabelas esperada no Supabase
-// ============================================
-//
-// produtos
-//   id (uuid, pk, default gen_random_uuid())
-//   nome (text)
-//   descricao (text)
-//   descricao_curta (text)
-//   preco (numeric)
-//   categoria (text) — ex: 'bolos', 'doces', 'salgados', 'paes', 'tortas'
-//   imagem_url (text)
-//   destaque (boolean, default false) — usado no carrossel da index
-//   disponivel (boolean, default true)
-//   estoque (integer, default 0)
-//   criado_em (timestamptz, default now())
-//
-// perfis
-//   id (uuid, pk, references auth.users)
-//   nome (text)
-//   telefone (text)
-//   cep (text)
-//   bairro (text)
-//   logradouro (text)
-//   numero (text)
-//   complemento (text)
-//   role (text, default 'cliente') — 'cliente' | 'admin'
-//   criado_em (timestamptz, default now())
-//
-// pedidos
-//   id (uuid, pk, default gen_random_uuid())
-//   cliente_id (uuid, references perfis.id)
-//   itens (jsonb) — [{ produto_id, nome, preco, quantidade }]
-//   valor_total (numeric)
-//   status (text, default 'aguardando_confirmacao')
-//        'aguardando_confirmacao' | 'confirmado' | 'em_preparo' | 'pronto' | 'entregue' | 'cancelado'
-//   tipo_entrega (text) — 'retirada' | 'entrega'
-//   endereco_entrega (text, nullable)
-//   data_agendada (date)
-//   horario_agendado (text)
-//   observacoes (text, nullable)
-//   forma_pagamento (text)
-//   criado_em (timestamptz, default now())
-//
-// horarios_disponiveis (opcional, ou calcular no client a partir de pedidos)
-//   data (date)
-//   horario (text)
-//   capacidade (integer, default 3)
 
 // ============================================
 // Helpers de autenticação
@@ -96,6 +46,15 @@ async function exigirAdmin() {
   const perfil = await perfilAtual();
   if (!perfil || perfil.role !== 'admin') {
     window.location.href = 'index.html';
+    return null;
+  }
+  return perfil;
+}
+
+async function exigirStaff(redirecionarPara = 'index.html') {
+  const perfil = await perfilAtual();
+  if (!perfil || !['funcionario', 'admin'].includes(perfil.role)) {
+    window.location.href = redirecionarPara;
     return null;
   }
   return perfil;
@@ -140,8 +99,12 @@ function formatarPreco(valor) {
 }
 
 function formatarData(dataStr) {
-  const [ano, mes, dia] = dataStr.split('-');
+  if(!dataStr) return '';
+  const dateObj = new Date(dataStr);
+  const dia = String(dateObj.getDate()).padStart(2, '0');
+  const mes = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const ano = dateObj.getFullYear();
   return `${dia}/${mes}/${ano}`;
 }
 
-const NUMERO_WHATSAPP = '5511999999999'; // substitua pelo número real, com DDI+DDD
+const NUMERO_WHATSAPP = '5542999823994';
