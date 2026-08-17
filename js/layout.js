@@ -22,8 +22,7 @@ function montarHeader() {
   header.innerHTML = `
     <nav class="nav">
       <a href="index.html" class="nav-logo">
-        <span class="material-symbols-outlined">bakery_dining</span>
-        Dona Benta
+        <img src="img/HeaderDonaBenta.png">
       </a>
       <button class="nav-toggle" id="navToggle" aria-label="Abrir menu">
         <span class="material-symbols-outlined">menu</span>
@@ -60,7 +59,6 @@ function montarFooter() {
     <div class="footer-conteudo">
       <div>
         <div class="footer-marca">
-          <span class="material-symbols-outlined">bakery_dining</span>
           Dona Benta
         </div>
         <p class="footer-desc">Pães, bolos e doces feitos como antigamente, com ingredientes selecionados e todo carinho da nossa cozinha para a sua mesa.</p>
@@ -111,6 +109,9 @@ function montarFooter() {
           <li><span class="material-symbols-outlined">mail</span> contato@donabenta.com.br</li>
         </ul>
       </div>
+    </div>
+    <div class="logo-benta-footer">
+      <img src="img/LogoDonaBenta.png">
     </div>
     <div class="footer-base">
       © ${new Date().getFullYear()} Dona Benta Confeitaria e Padaria. Todos os direitos reservados.
