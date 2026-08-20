@@ -148,9 +148,6 @@ function renderizarPerfil(area, usuario, perfil) {
 // =========================================================
 // SEÇÃO: MEUS PEDIDOS
 // =========================================================
-// =========================================================
-// SEÇÃO: MEUS PEDIDOS
-// =========================================================
 async function renderizarMeusPedidos(area, usuario) {
     let pedidos = [];
     try {
@@ -189,7 +186,6 @@ async function renderizarMeusPedidos(area, usuario) {
             </div>`;
     }).join('');
 
-    // Aqui está a mudança: A div volta a ser um .cartao padrão sem fundo transparente
     area.innerHTML = `
         <div class="cartao">
             <h3 style="margin-bottom: 20px;">Histórico de Pedidos</h3>
@@ -245,20 +241,22 @@ function carregarTabAdmin(tab) {
 
 function renderizarVisaoGeralAdmin(area) {
     const pendentes = PEDIDOS_ADMIN.filter(p => p.status === 'aguardando_confirmacao').length;
-    const faturamento = PEDIDOS_ADMIN.filter(p => p.status !== 'cancelado').reduce((s, p) => s + Number(p.valor_total), 0);
+    
+    // AQUI ESTÁ A MUDANÇA: O faturamento agora soma apenas onde p.pago === true
+    const faturamento = PEDIDOS_ADMIN.filter(p => p.pago === true).reduce((s, p) => s + Number(p.valor_total), 0);
 
     area.innerHTML = `
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px;">
             <div class="cartao stat-cartao"><span class="material-symbols-outlined">receipt_long</span><div class="stat-valor">${PEDIDOS_ADMIN.length}</div><div class="stat-rotulo">Pedidos totais</div></div>
             <div class="cartao stat-cartao"><span class="material-symbols-outlined">hourglass_empty</span><div class="stat-valor">${pendentes}</div><div class="stat-rotulo">Aguardando</div></div>
-            <div class="cartao stat-cartao"><span class="material-symbols-outlined">payments</span><div class="stat-valor">${formatarPreco(faturamento)}</div><div class="stat-rotulo">Faturamento</div></div>
+            <div class="cartao stat-cartao"><span class="material-symbols-outlined">payments</span><div class="stat-valor">${formatarPreco(faturamento)}</div><div class="stat-rotulo">Faturamento (Pago)</div></div>
             <div class="cartao stat-cartao"><span class="material-symbols-outlined">bakery_dining</span><div class="stat-valor">${PRODUTOS_ADMIN.length}</div><div class="stat-rotulo">Produtos</div></div>
         </div>
         <div class="cartao">
             <h3 style="margin-bottom:16px;">Últimos pedidos</h3>
             <div class="tabela-scroll">
                 <table>
-                    <thead><tr><th>Cliente</th><th>Data</th><th>Total</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Cliente</th><th>Data</th><th>Total</th><th>Status</th><th>Pagamento</th></tr></thead>
                     <tbody>
                         ${PEDIDOS_ADMIN.slice(0, 5).map(p => `
                             <tr>
@@ -266,6 +264,7 @@ function renderizarVisaoGeralAdmin(area) {
                                 <td>${formatarData(p.data_agendada)}</td>
                                 <td>${formatarPreco(p.valor_total)}</td>
                                 <td><span class="badge ${STATUS_INFO[p.status]?.classe || 'badge-info'}">${STATUS_INFO[p.status]?.rotulo || p.status}</span></td>
+                                <td><span class="badge ${p.pago ? 'badge-sucesso' : 'badge-alerta'}">${p.pago ? 'Pago' : 'Pendente'}</span></td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -315,16 +314,15 @@ function renderizarPedidosAdmin(area) {
     area.innerHTML = `
         <div class="cartao">
             <h3 style="margin-bottom: 20px;">Gerenciar Pedidos (${PEDIDOS_ADMIN.length})</h3>
-            <div class="tabela-scroll" style="overflow: visible;"> <!-- visible para o dropdown não cortar -->
+            <div class="tabela-scroll" style="overflow: visible;">
                 <table>
-                    <thead><tr><th>Cliente</th><th>Entrega</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Cliente</th><th>Entrega</th><th>Status</th><th>Pagamento</th></tr></thead>
                     <tbody>
                         ${PEDIDOS_ADMIN.map(p => `
                             <tr>
                                 <td>${p.perfis?.nome || '—'}<br><span style="color:var(--marrom-claro); font-size:0.8rem;">${p.perfis?.telefone || ''}</span></td>
                                 <td>${formatarData(p.data_agendada)}<br>${p.horario_agendado} (${p.tipo_entrega})</td>
                                 <td>
-                                    <!-- AQUI ENTRA O CUSTOM SELECT -->
                                     <div class="custom-select" data-pedido="${p.id}">
                                         <div class="custom-select-trigger">
                                             <span class="trigger-text">${STATUS_INFO[p.status]?.rotulo || p.status}</span>
@@ -339,6 +337,11 @@ function renderizarPedidosAdmin(area) {
                                         </div>
                                     </div>
                                 </td>
+                                <td>
+                                    <button class="badge btn-pagamento ${p.pago ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${p.id}" data-pago="${p.pago || false}" style="border: none; cursor: pointer; transition: 0.2s;">
+                                        ${p.pago ? 'Pago' : 'Pendente'}
+                                    </button>
+                                </td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -347,40 +350,33 @@ function renderizarPedidosAdmin(area) {
         </div>
     `;
 
-    // Lógica de funcionamento do Custom Select
+    // 1. Lógica do Custom Select (Status de entrega) - Mantido igual
     const selects = area.querySelectorAll('.custom-select');
-
     selects.forEach(selectBox => {
         const trigger = selectBox.querySelector('.custom-select-trigger');
         const triggerText = selectBox.querySelector('.trigger-text');
         const options = selectBox.querySelectorAll('.custom-option');
 
-        // Abre/Fecha ao clicar no trigger
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();
-            // Fecha os outros selects abertos antes de abrir este
             document.querySelectorAll('.custom-select').forEach(s => {
                 if (s !== selectBox) s.classList.remove('aberto');
             });
             selectBox.classList.toggle('aberto');
         });
 
-        // Lógica ao clicar em uma opção da lista
         options.forEach(option => {
             option.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const novoValor = option.dataset.valor;
                 const pedidoId = selectBox.dataset.pedido;
 
-                // Remove classe selecionado de todos e adiciona no clicado
                 options.forEach(opt => opt.classList.remove('selecionado'));
                 option.classList.add('selecionado');
                 
-                // Atualiza o texto visível
                 triggerText.textContent = option.textContent.trim();
                 selectBox.classList.remove('aberto');
 
-                // Salva no banco de dados (Supabase)
                 const { error } = await db.from('pedidos').update({ status: novoValor }).eq('id', pedidoId);
                 
                 if (error) {
@@ -394,27 +390,83 @@ function renderizarPedidosAdmin(area) {
         });
     });
 
-    // Fecha o select se o usuário clicar em qualquer outro lugar da tela
     document.addEventListener('click', () => {
         document.querySelectorAll('.custom-select').forEach(s => s.classList.remove('aberto'));
+    });
+
+    // 2. NOVA Lógica do Botão de Pagamento
+    const botoesPagamento = area.querySelectorAll('.btn-pagamento');
+    botoesPagamento.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const pedidoId = btn.dataset.pedido;
+            const estadoAtualPago = btn.dataset.pago === 'true'; // converte string para booleano
+            const novoEstadoPago = !estadoAtualPago; // inverte o estado
+
+            // Efeito visual de carregamento
+            btn.style.opacity = '0.5';
+            btn.disabled = true;
+
+            const { error } = await db.from('pedidos').update({ pago: novoEstadoPago }).eq('id', pedidoId);
+
+            if (error) {
+                mostrarToast('Erro ao atualizar pagamento', 'erro');
+                btn.style.opacity = '1';
+                btn.disabled = false;
+            } else {
+                mostrarToast(novoEstadoPago ? 'Pedido marcado como Pago!' : 'Pedido marcado como Pendente!', 'sucesso');
+                
+                // Atualiza a lista local para refletir na visão geral também
+                const pedido = PEDIDOS_ADMIN.find(p => p.id === pedidoId);
+                if (pedido) pedido.pago = novoEstadoPago;
+                
+                // Recarrega apenas a tabela para atualizar as cores e botões
+                renderizarPedidosAdmin(area);
+            }
+        });
     });
 }
 
 // =========================================================
-// MODAL DE PRODUTOS (ADMIN)
+// MODAL DE PRODUTOS (ADMIN) - MODIFICADO COM UPLOAD
 // =========================================================
 function injetarModalAdminGlobal() {
     if (document.getElementById('modalProduto')) return; // Evita duplicar
     const modalHTML = `
         <div class="modal-overlay" id="modalProduto">
             <div class="modal-cartao">
-                <div class="modal-cabecalho"><h3 id="modalTitulo">Novo produto</h3><button class="modal-fechar" id="fecharModal"><span class="material-symbols-outlined">close</span></button></div>
+                <div class="modal-cabecalho">
+                    <h3 id="modalTitulo">Novo produto</h3>
+                    <button class="modal-fechar" id="fecharModal"><span class="material-symbols-outlined">close</span></button>
+                </div>
                 <form id="formProduto" style="max-height: 70vh; overflow-y: auto; padding-right: 5px;">
                     <input type="hidden" id="produtoId">
                     <div class="campo"><label>Nome</label><input type="text" id="produtoNome" required></div>
-                    <div class="campo"><label>Categoria</label><select id="produtoCategoria" required><option value="bolos">Bolos</option><option value="paes">Pães</option><option value="doces">Doces</option><option value="salgados">Salgados</option><option value="tortas">Tortas</option></select></div>
-                    <div class="campo-linha"><div class="campo"><label>Preço (R$)</label><input type="number" id="produtoPreco" step="0.01" min="0" required></div><div class="campo"><label>Estoque</label><input type="number" id="produtoEstoque" min="0" required></div></div>
-                    <div class="campo"><label>URL da imagem</label><input type="url" id="produtoImagem" required></div>
+                    <div class="campo">
+                        <label>Categoria</label>
+                        <select id="produtoCategoria" required>
+                            <option value="bolos">Bolos</option>
+                            <option value="paes">Pães</option>
+                            <option value="doces">Doces</option>
+                            <option value="salgados">Salgados</option>
+                            <option value="tortas">Tortas</option>
+                        </select>
+                    </div>
+                    <div class="campo-linha">
+                        <div class="campo"><label>Preço (R$)</label><input type="number" id="produtoPreco" step="0.01" min="0" required></div>
+                        <div class="campo"><label>Estoque</label><input type="number" id="produtoEstoque" min="0" required></div>
+                    </div>
+                    
+                    <!-- NOVO CAMPO DE IMAGEM -->
+                    <div class="campo">
+                        <label>Foto do Produto</label>
+                        <input type="file" id="produtoImagemFile" accept="image/*">
+                        <input type="hidden" id="produtoImagemAtual"> <!-- Guarda a URL se estiver editando -->
+                        <div id="previewImagemContainer" style="margin-top: 10px; display: none;">
+                            <img id="previewImagem" src="" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc;">
+                            <span style="font-size: 0.8rem; color: var(--marrom-claro); margin-left: 8px; vertical-align: super;">Imagem atual</span>
+                        </div>
+                    </div>
+
                     <div class="campo"><label>Desc. curta</label><textarea id="produtoDescricaoCurta" rows="2" required></textarea></div>
                     <div class="campo"><label>Desc. completa</label><textarea id="produtoDescricao" rows="3" required></textarea></div>
                     <div class="campo-linha">
@@ -432,24 +484,77 @@ function injetarModalAdminGlobal() {
     
     document.getElementById('formProduto').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = document.getElementById('btnSalvarProduto');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">autorenew</span> Salvando...';
+
         const id = document.getElementById('produtoId').value;
+        const arquivoInput = document.getElementById('produtoImagemFile');
+        const arquivo = arquivoInput.files[0];
+        let imagemUrlFinal = document.getElementById('produtoImagemAtual').value; // Inicia com a atual (se houver)
+
+        // LÓGICA DE UPLOAD
+        if (arquivo) {
+            btn.innerHTML = '<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">autorenew</span> Subindo imagem...';
+            
+            const extensao = arquivo.name.split('.').pop();
+            const nomeArquivo = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}.${extensao}`;
+            
+            const { data: uploadData, error: uploadError } = await db.storage
+                .from('produtos')
+                .upload(nomeArquivo, arquivo, { cacheControl: '3600', upsert: false });
+
+            if (uploadError) {
+                mostrarToast('Erro ao subir imagem para o bucket', 'erro');
+                btn.disabled = false;
+                btn.textContent = 'Salvar produto';
+                return;
+            }
+
+            // Pega a URL pública
+            const { data: urlData } = db.storage.from('produtos').getPublicUrl(nomeArquivo);
+            imagemUrlFinal = urlData.publicUrl;
+        } else if (!id) {
+            // Se for criação de um NOVO produto e não selecionou foto
+            mostrarToast('Por favor, selecione uma foto para o produto.', 'erro');
+            btn.disabled = false;
+            btn.textContent = 'Salvar produto';
+            return;
+        }
+
+        // SALVAR NO BANCO
         const dadosProduto = {
-            nome: document.getElementById('produtoNome').value, categoria: document.getElementById('produtoCategoria').value,
-            preco: Number(document.getElementById('produtoPreco').value), estoque: Number(document.getElementById('produtoEstoque').value),
-            imagem_url: document.getElementById('produtoImagem').value, descricao_curta: document.getElementById('produtoDescricaoCurta').value,
-            descricao: document.getElementById('produtoDescricao').value, disponivel: document.getElementById('produtoDisponivel').checked,
+            nome: document.getElementById('produtoNome').value, 
+            categoria: document.getElementById('produtoCategoria').value,
+            preco: Number(document.getElementById('produtoPreco').value), 
+            estoque: Number(document.getElementById('produtoEstoque').value),
+            imagem_url: imagemUrlFinal, 
+            descricao_curta: document.getElementById('produtoDescricaoCurta').value,
+            descricao: document.getElementById('produtoDescricao').value, 
+            disponivel: document.getElementById('produtoDisponivel').checked,
             destaque: document.getElementById('produtoDestaque').checked,
         };
-        let erro;
-        if (id) ({ error: erro } = await db.from('produtos').update(dadosProduto).eq('id', id));
-        else ({ error: erro } = await db.from('produtos').insert(dadosProduto));
-
-        if (erro) { mostrarToast('Erro ao salvar', 'erro'); return; }
         
-        mostrarToast(id ? 'Produto atualizado!' : 'Produto criado!', 'sucesso');
+        let erroDb;
+        if (id) {
+            ({ error: erroDb } = await db.from('produtos').update(dadosProduto).eq('id', id));
+        } else {
+            ({ error: erroDb } = await db.from('produtos').insert(dadosProduto));
+        }
+
+        if (erroDb) { 
+            mostrarToast('Erro ao salvar no banco de dados', 'erro'); 
+            btn.disabled = false;
+            btn.textContent = 'Salvar produto';
+            return; 
+        }
+        
+        mostrarToast(id ? 'Produto atualizado!' : 'Produto criado com sucesso!', 'sucesso');
         document.getElementById('modalProduto').classList.remove('aberto');
         
-        // Recarrega os produtos e re-renderiza a tab
+        // Restaura o botão e recarrega a tabela
+        btn.disabled = false;
+        btn.textContent = 'Salvar produto';
         await db.from('produtos').select('*').order('criado_em', { ascending: false }).then(r => PRODUTOS_ADMIN = r.data || []);
         renderizarProdutosAdmin(document.getElementById('adminConteudoSecao'));
     });
@@ -459,6 +564,12 @@ function abrirModalProduto(id = null) {
     const modal = document.getElementById('modalProduto');
     const form = document.getElementById('formProduto');
     form.reset();
+    
+    // Reseta campo de arquivo e container de preview
+    document.getElementById('produtoImagemFile').value = '';
+    const previewContainer = document.getElementById('previewImagemContainer');
+    const previewImg = document.getElementById('previewImagem');
+
     if (id) {
         const produto = PRODUTOS_ADMIN.find(p => p.id === id);
         document.getElementById('modalTitulo').textContent = 'Editar produto';
@@ -467,7 +578,12 @@ function abrirModalProduto(id = null) {
         document.getElementById('produtoCategoria').value = produto.categoria;
         document.getElementById('produtoPreco').value = produto.preco;
         document.getElementById('produtoEstoque').value = produto.estoque ?? 0;
-        document.getElementById('produtoImagem').value = produto.imagem_url;
+        
+        // Exibe o preview da imagem existente
+        document.getElementById('produtoImagemAtual').value = produto.imagem_url;
+        previewImg.src = produto.imagem_url;
+        previewContainer.style.display = 'block';
+
         document.getElementById('produtoDescricaoCurta').value = produto.descricao_curta || '';
         document.getElementById('produtoDescricao').value = produto.descricao || '';
         document.getElementById('produtoDisponivel').checked = produto.disponivel !== false;
@@ -475,6 +591,8 @@ function abrirModalProduto(id = null) {
     } else {
         document.getElementById('modalTitulo').textContent = 'Novo produto';
         document.getElementById('produtoId').value = '';
+        document.getElementById('produtoImagemAtual').value = '';
+        previewContainer.style.display = 'none'; // Esconde preview na criação
         document.getElementById('produtoDisponivel').checked = true;
     }
     modal.classList.add('aberto');
