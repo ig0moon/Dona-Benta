@@ -21,8 +21,8 @@ if(abaEntrar) {
     const usuario = await usuarioAtual();
     if (usuario) {
         const perfil = await perfilAtual();
-        if(perfil?.role === 'admin') window.location.href = 'admin.html';
-        else if(perfil?.role === 'funcionario') window.location.href = 'funcionario.html';
+        if(perfil?.role === 'admin') window.location.href = 'index.html';
+        else if(perfil?.role === 'funcionario') window.location.href = 'index.html';
         else window.location.href = 'conta.html';
     }
 })();
@@ -41,8 +41,8 @@ formEntrar?.addEventListener('submit', async (e) => {
     mostrarToast('Login realizado com sucesso!', 'sucesso');
     const perfil = await perfilAtual();
     setTimeout(() => {
-        if(perfil?.role === 'admin') window.location.href = 'admin.html';
-        else if(perfil?.role === 'funcionario') window.location.href = 'funcionario.html';
+        if(perfil?.role === 'admin') window.location.href = 'index.html';
+        else if(perfil?.role === 'funcionario') window.location.href = 'index.html';
         else window.location.href = 'conta.html';
     }, 800);
 });

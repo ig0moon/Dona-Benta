@@ -92,7 +92,6 @@ function renderizarCarrinho() {
         <span class="material-symbols-outlined">shopping_bag</span>
         <h3>Seu carrinho está vazio</h3>
         <p>Que tal dar uma olhada no nosso catálogo?</p>
-        <a href="conta.html" class="btn btn-primario" style="margin-top:16px;">Minha conta</a>
         <a href="catalogo.html" class="btn btn-primario" style="margin-top:16px;">Ver catálogo</a>
       </div>
     `;
