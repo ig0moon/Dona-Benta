@@ -5,32 +5,80 @@
 
 const SUPABASE_URL = 'https://nxigfuivadxjotlqrwux.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_0TIbP0aiCcLnXjM-cRz6pQ_NCQycx5Z';
+const BUCKET_PRODUTOS = 'produtos';
+const BUCKET_AVATARES = 'fotos-perfil';
+const NUMERO_WHATSAPP = '5542999823994';
 
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============================================
+// Segurança: Sanitização e Prevenção de XSS
+// ============================================
+
+function escapeHtml(texto) {
+  if (texto === null || texto === undefined) return '';
+  return String(texto)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // ============================================
 // Helpers de autenticação
 // ============================================
 
 async function usuarioAtual() {
-  const { data: { session } } = await db.auth.getSession();
-  return session?.user ?? null;
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    return session?.user ?? null;
+  } catch (err) {
+    console.error('Erro ao verificar sessão:', err);
+    return null;
+  }
 }
 
 async function perfilAtual() {
   const usuario = await usuarioAtual();
   if (!usuario) return null;
-  const { data, error } = await db
-    .from('perfis')
-    .select('*')
-    .eq('id', usuario.id)
-    .single();
-  if (error) {
-    console.error('Erro ao buscar perfil:', error);
-    return null;
+
+  let perfil = {};
+  try {
+    const consultaPromise = db
+      .from('perfis')
+      .select('*')
+      .eq('id', usuario.id)
+      .maybeSingle();
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout de 3s')), 3000)
+    );
+
+    const { data, error } = await Promise.race([consultaPromise, timeoutPromise]);
+    if (!error && data) {
+      perfil = data;
+    }
+  } catch (err) {
+    console.warn('Perfil carregado via fallback local/metadata:', err.message || err);
   }
-  return data;
+
+  // Fallbacks usando metadados seguros do auth
+  const meta = usuario.user_metadata || {};
+  return {
+    id: usuario.id,
+    email: usuario.email,
+    nome: perfil.nome || meta.nome || 'Cliente',
+    telefone: perfil.telefone || meta.telefone || '',
+    cep: perfil.cep || '',
+    bairro: perfil.bairro || '',
+    logradouro: perfil.logradouro || '',
+    numero: perfil.numero || '',
+    complemento: perfil.complemento || '',
+    role: perfil.role || 'cliente',
+    avatar_url: perfil.avatar_url || meta.avatar_url || null
+  };
 }
 
 async function exigirLogin(redirecionarPara = 'login.html') {
@@ -42,10 +90,10 @@ async function exigirLogin(redirecionarPara = 'login.html') {
   return usuario;
 }
 
-async function exigirAdmin() {
+async function exigirAdmin(redirecionarPara = 'index.html') {
   const perfil = await perfilAtual();
   if (!perfil || perfil.role !== 'admin') {
-    window.location.href = 'index.html';
+    window.location.href = redirecionarPara;
     return null;
   }
   return perfil;
@@ -71,14 +119,17 @@ function mostrarToast(mensagem, tipo = 'info') {
   const icones = {
     sucesso: 'check_circle',
     erro: 'error',
-    info: 'info'
+    info: 'info',
+    alerta: 'warning'
   };
 
   const toast = document.createElement('div');
   toast.className = `toast ${tipo}`;
+  toast.setAttribute('role', 'alert');
+  toast.setAttribute('aria-live', 'polite');
   toast.innerHTML = `
     <span class="material-symbols-outlined">${icones[tipo] || 'info'}</span>
-    <span>${mensagem}</span>
+    <span>${escapeHtml(mensagem)}</span>
   `;
   document.body.appendChild(toast);
 
@@ -95,16 +146,21 @@ function mostrarToast(mensagem, tipo = 'info') {
 // ============================================
 
 function formatarPreco(valor) {
-  return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const num = Number(valor) || 0;
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }).replace(/[\u00A0\u202F]/g, ' ');
 }
 
 function formatarData(dataStr) {
-  if(!dataStr) return '';
+  if (!dataStr) return '';
+  // Se for YYYY-MM-DD evita problemas de timezone
+  if (typeof dataStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dataStr)) {
+    const [ano, mes, dia] = dataStr.split('-');
+    return `${dia}/${mes}/${ano}`;
+  }
   const dateObj = new Date(dataStr);
+  if (isNaN(dateObj.getTime())) return String(dataStr);
   const dia = String(dateObj.getDate()).padStart(2, '0');
   const mes = String(dateObj.getMonth() + 1).padStart(2, '0');
   const ano = dateObj.getFullYear();
   return `${dia}/${mes}/${ano}`;
 }
-
-const NUMERO_WHATSAPP = '5542999823994';

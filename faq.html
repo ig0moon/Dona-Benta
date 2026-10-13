@@ -1,70 +1,75 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dúvidas Frequentes — Dona Benta</title>
-<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Perguntas frequentes sobre encomendas, formas de entrega, prazos e pagamentos na Dona Benta.">
+  <title>Dúvidas Frequentes — Dona Benta</title>
+  <link rel="shortcut icon" href="img/favicon.png" type="image/x-icon">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
-<section class="pagina-header">
-  <div class="container">
-    <span class="eyebrow">Ajuda</span>
-    <h1>Perguntas frequentes</h1>
-    <p>Tudo o que você precisa saber antes de fazer seu pedido.</p>
-  </div>
-</section>
-
-<section class="secao">
-  <div class="container">
-    <div class="faq-lista" id="faqLista"></div>
-
-    <div class="faq-cta">
-      <h2 style="font-size: 1.5rem; margin-bottom: 10px;">Ainda tem dúvidas?</h2>
-      <p style="color: var(--marrom-claro); margin-bottom: 20px;">Fale diretamente com a gente pelo WhatsApp.</p>
-      <a href="https://wa.me/5542999823994" target="_blank" rel="noopener" class="btn btn-whatsapp">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-whatsapp" viewBox="0 0 16 16">
-          <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
-        </svg>
-        Conversar no WhatsApp
-      </a>
+  <section class="pagina-header">
+    <div class="container">
+      <span class="eyebrow">Ajuda & Suporte</span>
+      <h1>Perguntas frequentes</h1>
+      <p>Tudo o que você precisa saber antes de fazer ou agendar seu pedido.</p>
     </div>
-  </div>
-</section>
+  </section>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-client.js"></script>
-<script src="js/carrinho.js"></script>
-<script src="js/layout.js"></script>
-<script>
-const PERGUNTAS = [
-  { p: 'Como faço um pedido?', r: 'Escolha os produtos no catálogo, adicione ao carrinho e siga para o agendamento. Você vai escolher a data, o horário e a forma de entrega antes de confirmar o pedido pelo WhatsApp.' },
-  { p: 'Com quanto tempo de antecedência devo encomendar?', r: 'Recomendamos pelo menos 2 dias de antecedência para bolos e tortas personalizadas. Para pães e doces do dia a dia, aceitamos encomendas com 1 dia de antecedência.' },
-  { p: 'Vocês fazem entrega?', r: 'Sim! Durante o agendamento você pode escolher entre retirar na loja ou receber no seu endereço. A taxa de entrega é combinada na confirmação pelo WhatsApp.' },
-  { p: 'Quais formas de pagamento são aceitas?', r: 'Aceitamos Pix, cartão (na retirada ou entrega) e dinheiro. Você escolhe a forma de pagamento na hora de finalizar o pedido.' },
-  { p: 'Posso cancelar ou alterar meu pedido?', r: 'Sim, entre em contato pelo WhatsApp o quanto antes. Pedidos já em preparo podem não ser cancelados, dependendo do prazo.' },
-  { p: 'Vocês fazem produtos personalizados?', r: 'Fazemos! Bolos com mensagens, temas e tamanhos especiais podem ser combinados diretamente pelo WhatsApp antes da confirmação.' },
-  { p: 'Como acompanho o status do meu pedido?', r: 'Na página "Meus Pedidos", dentro da sua conta, você acompanha o status atualizado: aguardando confirmação, confirmado, em preparo, pronto ou entregue.' },
-];
+  <main class="secao">
+    <div class="container">
+      <div class="faq-lista" id="faqLista"></div>
 
-document.getElementById('faqLista').innerHTML = PERGUNTAS.map((item, i) => `
-  <div class="faq-item" data-indice="${i}">
-    <button class="faq-pergunta">
-      ${item.p}
-      <span class="material-symbols-outlined">add</span>
-    </button>
-    <div class="faq-resposta"><p>${item.r}</p></div>
-  </div>
-`).join('');
+      <div class="faq-cta">
+        <h2 style="font-size: 1.5rem; margin-bottom: 10px;">Ainda tem dúvidas?</h2>
+        <p style="color: var(--marrom-claro); margin-bottom: 20px;">Fale diretamente com nossa equipe pelo WhatsApp.</p>
+        <a href="https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Gostaria%20de%20tirar%20uma%20d%C3%BAvida%20sobre%20as%20encomendas." target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-whatsapp" viewBox="0 0 16 16">
+            <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
+          </svg>
+          Conversar no WhatsApp
+        </a>
+      </div>
+    </div>
+  </main>
 
-document.querySelectorAll('.faq-pergunta').forEach(btn => {
-  btn.addEventListener('click', () => {
-    btn.closest('.faq-item').classList.toggle('aberto');
-  });
-});
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/carrinho.js"></script>
+  <script src="js/layout.js"></script>
+  <script>
+    const PERGUNTAS = [
+      { p: 'Como faço um pedido?', r: 'Escolha os produtos no catálogo, adicione ao carrinho e siga para o agendamento. Você vai escolher a data, o horário e a forma de entrega antes de confirmar o pedido pelo WhatsApp.' },
+      { p: 'Com quanto tempo de antecedência devo encomendar?', r: 'Recomendamos pelo menos 2 dias de antecedência para bolos e tortas personalizadas. Para pães e doces do dia a dia, aceitamos encomendas com 1 dia de antecedência.' },
+      { p: 'Vocês fazem entrega?', r: 'Sim! Durante o agendamento você pode escolher entre retirar na loja ou receber no seu endereço em Ponta Grossa e região.' },
+      { p: 'Quais formas de pagamento são aceitas?', r: 'Aceitamos Pix, cartão de débito/crédito e dinheiro. Você escolhe a forma de pagamento na finalização do pedido.' },
+      { p: 'Posso cancelar ou alterar meu pedido?', r: 'Sim! Entre em contato conosco pelo WhatsApp o quanto antes informando o número do seu pedido.' },
+      { p: 'Vocês fazem produtos personalizados?', r: 'Fazemos! Bolos com mensagens, decorações temáticas e tamanhos sob medida podem ser combinados diretamente pelo WhatsApp.' },
+      { p: 'Como acompanho o status do meu pedido?', r: 'Na aba "Meus Pedidos", dentro da sua conta, você acompanha em tempo real se seu pedido está aguardando, confirmado, em preparo ou pronto.' }
+    ];
+
+    const listaEl = document.getElementById('faqLista');
+    if (listaEl) {
+      listaEl.innerHTML = PERGUNTAS.map((item, i) => `
+        <div class="faq-item" data-indice="${i}">
+          <button class="faq-pergunta" aria-expanded="false">
+            ${escapeHtml(item.p)}
+            <span class="material-symbols-outlined">add</span>
+          </button>
+          <div class="faq-resposta"><p>${escapeHtml(item.r)}</p></div>
+        </div>
+      `).join('');
+
+      listaEl.querySelectorAll('.faq-pergunta').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = btn.closest('.faq-item');
+          const aberto = item.classList.toggle('aberto');
+          btn.setAttribute('aria-expanded', String(aberto));
+        });
+      });
+    }
+  </script>
 </body>
 </html>
