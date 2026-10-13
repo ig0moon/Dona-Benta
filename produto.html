@@ -1,31 +1,33 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Produto — Dona Benta</title>
-<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Detalhes do produto, preço e encomenda artesanal na Dona Benta Confeitaria e Padaria.">
+  <title>Produto — Dona Benta</title>
+  <link rel="shortcut icon" href="img/favicon.png" type="image/x-icon">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <main class="secao">
+    <div class="container container-produto">
+      <div class="produto-topo-navegacao">
+        <a href="catalogo.html" class="btn btn-outline btn-voltar">
+          <span class="material-symbols-outlined">arrow_back</span> Voltar ao catálogo
+        </a>
+      </div>
 
-<section class="secao">
-  <div class="container">
-    <a href="catalogo.html" class="btn btn-outline btn-voltar">
-      <span class="material-symbols-outlined">arrow_back</span> Voltar ao catálogo
-    </a>
-
-    <div id="areaProduto">
-      <div class="spinner"></div>
+      <div id="areaProduto">
+        <div class="spinner"></div>
+      </div>
     </div>
-  </div>
-</section>
+  </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-client.js"></script>
-<script src="js/carrinho.js"></script>
-<script src="js/layout.js"></script>
-<script src="js/produto.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/carrinho.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/produto.js"></script>
 </body>
 </html>

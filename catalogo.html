@@ -1,61 +1,61 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Catálogo — Dona Benta</title>
-<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Explore o catálogo da Dona Benta: bolos, pães artesanais, doces finos, tortas e salgados. Encomende online.">
+  <title>Catálogo de Produtos Artesanais — Dona Benta</title>
+  <link rel="shortcut icon" href="img/favicon.png" type="image/x-icon">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
-<section class="pagina-header">
-  <div class="container">
-    <span class="eyebrow">Nosso catálogo</span>
-    <h1>Tudo que sai do nosso forno</h1>
-    <p>Escolha entre bolos, pães, doces e salgados feitos artesanalmente.</p>
-  </div>
-</section>
-
-<section class="secao">
-  <div class="container">
-    <div class="busca-linha">
-      <span class="material-symbols-outlined">search</span>
-      <input type="text" id="campoBusca" placeholder="Buscar produto...">
+  <section class="pagina-header">
+    <div class="container">
+      <span class="eyebrow">Nosso catálogo</span>
+      <h1>Tudo que sai do nosso forno</h1>
+      <p>Escolha entre bolos, pães, doces e salgados preparados artesanalmente com receitas de família.</p>
     </div>
+  </section>
 
-    <div class="filtros" id="filtros">
-      <button class="filtro-btn ativo" data-categoria="todos">
-        <span class="material-symbols-outlined">apps</span> Todos
-      </button>
-      <button class="filtro-btn" data-categoria="bolos">
-        <span class="material-symbols-outlined">cake</span> Bolos
-      </button>
-      <button class="filtro-btn" data-categoria="paes">
-        <span class="material-symbols-outlined">bakery_dining</span> Pães
-      </button>
-      <button class="filtro-btn" data-categoria="doces">
-        <span class="material-symbols-outlined">cookie</span> Doces
-      </button>
-      <button class="filtro-btn" data-categoria="salgados">
-        <span class="material-symbols-outlined">lunch_dining</span> Salgados
-      </button>
-      <button class="filtro-btn" data-categoria="tortas">
-        <span class="material-symbols-outlined">icecream</span> Tortas
-      </button>
+  <main class="secao">
+    <div class="container">
+      <div class="busca-linha">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" id="campoBusca" placeholder="Buscar bolos, pães, doces..." aria-label="Buscar produtos">
+      </div>
+
+      <div class="filtros" id="filtros">
+        <button type="button" class="filtro-btn ativo" data-categoria="todos">
+          <span class="material-symbols-outlined">apps</span> Todos
+        </button>
+        <button type="button" class="filtro-btn" data-categoria="bolos">
+          <span class="material-symbols-outlined">cake</span> Bolos
+        </button>
+        <button type="button" class="filtro-btn" data-categoria="paes">
+          <span class="material-symbols-outlined">bakery_dining</span> Pães
+        </button>
+        <button type="button" class="filtro-btn" data-categoria="doces">
+          <span class="material-symbols-outlined">cookie</span> Doces
+        </button>
+        <button type="button" class="filtro-btn" data-categoria="salgados">
+          <span class="material-symbols-outlined">lunch_dining</span> Salgados
+        </button>
+        <button type="button" class="filtro-btn" data-categoria="tortas">
+          <span class="material-symbols-outlined">icecream</span> Tortas
+        </button>
+      </div>
+
+      <div id="areaCatalogo">
+        <div class="spinner"></div>
+      </div>
     </div>
+  </main>
 
-    <div id="areaCatalogo">
-      <div class="spinner"></div>
-    </div>
-  </div>
-</section>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-client.js"></script>
-<script src="js/carrinho.js"></script>
-<script src="js/layout.js"></script>
-<script src="js/catalogo.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/carrinho.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/catalogo.js"></script>
 </body>
 </html>
