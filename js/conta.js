@@ -129,6 +129,330 @@ async function carregarConta() {
 }
 
 // ============================================
+// VISUALIZADOR DE FOTO DE PERFIL (LIGHTBOX COM BLUR)
+// ============================================
+function abrirVisualizadorFotoPerfil(avatarUrl, nome) {
+  if (!avatarUrl || typeof avatarUrl !== 'string' || !avatarUrl.trim()) return;
+
+  let modal = document.getElementById('avatarLightbox');
+  if (!modal) {
+    const markup = `
+      <div class="avatar-lightbox" id="avatarLightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Visualizador de foto de perfil">
+        <div class="avatar-lightbox-backdrop" id="avatarLightboxBackdrop" title="Clique para fechar"></div>
+        <div class="avatar-lightbox-conteudo">
+          <button type="button" class="avatar-lightbox-fechar" id="btnFecharAvatarLightbox" aria-label="Fechar visualização" title="Fechar (Esc)">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+          <div class="avatar-lightbox-moldura">
+            <img src="" alt="Foto de perfil em tamanho maior" id="avatarLightboxImg" class="avatar-lightbox-img">
+          </div>
+          <div class="avatar-lightbox-info">
+            <h3 id="avatarLightboxNome" class="avatar-lightbox-nome"></h3>
+            <span class="avatar-lightbox-sub">Foto de perfil</span>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', markup);
+    modal = document.getElementById('avatarLightbox');
+
+    const fechar = () => {
+      if (!modal) return;
+      modal.classList.remove('aberto');
+      modal.setAttribute('aria-hidden', 'true');
+    };
+
+    document.getElementById('btnFecharAvatarLightbox')?.addEventListener('click', fechar);
+    document.getElementById('avatarLightboxBackdrop')?.addEventListener('click', fechar);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('aberto')) {
+        fechar();
+      }
+    });
+  }
+
+  const imgEl = document.getElementById('avatarLightboxImg');
+  const nomeEl = document.getElementById('avatarLightboxNome');
+
+  if (imgEl) imgEl.src = avatarUrl;
+  if (nomeEl) nomeEl.textContent = nome || 'Foto de Perfil';
+
+  modal.classList.add('aberto');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function configurarCliqueVisualizadorAvatar(preview, avatarUrl, nome) {
+  if (!preview) return;
+  if (!avatarUrl) {
+    preview.onclick = null;
+    preview.classList.remove('clicavel');
+    preview.removeAttribute('title');
+    return;
+  }
+
+  preview.classList.add('clicavel');
+  preview.title = 'Clique para ampliar a foto de perfil';
+
+  preview.onclick = (e) => {
+    // Evita abrir se o clique foi diretamente no botão da câmera de upload
+    if (e.target.closest('#inputFotoPerfil') || e.target.closest('.btn-avatar-upload')) return;
+    const imgAtual = preview.querySelector('#avatarImg');
+    const urlFinal = imgAtual?.src || avatarUrl;
+    abrirVisualizadorFotoPerfil(urlFinal, nome);
+  };
+}
+
+// ============================================
+// CORTADOR DE FOTOS QUADRADO (1:1) INTERATIVO
+// Permite ao usuário arrastar, dar zoom e girar a foto
+// ============================================
+function abrirModalCortadorFoto({ arquivo, onConfirmar, onCancelar, titulo = 'Ajustar e Cortar Foto' }) {
+  if (!arquivo) return;
+
+  let modal = document.getElementById('modalCortadorFoto');
+  if (!modal) {
+    const markup = `
+      <div class="cropper-modal-overlay" id="modalCortadorFoto" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="cropper-modal-cartao">
+          <div class="cropper-modal-topo">
+            <div>
+              <h3 class="cropper-modal-titulo" id="cropperTitulo">${escapeHtml(titulo)}</h3>
+              <p class="cropper-modal-sub">Arraste a foto e use o zoom para enquadrar no padrão quadrado (1:1)</p>
+            </div>
+            <button type="button" class="cropper-fechar" id="btnFecharCropper" aria-label="Fechar" title="Fechar (Esc)">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          <div class="cropper-area-container">
+            <div class="cropper-viewbox" id="cropperViewbox" title="Arraste para reposicionar a foto">
+              <canvas id="cropperCanvas" class="cropper-canvas" width="300" height="300"></canvas>
+              <div class="cropper-grade-guia"></div>
+            </div>
+          </div>
+          <div class="cropper-controles">
+            <div class="cropper-controle-zoom">
+              <button type="button" class="cropper-btn-acao" id="btnZoomMenos" title="Diminuir zoom" aria-label="Diminuir zoom">
+                <span class="material-symbols-outlined">remove</span>
+              </button>
+              <input type="range" class="cropper-slider" id="cropperZoomSlider" min="1" max="3" step="0.01" value="1" aria-label="Controle de zoom da foto">
+              <button type="button" class="cropper-btn-acao" id="btnZoomMais" title="Aumentar zoom" aria-label="Aumentar zoom">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+            </div>
+            <div class="cropper-acoes-rapidas">
+              <button type="button" class="cropper-btn-ferramenta" id="btnGirarFoto">
+                <span class="material-symbols-outlined">rotate_right</span>
+                <span>Girar 90°</span>
+              </button>
+              <button type="button" class="cropper-btn-ferramenta" id="btnCentralizarFoto">
+                <span class="material-symbols-outlined">filter_center_focus</span>
+                <span>Centralizar</span>
+              </button>
+            </div>
+          </div>
+          <div class="cropper-modal-rodape">
+            <button type="button" class="btn btn-outline" id="btnCancelarCropper">Cancelar</button>
+            <button type="button" class="btn btn-primario" id="btnConfirmarCropper">
+              <span class="material-symbols-outlined">check</span>
+              <span>Confirmar e Cortar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', markup);
+    modal = document.getElementById('modalCortadorFoto');
+  }
+
+  const canvas = document.getElementById('cropperCanvas');
+  const ctx = canvas.getContext('2d');
+  const zoomSlider = document.getElementById('cropperZoomSlider');
+  const btnZoomMais = document.getElementById('btnZoomMais');
+  const btnZoomMenos = document.getElementById('btnZoomMenos');
+  const btnGirar = document.getElementById('btnGirarFoto');
+  const btnCentralizar = document.getElementById('btnCentralizarFoto');
+  const btnConfirmar = document.getElementById('btnConfirmarCropper');
+  const btnCancelar = document.getElementById('btnCancelarCropper');
+  const btnFechar = document.getElementById('btnFecharCropper');
+  const tituloEl = document.getElementById('cropperTitulo');
+
+  if (tituloEl) tituloEl.textContent = titulo;
+
+  const leitor = new FileReader();
+  leitor.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      let rotacao = 0;
+      let zoom = 1.0;
+      let panX = 0;
+      let panY = 0;
+      let baseScale = 1.0;
+
+      const calcularBaseScale = () => {
+        const effW = (rotacao % 180 === 0) ? img.width : img.height;
+        const effH = (rotacao % 180 === 0) ? img.height : img.width;
+        baseScale = Math.max(300 / effW, 300 / effH);
+      };
+
+      const limitarLimites = () => {
+        const effW = (rotacao % 180 === 0) ? img.width : img.height;
+        const effH = (rotacao % 180 === 0) ? img.height : img.width;
+        const totalW = effW * (baseScale * zoom);
+        const totalH = effH * (baseScale * zoom);
+        const maxPanX = Math.max(0, (totalW - 300) / 2);
+        const maxPanY = Math.max(0, (totalH - 300) / 2);
+        panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
+        panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
+      };
+
+      const desenhar = () => {
+        ctx.clearRect(0, 0, 300, 300);
+        ctx.save();
+        ctx.translate(150 + panX, 150 + panY);
+        ctx.rotate((rotacao * Math.PI) / 180);
+        const drawW = img.width * (baseScale * zoom);
+        const drawH = img.height * (baseScale * zoom);
+        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+        ctx.restore();
+      };
+
+      calcularBaseScale();
+      zoomSlider.value = '1';
+      desenhar();
+
+      // Drag / Pan com Pointer Events
+      let arrastando = false;
+      let startX = 0, startY = 0;
+      let initialPanX = 0, initialPanY = 0;
+
+      canvas.onpointerdown = (ev) => {
+        arrastando = true;
+        canvas.setPointerCapture(ev.pointerId);
+        startX = ev.clientX;
+        startY = ev.clientY;
+        initialPanX = panX;
+        initialPanY = panY;
+      };
+
+      canvas.onpointermove = (ev) => {
+        if (!arrastando) return;
+        panX = initialPanX + (ev.clientX - startX);
+        panY = initialPanY + (ev.clientY - startY);
+        limitarLimites();
+        desenhar();
+      };
+
+      canvas.onpointerup = canvas.onpointercancel = () => {
+        arrastando = false;
+      };
+
+      // Zoom via slider
+      zoomSlider.oninput = () => {
+        zoom = parseFloat(zoomSlider.value) || 1;
+        limitarLimites();
+        desenhar();
+      };
+
+      // Zoom via botões +/-
+      btnZoomMais.onclick = () => {
+        zoom = Math.min(3, zoom + 0.15);
+        zoomSlider.value = zoom.toString();
+        limitarLimites();
+        desenhar();
+      };
+
+      btnZoomMenos.onclick = () => {
+        zoom = Math.max(1, zoom - 0.15);
+        zoomSlider.value = zoom.toString();
+        limitarLimites();
+        desenhar();
+      };
+
+      // Zoom via Scroll Wheel
+      canvas.onwheel = (ev) => {
+        ev.preventDefault();
+        const delta = ev.deltaY < 0 ? 0.08 : -0.08;
+        zoom = Math.max(1, Math.min(3, zoom + delta));
+        zoomSlider.value = zoom.toString();
+        limitarLimites();
+        desenhar();
+      };
+
+      // Girar 90 graus
+      btnGirar.onclick = () => {
+        rotacao = (rotacao + 90) % 360;
+        calcularBaseScale();
+        limitarLimites();
+        desenhar();
+      };
+
+      // Centralizar
+      btnCentralizar.onclick = () => {
+        panX = 0;
+        panY = 0;
+        zoom = 1;
+        zoomSlider.value = '1';
+        desenhar();
+      };
+
+      const fecharModal = () => {
+        modal.classList.remove('aberto');
+        modal.setAttribute('aria-hidden', 'true');
+        canvas.onpointerdown = null;
+        canvas.onpointermove = null;
+        canvas.onpointerup = null;
+        canvas.onwheel = null;
+      };
+
+      btnCancelar.onclick = () => {
+        fecharModal();
+        if (typeof onCancelar === 'function') onCancelar();
+      };
+
+      btnFechar.onclick = () => {
+        fecharModal();
+        if (typeof onCancelar === 'function') onCancelar();
+      };
+
+      // Confirmar corte e exportar Canvas 1:1 de alta fidelidade
+      btnConfirmar.onclick = () => {
+        const tamanhoExportacao = Math.min(1000, Math.max(600, Math.min(img.width, img.height)));
+        const outCanvas = document.createElement('canvas');
+        outCanvas.width = tamanhoExportacao;
+        outCanvas.height = tamanhoExportacao;
+        const outCtx = outCanvas.getContext('2d');
+        outCtx.imageSmoothingQuality = 'high';
+
+        const fator = tamanhoExportacao / 300;
+        outCtx.translate(tamanhoExportacao / 2 + panX * fator, tamanhoExportacao / 2 + panY * fator);
+        outCtx.rotate((rotacao * Math.PI) / 180);
+        const finalW = img.width * (baseScale * zoom) * fator;
+        const finalH = img.height * (baseScale * zoom) * fator;
+        outCtx.drawImage(img, -finalW / 2, -finalH / 2, finalW, finalH);
+
+        outCanvas.toBlob((blob) => {
+          if (!blob) {
+            mostrarToast('Erro ao processar corte da foto.', 'erro');
+            return;
+          }
+          const nomeOriginal = (arquivo.name || 'foto').replace(/\.[^/.]+$/, '');
+          const arquivoRecortado = new File([blob], `${nomeOriginal}_quadrado.jpg`, { type: 'image/jpeg' });
+          const previewUrl = outCanvas.toDataURL('image/jpeg', 0.92);
+          fecharModal();
+          if (typeof onConfirmar === 'function') onConfirmar(arquivoRecortado, previewUrl);
+        }, 'image/jpeg', 0.92);
+      };
+
+      modal.classList.add('aberto');
+      modal.setAttribute('aria-hidden', 'false');
+    };
+    img.src = e.target.result;
+  };
+  leitor.readAsDataURL(arquivo);
+}
+
+// ============================================
 // CARREGAMENTO SEGURO DA FOTO (3s MÁXIMO)
 // ============================================
 function verificarECarregarAvatar(avatarUrl, nome, inicial, usuario, perfil) {
@@ -139,6 +463,7 @@ function verificarECarregarAvatar(avatarUrl, nome, inicial, usuario, perfil) {
 
   // Garante monograma com inicial limpo imediatamente
   preview.innerHTML = `<span class="avatar-inicial" id="avatarInicial">${escapeHtml(inicial)}</span>`;
+  configurarCliqueVisualizadorAvatar(preview, null, null);
   if (acoesContainer) acoesContainer.innerHTML = '';
 
   // Se não há url definida, deixa sem foto
@@ -164,6 +489,7 @@ function verificarECarregarAvatar(avatarUrl, nome, inicial, usuario, perfil) {
     imgTeste.src = '';
     if (loading) loading.hidden = true;
     preview.innerHTML = `<span class="avatar-inicial" id="avatarInicial">${escapeHtml(inicial)}</span>`;
+    configurarCliqueVisualizadorAvatar(preview, null, null);
     if (acoesContainer) acoesContainer.innerHTML = '';
     if (typeof aplicarAvatarAoBotaoConta === 'function') aplicarAvatarAoBotaoConta(null);
   };
@@ -180,6 +506,7 @@ function verificarECarregarAvatar(avatarUrl, nome, inicial, usuario, perfil) {
     clearTimeout(timerLimite);
     if (loading) loading.hidden = true;
     preview.innerHTML = `<img src="${escapeHtml(avatarUrl)}" alt="Foto de ${escapeHtml(nome)}" class="avatar-img" id="avatarImg">`;
+    configurarCliqueVisualizadorAvatar(preview, avatarUrl, nome);
     if (typeof aplicarAvatarAoBotaoConta === 'function') aplicarAvatarAoBotaoConta(avatarUrl);
     if (acoesContainer) {
       acoesContainer.innerHTML = `
@@ -201,7 +528,7 @@ function verificarECarregarAvatar(avatarUrl, nome, inicial, usuario, perfil) {
 }
 
 // ============================================
-// UPLOAD E GERENCIAMENTO DE FOTO DE PERFIL
+// UPLOAD E GERENCIAMENTO DE FOTO DE PERFIL COM RECORTE QUADRADO
 // ============================================
 function configurarUploadFotoPerfil(usuario, perfil) {
   const input = document.getElementById('inputFotoPerfil');
@@ -212,113 +539,123 @@ function configurarUploadFotoPerfil(usuario, perfil) {
   if (!input) return;
 
   input.addEventListener('change', async (e) => {
-    const arquivo = e.target.files?.[0];
-    if (!arquivo) return;
+    const arquivoOriginal = e.target.files?.[0];
+    if (!arquivoOriginal) return;
 
     // 1. Validações de segurança do arquivo
     const formatosValidos = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!formatosValidos.includes(arquivo.type)) {
+    if (!formatosValidos.includes(arquivoOriginal.type)) {
       mostrarToast('Por favor, selecione uma imagem nos formatos JPG, PNG ou WEBP.', 'erro');
       input.value = '';
       return;
     }
 
-    const TAMANHO_MAX_BYTES = 4 * 1024 * 1024; // 4MB
-    if (arquivo.size > TAMANHO_MAX_BYTES) {
-      mostrarToast('A imagem deve ter no máximo 4MB.', 'erro');
+    const TAMANHO_MAX_BYTES = 12 * 1024 * 1024; // Até 12MB antes do recorte
+    if (arquivoOriginal.size > TAMANHO_MAX_BYTES) {
+      mostrarToast('A foto selecionada deve ter no máximo 12MB.', 'erro');
       input.value = '';
       return;
     }
 
-    try {
-      if (loading) {
-        loading.hidden = false;
-        preview.appendChild(loading);
-      }
-      mostrarToast('Enviando foto de perfil...', 'info');
-
-      const extensao = (arquivo.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const nomeLimpo = `avatar_${Date.now()}.${extensao}`;
-      const bucketDestino = typeof BUCKET_AVATARES !== 'undefined' ? BUCKET_AVATARES : 'fotos-perfil';
-      const caminhoStorage = `${usuario.id}/${nomeLimpo}`;
-
-      // 2. Upload para o bucket exclusivo 'fotos-perfil'
-      let { data: uploadData, error: uploadError } = await db.storage
-        .from(bucketDestino)
-        .upload(caminhoStorage, arquivo, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      // Fallback automático caso o bucket novo ainda não tenha sido criado
-      let bucketUsado = bucketDestino;
-      if (uploadError && uploadError.message?.toLowerCase().includes('bucket not found')) {
-        console.warn(`Bucket ${bucketDestino} não encontrado, tentando fallback no bucket produtos...`);
-        bucketUsado = typeof BUCKET_PRODUTOS !== 'undefined' ? BUCKET_PRODUTOS : 'produtos';
-        const caminhoFallback = `avatars/${usuario.id}/${nomeLimpo}`;
-        const resFallback = await db.storage
-          .from(bucketUsado)
-          .upload(caminhoFallback, arquivo, { cacheControl: '3600', upsert: true });
-        uploadData = resFallback.data;
-        uploadError = resFallback.error;
-      }
-
-      if (uploadError) {
-        console.error('Erro no upload de avatar:', uploadError);
-        mostrarToast('Erro ao enviar foto: ' + uploadError.message, 'erro');
-        if (loading) loading.hidden = true;
+    // Abre o cortador de foto interativo quadrado (1:1)
+    abrirModalCortadorFoto({
+      arquivo: arquivoOriginal,
+      titulo: 'Ajustar Foto de Perfil',
+      onCancelar: () => {
         input.value = '';
-        return;
+      },
+      onConfirmar: async (arquivoRecortado) => {
+        try {
+          if (loading) {
+            loading.hidden = false;
+            preview.appendChild(loading);
+          }
+          mostrarToast('Enviando foto de perfil...', 'info');
+
+          const nomeLimpo = `avatar_${Date.now()}.jpg`;
+          const bucketDestino = typeof BUCKET_AVATARES !== 'undefined' ? BUCKET_AVATARES : 'fotos-perfil';
+          const caminhoStorage = `${usuario.id}/${nomeLimpo}`;
+
+          // 2. Upload para o storage da imagem já recortada quadrada
+          let { data: uploadData, error: uploadError } = await db.storage
+            .from(bucketDestino)
+            .upload(caminhoStorage, arquivoRecortado, {
+              cacheControl: '3600',
+              upsert: true
+            });
+
+          // Fallback automático caso o bucket exclusivo 'fotos-perfil' não exista ainda
+          let bucketUsado = bucketDestino;
+          if (uploadError && uploadError.message?.toLowerCase().includes('bucket not found')) {
+            console.warn(`Bucket ${bucketDestino} não encontrado, tentando fallback no bucket produtos...`);
+            bucketUsado = typeof BUCKET_PRODUTOS !== 'undefined' ? BUCKET_PRODUTOS : 'produtos';
+            const caminhoFallback = `avatars/${usuario.id}/${nomeLimpo}`;
+            const resFallback = await db.storage
+              .from(bucketUsado)
+              .upload(caminhoFallback, arquivoRecortado, { cacheControl: '3600', upsert: true });
+            uploadData = resFallback.data;
+            uploadError = resFallback.error;
+          }
+
+          if (uploadError) {
+            console.error('Erro no upload de avatar:', uploadError);
+            mostrarToast('Erro ao enviar foto: ' + uploadError.message, 'erro');
+            if (loading) loading.hidden = true;
+            input.value = '';
+            return;
+          }
+
+          // 3. Obter URL pública
+          const caminhoFinal = bucketUsado === bucketDestino ? caminhoStorage : `avatars/${usuario.id}/${nomeLimpo}`;
+          const { data: urlData } = db.storage
+            .from(bucketUsado)
+            .getPublicUrl(caminhoFinal);
+
+          const novaUrl = urlData?.publicUrl;
+          if (!novaUrl) {
+            throw new Error('Não foi possível obter o link público da foto');
+          }
+
+          // 4. Salva nos metadados do Auth
+          await db.auth.updateUser({
+            data: { avatar_url: novaUrl }
+          });
+
+          // 5. Tenta salvar na tabela perfis
+          try {
+            await db.from('perfis').update({ avatar_url: novaUrl }).eq('id', usuario.id);
+          } catch (errDb) {
+            console.warn('Coluna avatar_url não presente na tabela perfis (salvo no auth metadata):', errDb);
+          }
+
+          // 6. Atualiza o estado em memória e a interface
+          perfil.avatar_url = novaUrl;
+          preview.innerHTML = `<img src="${escapeHtml(novaUrl)}" alt="Foto de perfil" class="avatar-img" id="avatarImg">`;
+          configurarCliqueVisualizadorAvatar(preview, novaUrl, perfil.nome || usuario.email);
+          if (loading) loading.hidden = true;
+          if (typeof aplicarAvatarAoBotaoConta === 'function') aplicarAvatarAoBotaoConta(novaUrl);
+
+          // Adiciona botão de remover
+          if (acoesContainer) {
+            acoesContainer.innerHTML = `
+              <button type="button" id="btnRemoverFoto" class="btn-remover-foto" title="Remover foto de perfil" aria-label="Remover foto de perfil">
+                <span class="material-symbols-outlined">delete</span>
+                <span>Remover foto</span>
+              </button>
+            `;
+            configurarBotaoRemoverFoto(usuario, perfil);
+          }
+
+          mostrarToast('Foto de perfil atualizada com sucesso!', 'sucesso');
+        } catch (errGeral) {
+          console.error('Erro no upload da foto:', errGeral);
+          mostrarToast('Ocorreu um erro ao atualizar a foto de perfil.', 'erro');
+          if (loading) loading.hidden = true;
+        } finally {
+          input.value = '';
+        }
       }
-
-      // 3. Obter URL pública
-      const caminhoFinal = bucketUsado === bucketDestino ? caminhoStorage : `avatars/${usuario.id}/${nomeLimpo}`;
-      const { data: urlData } = db.storage
-        .from(bucketUsado)
-        .getPublicUrl(caminhoFinal);
-
-      const novaUrl = urlData?.publicUrl;
-      if (!novaUrl) {
-        throw new Error('Não foi possível obter o link público da foto');
-      }
-
-      // 4. Salva nos metadados do Auth (imediato e sem depender de tabela)
-      await db.auth.updateUser({
-        data: { avatar_url: novaUrl }
-      });
-
-      // 5. Tenta salvar na tabela perfis (se a coluna existir)
-      try {
-        await db.from('perfis').update({ avatar_url: novaUrl }).eq('id', usuario.id);
-      } catch (errDb) {
-        console.warn('Coluna avatar_url não presente na tabela perfis (salvo no auth metadata):', errDb);
-      }
-
-      // 6. Atualiza o estado em memória e a interface
-      perfil.avatar_url = novaUrl;
-      preview.innerHTML = `<img src="${escapeHtml(novaUrl)}" alt="Foto de perfil" class="avatar-img" id="avatarImg">`;
-      if (loading) loading.hidden = true;
-      if (typeof aplicarAvatarAoBotaoConta === 'function') aplicarAvatarAoBotaoConta(novaUrl);
-
-      // Adiciona botão de remover
-      if (acoesContainer) {
-        acoesContainer.innerHTML = `
-          <button type="button" id="btnRemoverFoto" class="btn-remover-foto" title="Remover foto de perfil" aria-label="Remover foto de perfil">
-            <span class="material-symbols-outlined">delete</span>
-            <span>Remover foto</span>
-          </button>
-        `;
-        configurarBotaoRemoverFoto(usuario, perfil);
-      }
-
-      mostrarToast('Foto de perfil atualizada com sucesso!', 'sucesso');
-    } catch (errGeral) {
-      console.error('Erro no upload da foto:', errGeral);
-      mostrarToast('Ocorreu um erro ao atualizar a foto de perfil.', 'erro');
-      if (loading) loading.hidden = true;
-    } finally {
-      input.value = '';
-    }
+    });
   });
 
   configurarBotaoRemoverFoto(usuario, perfil);
@@ -357,6 +694,7 @@ function configurarBotaoRemoverFoto(usuario, perfil) {
       const inicial = (perfil.nome || 'Cliente').charAt(0).toUpperCase() || 'U';
 
       preview.innerHTML = `<span class="avatar-inicial" id="avatarInicial">${escapeHtml(inicial)}</span>`;
+      configurarCliqueVisualizadorAvatar(preview, null, null);
       if (loading) loading.hidden = true;
 
       if (acoesContainer) acoesContainer.innerHTML = '';
@@ -406,8 +744,8 @@ function renderizarPerfil(area, usuario, perfil) {
           </div>
         </div>
         <div class="campo">
-          <label>E-mail da conta</label>
-          <input type="email" value="${escapeHtml(usuario.email)}" disabled style="background:#f4f4f4; cursor:not-allowed;">
+          <label for="emailPerfil">E-mail da conta</label>
+          <input type="email" id="emailPerfil" value="${escapeHtml(usuario.email)}" disabled>
         </div>
         <div class="campo-linha">
           <div class="campo">
@@ -749,12 +1087,33 @@ function renderizarPedidosAdmin(area) {
                   ${escapeHtml(formatarData(p.data_agendada))}<br>
                   <span style="color:var(--marrom-claro); font-size:0.82rem;">${escapeHtml(p.horario_agendado || '')} (${p.tipo_entrega === 'entrega' ? 'Entrega' : 'Retirada'})</span>
                 </td>
-                <td>
-                  <select class="admin-status-select" data-pedido="${escapeHtml(p.id)}" aria-label="Status do pedido">
-                    ${Object.entries(STATUS_INFO).map(([valor, info]) => `
-                      <option value="${valor}" ${p.status === valor ? 'selected' : ''}>${escapeHtml(info.rotulo)}</option>
-                    `).join('')}
-                  </select>
+                <td style="position: relative;">
+                  ${(() => {
+                    const statusInfo = STATUS_INFO[p.status] || STATUS_INFO.aguardando_confirmacao;
+                    return `
+                    <div class="custom-status-dropdown" data-pedido="${escapeHtml(p.id)}">
+                      <button type="button" class="custom-status-trigger badge ${statusInfo.classe}" aria-haspopup="listbox" aria-expanded="false" aria-label="Status do pedido: ${escapeHtml(statusInfo.rotulo)}">
+                        <span class="material-symbols-outlined status-icone">${escapeHtml(statusInfo.icone || 'circle')}</span>
+                        <span class="status-texto">${escapeHtml(statusInfo.rotulo)}</span>
+                        <span class="material-symbols-outlined status-chevron">expand_more</span>
+                      </button>
+                      <div class="custom-status-menu" role="listbox">
+                        ${Object.entries(STATUS_INFO).map(([valor, info]) => {
+                          const ehAtiva = p.status === valor || (!p.status && valor === 'aguardando_confirmacao');
+                          return `
+                          <div class="custom-status-opcao ${ehAtiva ? 'selecionada' : ''}" data-valor="${valor}" role="option" aria-selected="${ehAtiva}">
+                            <span class="status-opcao-badge badge ${info.classe}">
+                              <span class="material-symbols-outlined">${escapeHtml(info.icone || 'circle')}</span>
+                            </span>
+                            <span class="status-opcao-texto">${escapeHtml(info.rotulo)}</span>
+                            ${ehAtiva ? '<span class="material-symbols-outlined status-check">check</span>' : ''}
+                          </div>
+                        `;
+                        }).join('')}
+                      </div>
+                    </div>
+                    `;
+                  })()}
                 </td>
                 <td>
                   <button class="badge btn-pagamento ${p.pago ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${Boolean(p.pago)}">
@@ -771,25 +1130,135 @@ function renderizarPedidosAdmin(area) {
     </div>
   `;
 
-  // Listener para alteração de status do pedido
-  area.querySelectorAll('.admin-status-select').forEach(selectEl => {
-    selectEl.addEventListener('change', async (e) => {
-      const novoValor = e.target.value;
-      const pedidoId = selectEl.dataset.pedido;
-      selectEl.disabled = true;
+  // Listener para dropdown customizado de status do pedido
+  area.querySelectorAll('.custom-status-dropdown').forEach(dropdown => {
+    const trigger = dropdown.querySelector('.custom-status-trigger');
+    const menu = dropdown.querySelector('.custom-status-menu');
+    const pedidoId = dropdown.dataset.pedido;
 
-      const { error } = await db.from('pedidos').update({ status: novoValor }).eq('id', pedidoId);
-      selectEl.disabled = false;
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const estaAberto = dropdown.classList.contains('aberto');
 
-      if (error) {
-        mostrarToast('Erro ao atualizar status: ' + error.message, 'erro');
+      // Fecha outros dropdowns abertos
+      document.querySelectorAll('.custom-status-dropdown.aberto').forEach(d => {
+        if (d !== dropdown) {
+          d.classList.remove('aberto');
+          d.querySelector('.custom-status-trigger')?.setAttribute('aria-expanded', 'false');
+          d.closest('tr')?.classList.remove('linha-com-dropdown-aberto');
+        }
+      });
+
+      if (!estaAberto) {
+        // Verifica se há espaço suficiente abaixo da linha
+        const rect = trigger.getBoundingClientRect();
+        const espacoAbaixo = window.innerHeight - rect.bottom;
+        if (espacoAbaixo < 240) {
+          menu.classList.add('abrir-para-cima');
+        } else {
+          menu.classList.remove('abrir-para-cima');
+        }
+
+        dropdown.classList.add('aberto');
+        trigger.setAttribute('aria-expanded', 'true');
+        dropdown.closest('tr')?.classList.add('linha-com-dropdown-aberto');
       } else {
-        mostrarToast('Status do pedido atualizado!', 'sucesso');
-        const pedido = PEDIDOS_ADMIN.find(p => p.id === pedidoId);
-        if (pedido) pedido.status = novoValor;
+        dropdown.classList.remove('aberto');
+        trigger.setAttribute('aria-expanded', 'false');
+        dropdown.closest('tr')?.classList.remove('linha-com-dropdown-aberto');
       }
     });
+
+    // Clique nas opções do dropdown
+    menu.querySelectorAll('.custom-status-opcao').forEach(opcao => {
+      opcao.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const novoValor = opcao.dataset.valor;
+        const pedido = PEDIDOS_ADMIN.find(p => p.id === pedidoId);
+        const valorAntigo = pedido ? pedido.status : null;
+
+        // Fecha o menu
+        dropdown.classList.remove('aberto');
+        trigger.setAttribute('aria-expanded', 'false');
+        dropdown.closest('tr')?.classList.remove('linha-com-dropdown-aberto');
+
+        if (novoValor === valorAntigo) return;
+
+        const infoNovo = STATUS_INFO[novoValor];
+        if (!infoNovo) return;
+
+        // Feedback de carregamento no trigger
+        const iconeEl = trigger.querySelector('.status-icone');
+        const textoEl = trigger.querySelector('.status-texto');
+        const iconeOriginal = iconeEl.textContent;
+        const textoOriginal = textoEl.textContent;
+
+        trigger.classList.add('salvando');
+        iconeEl.textContent = 'autorenew';
+        iconeEl.classList.add('spin');
+
+        const { error } = await db.from('pedidos').update({ status: novoValor }).eq('id', pedidoId);
+
+        trigger.classList.remove('salvando');
+        iconeEl.classList.remove('spin');
+
+        if (error) {
+          iconeEl.textContent = iconeOriginal;
+          textoEl.textContent = textoOriginal;
+          mostrarToast('Erro ao atualizar status: ' + error.message, 'erro');
+        } else {
+          // Atualiza dados locais
+          if (pedido) pedido.status = novoValor;
+
+          // Atualiza classes e conteúdo visual do trigger
+          Object.values(STATUS_INFO).forEach(s => trigger.classList.remove(s.classe));
+          trigger.classList.add(infoNovo.classe);
+          iconeEl.textContent = infoNovo.icone || 'circle';
+          textoEl.textContent = infoNovo.rotulo;
+          trigger.setAttribute('aria-label', `Status do pedido: ${infoNovo.rotulo}`);
+
+          // Atualiza os checks nas opções do menu
+          menu.querySelectorAll('.custom-status-opcao').forEach(op => {
+            const ehSelecionada = op.dataset.valor === novoValor;
+            op.classList.toggle('selecionada', ehSelecionada);
+            op.setAttribute('aria-selected', ehSelecionada);
+            const check = op.querySelector('.status-check');
+            if (ehSelecionada && !check) {
+              op.insertAdjacentHTML('beforeend', '<span class="material-symbols-outlined status-check">check</span>');
+            } else if (!ehSelecionada && check) {
+              check.remove();
+            }
+          });
+
+          mostrarToast('Status do pedido atualizado!', 'sucesso');
+        }
+      });
+    });
   });
+
+  // Fechar dropdowns ao clicar fora ou tecla Escape
+  if (!window._fecharStatusDropdownsRegistrado) {
+    window._fecharStatusDropdownsRegistrado = true;
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.custom-status-dropdown')) {
+        document.querySelectorAll('.custom-status-dropdown.aberto').forEach(d => {
+          d.classList.remove('aberto');
+          d.querySelector('.custom-status-trigger')?.setAttribute('aria-expanded', 'false');
+          d.closest('tr')?.classList.remove('linha-com-dropdown-aberto');
+        });
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.custom-status-dropdown.aberto').forEach(d => {
+          d.classList.remove('aberto');
+          d.querySelector('.custom-status-trigger')?.setAttribute('aria-expanded', 'false');
+          d.closest('tr')?.classList.remove('linha-com-dropdown-aberto');
+        });
+      }
+    });
+  }
 
   // Botão de alteração de pagamento
   const botoesPagamento = area.querySelectorAll('.btn-pagamento');
@@ -818,8 +1287,10 @@ function renderizarPedidosAdmin(area) {
 }
 
 // =========================================================
-// MODAL DE PRODUTOS (ADMIN) COM VALIDAÇÃO SEGURA DE ARQUIVO
+// MODAL DE PRODUTOS (ADMIN) COM VALIDAÇÃO SEGURA DE ARQUIVO E CORTE QUADRADO
 // =========================================================
+let fotoProdutoRecortada = null;
+
 function injetarModalAdminGlobal() {
   if (document.getElementById('modalProduto')) return;
 
@@ -863,7 +1334,7 @@ function injetarModalAdminGlobal() {
             <input type="hidden" id="produtoImagemAtual">
             <div id="previewImagemContainer" style="margin-top: 10px; display: none;">
               <img id="previewImagem" src="" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid #ccc;">
-              <span style="font-size: 0.8rem; color: var(--marrom-claro); margin-left: 8px; vertical-align: super;">Imagem cadastrada</span>
+              <span style="font-size: 0.8rem; color: var(--marrom-claro); margin-left: 8px; vertical-align: super;">Imagem quadrada cadastrada</span>
             </div>
           </div>
 
@@ -894,8 +1365,48 @@ function injetarModalAdminGlobal() {
   `;
   document.body.insertAdjacentHTML('beforeend', modalHTML);
 
+  // Escuta seleção de foto do produto para abrir o cortador quadrado interativo
+  const inputImagemProd = document.getElementById('produtoImagemFile');
+  inputImagemProd?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formatosValidos = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!formatosValidos.includes(file.type)) {
+      mostrarToast('Formato de foto inválido. Use JPG, PNG ou WEBP.', 'erro');
+      inputImagemProd.value = '';
+      return;
+    }
+
+    abrirModalCortadorFoto({
+      arquivo: file,
+      titulo: 'Ajustar Foto do Produto',
+      onCancelar: () => {
+        if (!fotoProdutoRecortada) inputImagemProd.value = '';
+      },
+      onConfirmar: (fileCortado, previewUrl) => {
+        fotoProdutoRecortada = fileCortado;
+        const previewImg = document.getElementById('previewImagem');
+        const previewContainer = document.getElementById('previewImagemContainer');
+        if (previewImg && previewContainer) {
+          previewImg.src = previewUrl;
+          previewContainer.style.display = 'block';
+        }
+        mostrarToast('Foto enquadrada em padrão quadrado (1:1)!', 'info');
+      }
+    });
+  });
+
   document.getElementById('fecharModal').addEventListener('click', () => {
+    fotoProdutoRecortada = null;
     document.getElementById('modalProduto').classList.remove('aberto');
+  });
+
+  document.getElementById('modalProduto').addEventListener('click', (e) => {
+    if (e.target.id === 'modalProduto') {
+      fotoProdutoRecortada = null;
+      document.getElementById('modalProduto').classList.remove('aberto');
+    }
   });
 
   document.getElementById('formProduto').addEventListener('submit', async (e) => {
@@ -906,7 +1417,7 @@ function injetarModalAdminGlobal() {
 
     const id = document.getElementById('produtoId').value;
     const arquivoInput = document.getElementById('produtoImagemFile');
-    const arquivo = arquivoInput.files?.[0];
+    const arquivo = fotoProdutoRecortada || arquivoInput.files?.[0];
     let imagemUrlFinal = document.getElementById('produtoImagemAtual').value;
 
     // Upload de imagem com validação de tipo e tamanho
@@ -918,15 +1429,15 @@ function injetarModalAdminGlobal() {
         btn.textContent = 'Salvar produto';
         return;
       }
-      if (arquivo.size > 5 * 1024 * 1024) {
-        mostrarToast('A foto do produto deve ter no máximo 5MB.', 'erro');
+      if (arquivo.size > 8 * 1024 * 1024) {
+        mostrarToast('A foto do produto deve ter no máximo 8MB.', 'erro');
         btn.disabled = false;
         btn.textContent = 'Salvar produto';
         return;
       }
 
       btn.innerHTML = '<span class="material-symbols-outlined spin">autorenew</span> Enviando imagem...';
-      const extensao = arquivo.name.split('.').pop().toLowerCase() || 'jpg';
+      const extensao = (arquivo.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
       const nomeArquivo = `produtos/${Date.now()}-${Math.random().toString(36).substring(2, 10)}.${extensao}`;
 
       const { data: uploadData, error: uploadError } = await db.storage
@@ -977,6 +1488,7 @@ function injetarModalAdminGlobal() {
 
     mostrarToast(id ? 'Produto atualizado com sucesso!' : 'Produto criado com sucesso!', 'sucesso');
     document.getElementById('modalProduto').classList.remove('aberto');
+    fotoProdutoRecortada = null;
     btn.disabled = false;
     btn.textContent = 'Salvar produto';
 
@@ -989,6 +1501,7 @@ function abrirModalProduto(id = null) {
   const modal = document.getElementById('modalProduto');
   const form = document.getElementById('formProduto');
   form.reset();
+  fotoProdutoRecortada = null;
 
   document.getElementById('produtoImagemFile').value = '';
   const previewContainer = document.getElementById('previewImagemContainer');

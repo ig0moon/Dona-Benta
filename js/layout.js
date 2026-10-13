@@ -3,6 +3,61 @@
 // Injetados em todas as páginas para manter consistência
 // ============================================
 
+const CHAVE_TEMA = 'donaBentaTema';
+
+// Execução imediata do tema para evitar qualquer piscar de tela (FOUC)
+(function initTemaImediato() {
+  try {
+    const temaSalvo = localStorage.getItem(CHAVE_TEMA);
+    if (temaSalvo === 'escuro') {
+      document.documentElement.setAttribute('data-tema', 'escuro');
+    } else {
+      document.documentElement.removeAttribute('data-tema');
+    }
+  } catch (e) {}
+})();
+
+function obterTemaAtual() {
+  try {
+    return localStorage.getItem(CHAVE_TEMA) || 'claro';
+  } catch (e) {
+    return 'claro';
+  }
+}
+
+function sincronizarControlesTema() {
+  const isEscuro = obterTemaAtual() === 'escuro';
+  document.querySelectorAll('.toggle-tema-input').forEach(input => {
+    input.checked = isEscuro;
+  });
+  document.querySelectorAll('.icone-tema-indicador').forEach(icone => {
+    icone.textContent = isEscuro ? 'dark_mode' : 'light_mode';
+  });
+}
+
+function aplicarTema(tema) {
+  const isEscuro = tema === 'escuro';
+  if (isEscuro) {
+    document.documentElement.setAttribute('data-tema', 'escuro');
+  } else {
+    document.documentElement.removeAttribute('data-tema');
+  }
+  try {
+    localStorage.setItem(CHAVE_TEMA, isEscuro ? 'escuro' : 'claro');
+  } catch (e) {}
+
+  sincronizarControlesTema();
+}
+
+function alternarTema() {
+  const atual = obterTemaAtual();
+  const novo = atual === 'escuro' ? 'claro' : 'escuro';
+  aplicarTema(novo);
+  if (typeof mostrarToast === 'function') {
+    mostrarToast(novo === 'escuro' ? 'Modo escuro ativado' : 'Modo claro ativado', 'info');
+  }
+}
+
 const LINKS_NAV = [
   { href: 'index.html', label: 'Início' },
   { href: 'catalogo.html', label: 'Catálogo' },
@@ -17,6 +72,7 @@ function paginaAtual() {
 
 function montarHeader() {
   const atual = paginaAtual();
+  const isEscuro = obterTemaAtual() === 'escuro';
   const header = document.createElement('header');
   header.className = 'header';
   header.innerHTML = `
@@ -36,15 +92,19 @@ function montarHeader() {
         ${LINKS_NAV.map(l => `<li><a href="${l.href}" class="${l.href === atual ? 'ativo' : ''}">${l.label}</a></li>`).join('')}
       </ul>
 
-      <!-- Ações à direita (carrinho e conta) -->
+      <!-- Ações à direita (carrinho e conta com dropdown) -->
       <div class="nav-actions">
         <a href="carrinho.html" class="nav-icon-btn" aria-label="Ver carrinho" id="linkCarrinho">
           <span class="material-symbols-outlined">shopping_bag</span>
           <span class="cart-badge" id="carrinhoContagem" hidden>0</span>
         </a>
-        <a href="login.html" class="nav-icon-btn" aria-label="Entrar ou acessar conta" id="linkConta" title="Entrar / Minha Conta">
-          <span class="material-symbols-outlined" id="iconeContaNav">person</span>
-        </a>
+        <div class="nav-user-wrapper" id="navUserWrapper">
+          <a href="login.html" class="nav-icon-btn" aria-label="Entrar ou acessar conta" id="linkConta" title="Entrar / Minha Conta">
+            <span class="material-symbols-outlined" id="iconeContaNav">person</span>
+          </a>
+          <!-- Dropdown do perfil no header -->
+          <div class="nav-usuario-dropdown" id="navUsuarioDropdown" aria-hidden="true" role="menu"></div>
+        </div>
       </div>
     </nav>
   `;
@@ -111,6 +171,22 @@ function montarHeader() {
               <span id="drawerTextoConta">Entrar / Cadastrar</span>
             </a>
           </li>
+          <li id="drawerItemPedidos" hidden>
+            <a href="conta.html?aba=pedidos" class="${atual === 'conta.html' && window.location.search.includes('pedidos') ? 'ativo' : ''}">
+              <span class="material-symbols-outlined">receipt_long</span>
+              <span>Meus pedidos</span>
+            </a>
+          </li>
+          <li class="nav-drawer-tema-item">
+            <div class="nav-drawer-tema-label">
+              <span class="material-symbols-outlined icone-tema-indicador" id="iconeTemaDrawer">${isEscuro ? 'dark_mode' : 'light_mode'}</span>
+              <span>Modo escuro</span>
+            </div>
+            <label class="switch-tema" for="toggleTemaDrawer" title="Alternar modo escuro">
+              <input type="checkbox" id="toggleTemaDrawer" class="toggle-tema-input" ${isEscuro ? 'checked' : ''} aria-label="Alternar modo escuro">
+              <span class="switch-slider"></span>
+            </label>
+          </li>
         </ul>
       </div>
 
@@ -169,9 +245,37 @@ function montarHeader() {
     a.addEventListener('click', fecharDrawer);
   });
 
+  // Alternador de tema dentro do Drawer Lateral
+  const toggleDrawer = document.getElementById('toggleTemaDrawer');
+  toggleDrawer?.addEventListener('change', () => {
+    alternarTema();
+  });
+
+  // Fechamento com tecla Escape
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && drawer?.classList.contains('aberto')) {
-      fecharDrawer();
+    if (e.key === 'Escape') {
+      if (drawer?.classList.contains('aberto')) {
+        fecharDrawer();
+      }
+      const dropdown = document.getElementById('navUsuarioDropdown');
+      if (dropdown && dropdown.classList.contains('aberto')) {
+        dropdown.classList.remove('aberto');
+        dropdown.setAttribute('aria-hidden', 'true');
+        document.getElementById('linkConta')?.setAttribute('aria-expanded', 'false');
+      }
+    }
+  });
+
+  // Fechar dropdown de usuário ao clicar fora
+  document.addEventListener('click', (e) => {
+    const wrapper = document.getElementById('navUserWrapper');
+    const dropdown = document.getElementById('navUsuarioDropdown');
+    if (dropdown && dropdown.classList.contains('aberto')) {
+      if (!wrapper || !wrapper.contains(e.target)) {
+        dropdown.classList.remove('aberto');
+        dropdown.setAttribute('aria-hidden', 'true');
+        document.getElementById('linkConta')?.setAttribute('aria-expanded', 'false');
+      }
     }
   });
 
@@ -249,10 +353,12 @@ function montarFooter() {
 function aplicarAvatarAoBotaoConta(avatarUrl) {
   const linkContaNav = document.getElementById('linkConta');
   const drawerLinkConta = document.getElementById('drawerLinkConta');
+  const escapar = typeof escapeHtml === 'function' ? escapeHtml : (str => String(str || '').replace(/[&<>"']/g, ''));
 
   if (linkContaNav) {
     if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim()) {
-      linkContaNav.innerHTML = `<img src="${avatarUrl}" alt="Minha conta" class="nav-avatar-img" onerror="this.onerror=null; this.parentElement.classList.remove('com-avatar'); this.parentElement.innerHTML='<span class=\\'material-symbols-outlined\\' id=\\'iconeContaNav\\'>person</span>';">`;
+      const urlSegura = escapar(avatarUrl.trim());
+      linkContaNav.innerHTML = `<img src="${urlSegura}" alt="Minha conta" class="nav-avatar-img" onerror="this.onerror=null; this.parentElement.classList.remove('com-avatar'); this.parentElement.innerHTML='<span class=\\'material-symbols-outlined\\' id=\\'iconeContaNav\\'>person</span>';">`;
       linkContaNav.classList.add('com-avatar');
     } else {
       linkContaNav.innerHTML = `<span class="material-symbols-outlined" id="iconeContaNav">person</span>`;
@@ -262,10 +368,11 @@ function aplicarAvatarAoBotaoConta(avatarUrl) {
 
   if (drawerLinkConta) {
     const drawerTextoConta = document.getElementById('drawerTextoConta');
-    const texto = drawerTextoConta ? drawerTextoConta.textContent : 'Minha Conta';
+    const texto = drawerTextoConta ? escapar(drawerTextoConta.textContent) : 'Minha Conta';
     if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim()) {
+      const urlSegura = escapar(avatarUrl.trim());
       drawerLinkConta.innerHTML = `
-        <img src="${avatarUrl}" alt="Minha conta" class="drawer-avatar-img" onerror="this.onerror=null; this.outerHTML='<span class=\\'material-symbols-outlined\\'>person</span>';">
+        <img src="${urlSegura}" alt="Minha conta" class="drawer-avatar-img" onerror="this.onerror=null; this.outerHTML='<span class=\\'material-symbols-outlined\\'>person</span>';">
         <span id="drawerTextoConta">${texto}</span>
       `;
     } else {
@@ -281,18 +388,19 @@ function aplicarAvatarAoBotaoConta(avatarUrl) {
 async function atualizarAuthLayout() {
   const linksContaLista = document.getElementById('footerLinksConta');
   const linkContaNav = document.getElementById('linkConta');
+  const dropdown = document.getElementById('navUsuarioDropdown');
   const drawerLinkConta = document.getElementById('drawerLinkConta');
   const drawerTextoConta = document.getElementById('drawerTextoConta');
+  const drawerItemPedidos = document.getElementById('drawerItemPedidos');
+  const escapar = typeof escapeHtml === 'function' ? escapeHtml : (str => String(str || '').replace(/[&<>"']/g, ''));
 
   try {
     const usuario = typeof usuarioAtual === 'function' ? await usuarioAtual() : null;
 
     if (usuario) {
       // Usuário LOGADO
-      if (linkContaNav) {
-        linkContaNav.href = 'conta.html';
-        linkContaNav.setAttribute('aria-label', 'Minha conta');
-        linkContaNav.setAttribute('title', 'Minha conta');
+      if (drawerItemPedidos) {
+        drawerItemPedidos.hidden = false;
       }
 
       if (drawerLinkConta && drawerTextoConta) {
@@ -300,13 +408,109 @@ async function atualizarAuthLayout() {
         drawerTextoConta.textContent = 'Minha Conta';
       }
 
-      // Se o usuário tem foto de perfil, exibe a foto no botão de conta
+      // Se o usuário tem foto de perfil, obtém o avatar
       let avatarUrl = usuario?.user_metadata?.avatar_url || null;
-      if (!avatarUrl && typeof perfilAtual === 'function') {
-        const perfil = await perfilAtual();
-        avatarUrl = perfil?.avatar_url || null;
+      let perfilInfo = null;
+      if (typeof perfilAtual === 'function') {
+        perfilInfo = await perfilAtual();
+        if (!avatarUrl && perfilInfo?.avatar_url) {
+          avatarUrl = perfilInfo.avatar_url;
+        }
       }
       aplicarAvatarAoBotaoConta(avatarUrl);
+
+      const nomeExibicao = (perfilInfo?.nome || usuario?.user_metadata?.nome || usuario?.email?.split('@')[0] || 'Cliente').trim();
+      const emailExibicao = usuario?.email || '';
+      const inicial = nomeExibicao.charAt(0).toUpperCase() || 'U';
+      const isEscuro = obterTemaAtual() === 'escuro';
+
+      // Dropdown de perfil no header
+      if (linkContaNav && dropdown) {
+        linkContaNav.href = '#';
+        linkContaNav.setAttribute('aria-label', 'Menu da conta');
+        linkContaNav.setAttribute('title', 'Minha conta e opções');
+        linkContaNav.setAttribute('aria-haspopup', 'true');
+        linkContaNav.setAttribute('aria-expanded', 'false');
+
+        linkContaNav.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const aberto = dropdown.classList.toggle('aberto');
+          dropdown.setAttribute('aria-hidden', (!aberto).toString());
+          linkContaNav.setAttribute('aria-expanded', aberto.toString());
+        };
+
+        dropdown.innerHTML = `
+          <div class="nav-dropdown-header">
+            ${avatarUrl ? `
+              <img src="${escapar(avatarUrl)}" alt="Foto de perfil" class="nav-dropdown-avatar" onerror="this.outerHTML='<div class=\\'nav-dropdown-avatar-monograma\\'>${escapar(inicial)}</div>';">
+            ` : `
+              <div class="nav-dropdown-avatar-monograma">${escapar(inicial)}</div>
+            `}
+            <div class="nav-dropdown-usuario-info">
+              <span class="nav-dropdown-nome">${escapar(nomeExibicao)}</span>
+              <span class="nav-dropdown-email">${escapar(emailExibicao)}</span>
+            </div>
+          </div>
+
+          <div class="nav-dropdown-divisor"></div>
+
+          <ul class="nav-dropdown-menu">
+            <li>
+              <a href="conta.html" class="nav-dropdown-item">
+                <span class="material-symbols-outlined">person</span>
+                <span>Minha conta</span>
+              </a>
+            </li>
+            <li>
+              <a href="conta.html?aba=pedidos" class="nav-dropdown-item">
+                <span class="material-symbols-outlined">receipt_long</span>
+                <span>Meus pedidos</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="nav-dropdown-divisor"></div>
+
+          <div class="nav-dropdown-tema-item">
+            <div class="nav-dropdown-tema-label">
+              <span class="material-symbols-outlined icone-tema-indicador" id="iconeTemaDropdown">${isEscuro ? 'dark_mode' : 'light_mode'}</span>
+              <span>Modo escuro</span>
+            </div>
+            <label class="switch-tema" for="toggleTemaDropdown" title="Alternar modo escuro">
+              <input type="checkbox" id="toggleTemaDropdown" class="toggle-tema-input" ${isEscuro ? 'checked' : ''} aria-label="Alternar modo escuro">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+
+          <div class="nav-dropdown-divisor"></div>
+
+          <button type="button" class="nav-dropdown-item nav-dropdown-sair" id="btnSairDropdown">
+            <span class="material-symbols-outlined">logout</span>
+            <span>Sair</span>
+          </button>
+        `;
+
+        const toggleDropdown = document.getElementById('toggleTemaDropdown');
+        toggleDropdown?.addEventListener('change', () => {
+          alternarTema();
+        });
+
+        const btnSairDrop = document.getElementById('btnSairDropdown');
+        btnSairDrop?.addEventListener('click', async (e) => {
+          e.preventDefault();
+          dropdown.classList.remove('aberto');
+          if (typeof db !== 'undefined' && db.auth) {
+            await db.auth.signOut();
+            if (typeof mostrarToast === 'function') {
+              mostrarToast('Você saiu da sua conta', 'info');
+            }
+            setTimeout(() => {
+              window.location.href = 'index.html';
+            }, 350);
+          }
+        });
+      }
 
       if (linksContaLista) {
         linksContaLista.innerHTML = `
@@ -334,10 +538,23 @@ async function atualizarAuthLayout() {
       }
     } else {
       // Usuário NÃO LOGADO
+      if (drawerItemPedidos) {
+        drawerItemPedidos.hidden = true;
+      }
+
       if (linkContaNav) {
+        linkContaNav.onclick = null;
         linkContaNav.href = 'login.html';
         linkContaNav.setAttribute('aria-label', 'Entrar ou cadastrar');
         linkContaNav.setAttribute('title', 'Entrar / Cadastrar');
+        linkContaNav.removeAttribute('aria-haspopup');
+        linkContaNav.removeAttribute('aria-expanded');
+      }
+
+      if (dropdown) {
+        dropdown.classList.remove('aberto');
+        dropdown.setAttribute('aria-hidden', 'true');
+        dropdown.innerHTML = '';
       }
 
       if (drawerLinkConta && drawerTextoConta) {
@@ -360,8 +577,19 @@ async function atualizarAuthLayout() {
 }
 
 function atualizarContagemCarrinho() {
-  const carrinho = JSON.parse(localStorage.getItem('donaBentaCarrinho') || '[]');
-  const total = carrinho.reduce((soma, item) => soma + (Number(item.quantidade) || 0), 0);
+  let total = 0;
+  try {
+    const raw = localStorage.getItem('donaBentaCarrinho');
+    if (raw) {
+      const carrinho = JSON.parse(raw);
+      if (Array.isArray(carrinho)) {
+        total = carrinho.reduce((soma, item) => soma + (Number(item?.quantidade) || 0), 0);
+      }
+    }
+  } catch (e) {
+    total = 0;
+  }
+
   const badge = document.getElementById('carrinhoContagem');
   const badgeDrawer = document.getElementById('carrinhoContagemDrawer');
 
