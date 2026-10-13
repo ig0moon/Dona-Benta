@@ -7,7 +7,8 @@
   <title>Dona Benta — Confeitaria e Padaria Artesanal</title>
   <link rel="shortcut icon" href="img/favicon.png" type="image/x-icon">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=2.2">
+  <script>(function(){try{if(localStorage.getItem('donaBentaTema')==='escuro'){document.documentElement.setAttribute('data-tema','escuro');}}catch(e){}})();</script>
 </head>
 <body>
 
@@ -116,50 +117,6 @@
   <script src="js/supabase-client.js"></script>
   <script src="js/carrinho.js"></script>
   <script src="js/layout.js"></script>
-  <script>
-    const PRODUTOS_MODELO = [
-      {
-        id: 'modelo-1',
-        nome: 'Bolo de Chocolate com Ganache',
-        descricao_curta: 'Camadas fofinhas de chocolate belga com ganache cremosa e raspas de cacau por cima. Perfeito para aniversários e ocasiões especiais.',
-        preco: 89.90,
-        categoria: 'bolos',
-        imagem_url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=900&q=80'
-      },
-      {
-        id: 'modelo-2',
-        nome: 'Pão Artesanal de Fermentação Natural',
-        descricao_curta: 'Casca crocante e miolo macio, fermentado lentamente por 24 horas com fermento natural. Assado em forno de pedra todas as manhãs.',
-        preco: 22.00,
-        categoria: 'paes',
-        imagem_url: 'https://images.unsplash.com/photo-1585478259715-876a6a81fc08?w=900&q=80'
-      },
-      {
-        id: 'modelo-3',
-        nome: 'Caixa de Brigadeiros Gourmet',
-        descricao_curta: 'Doze brigadeiros artesanais em quatro sabores: tradicional, pistache, doce de leite e maracujá. Embalagem para presente.',
-        preco: 45.00,
-        categoria: 'doces',
-        imagem_url: 'https://images.unsplash.com/photo-1548907040-4baa419dea28?w=900&q=80'
-      },
-      {
-        id: 'modelo-4',
-        nome: 'Torta de Frango com Catupiry',
-        descricao_curta: 'Massa amanteigada recheada com frango desfiado e catupiry cremoso. Serve até 8 pessoas, ideal para reuniões em família.',
-        preco: 68.00,
-        categoria: 'salgados',
-        imagem_url: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=900&q=80'
-      },
-      {
-        id: 'modelo-5',
-        nome: 'Croissants Amanteigados',
-        descricao_curta: 'Folhados com manteiga francesa, dourados por fora e amanteigados por dentro. Vendidos em caixa com 6 unidades.',
-        preco: 38.00,
-        categoria: 'paes',
-        imagem_url: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=900&q=80'
-      }
-    ];
-  </script>
   <script src="js/carrossel-index.js"></script>
 </body>
 </html>

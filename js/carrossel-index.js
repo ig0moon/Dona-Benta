@@ -3,6 +3,49 @@
 // Carrossel da Página Inicial e Destaques
 // ============================================
 
+const PRODUTOS_MODELO_PADRAO = [
+  {
+    id: 'modelo-1',
+    nome: 'Bolo de Chocolate com Ganache Belga',
+    descricao_curta: 'Camadas fofinhas de chocolate belga com ganache cremosa e raspas de cacau nobre. Perfeito para comemorações.',
+    preco: 89.90,
+    categoria: 'bolos',
+    imagem_url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=900&q=80'
+  },
+  {
+    id: 'modelo-2',
+    nome: 'Pão Artesanal de Fermentação Natural',
+    descricao_curta: 'Casca crocante e miolo macio, fermentado lentamente por 24 horas com levain natural. Assado em forno de pedra.',
+    preco: 22.00,
+    categoria: 'paes',
+    imagem_url: 'https://images.unsplash.com/photo-1585478259715-876a6a81fc08?w=900&q=80'
+  },
+  {
+    id: 'modelo-3',
+    nome: 'Caixa de Brigadeiros Gourmet (12 un)',
+    descricao_curta: 'Doze brigadeiros artesanais em quatro sabores: tradicional belga, pistache, ninho com nutella e maracujá.',
+    preco: 45.00,
+    categoria: 'doces',
+    imagem_url: 'https://images.unsplash.com/photo-1548907040-4baa419dea28?w=900&q=80'
+  },
+  {
+    id: 'modelo-4',
+    nome: 'Torta de Frango com Catupiry Artesanal',
+    descricao_curta: 'Massa amanteigada recheada com frango desfiado e catupiry cremoso. Serve até 8 pessoas, ideal para a família.',
+    preco: 68.00,
+    categoria: 'salgados',
+    imagem_url: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=900&q=80'
+  },
+  {
+    id: 'modelo-5',
+    nome: 'Croissants Amanteigados Tradicionais',
+    descricao_curta: 'Folhados com manteiga francesa, dourados por fora e macios por dentro. Vendidos em caixa com 6 unidades.',
+    preco: 38.00,
+    categoria: 'paes',
+    imagem_url: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=900&q=80'
+  }
+];
+
 let slideAtual = 0;
 let temporizadorCarrossel = null;
 
@@ -102,7 +145,7 @@ function montarDestaques(produtos) {
 }
 
 async function carregarProdutosIndex() {
-  let produtos = typeof PRODUTOS_MODELO !== 'undefined' ? PRODUTOS_MODELO : [];
+  let produtos = (typeof PRODUTOS_MODELO !== 'undefined' && PRODUTOS_MODELO?.length) ? PRODUTOS_MODELO : PRODUTOS_MODELO_PADRAO;
 
   try {
     const { data, error } = await db
