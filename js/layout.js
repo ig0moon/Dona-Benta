@@ -5,6 +5,14 @@
 
 const CHAVE_TEMA = 'donaBentaTema';
 
+// Ícones SVG oficiais (Pix e WhatsApp)
+const ICONE_PIX_SVG = `<svg class="icone-pix-svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g><path d="M11.917 11.71a2.046 2.046 0 0 1-1.454-.602l-2.1-2.1a.4.4 0 0 0-.551 0l-2.108 2.108a2.044 2.044 0 0 1-1.454.602h-.414l2.66 2.66c.83.83 2.177.83 3.007 0l2.667-2.668h-.253zM4.25 4.282c.55 0 1.066.214 1.454.602l2.108 2.108a.39.39 0 0 0 .552 0l2.1-2.1a2.044 2.044 0 0 1 1.453-.602h.253L9.503 1.623a2.127 2.127 0 0 0-3.007 0l-2.66 2.66h.414z"></path><path d="m14.377 6.496-1.612-1.612a.307.307 0 0 1-.114.023h-.733c-.379 0-.75.154-1.017.422l-2.1 2.1a1.005 1.005 0 0 1-1.425 0L5.268 5.32a1.448 1.448 0 0 0-1.018-.422h-.9a.306.306 0 0 1-.109-.021L1.623 6.496c-.83.83-.83 2.177 0 3.008l1.618 1.618a.305.305 0 0 1 .108-.022h.901c.38 0 .75-.153 1.018-.421L7.375 8.57a1.034 1.034 0 0 1 1.426 0l2.1 2.1c.267.268.638.421 1.017.421h.733c.04 0 .079.01.114.024l1.612-1.612c.83-.83.83-2.178 0-3.008z"></path></g></svg>`;
+
+const ICONE_WHATSAPP_SVG = `<svg class="icone-whatsapp-svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g><path d="M11.42 9.49c-.19-.09-1.1-.54-1.27-.61s-.29-.09-.42.1-.48.6-.59.73-.21.14-.4 0a5.13 5.13 0 0 1-1.49-.92 5.25 5.25 0 0 1-1-1.29c-.11-.18 0-.28.08-.38s.18-.21.28-.32a1.39 1.39 0 0 0 .18-.31.38.38 0 0 0 0-.33c0-.09-.42-1-.58-1.37s-.3-.32-.41-.32h-.4a.72.72 0 0 0-.5.23 2.1 2.1 0 0 0-.65 1.55A3.59 3.59 0 0 0 5 8.2 8.32 8.32 0 0 0 8.19 11c.44.19.78.3 1.05.39a2.53 2.53 0 0 0 1.17.07 1.93 1.93 0 0 0 1.26-.88 1.67 1.67 0 0 0 .11-.88c-.05-.07-.17-.12-.36-.21z"></path><path d="M13.29 2.68A7.36 7.36 0 0 0 8 .5a7.44 7.44 0 0 0-6.41 11.15l-1 3.85 3.94-1a7.4 7.4 0 0 0 3.55.9H8a7.44 7.44 0 0 0 5.29-12.72zM8 14.12a6.12 6.12 0 0 1-3.15-.87l-.22-.13-2.34.61.62-2.28-.14-.23a6.18 6.18 0 0 1 9.6-7.65 6.12 6.12 0 0 1 1.81 4.37A6.19 6.19 0 0 1 8 14.12z"></path></g></svg>`;
+
+window.ICONE_PIX_SVG = ICONE_PIX_SVG;
+window.ICONE_WHATSAPP_SVG = ICONE_WHATSAPP_SVG;
+
 // Execução imediata do tema para evitar qualquer piscar de tela (FOUC)
 (function initTemaImediato() {
   try {
@@ -46,7 +54,17 @@ function aplicarTema(tema) {
     localStorage.setItem(CHAVE_TEMA, isEscuro ? 'escuro' : 'claro');
   } catch (e) {}
 
+  // Atualiza as logos do cabeçalho e do menu gaveta (mobile)
+  const logoImgs = document.querySelectorAll('.nav-logo img, .nav-drawer-marca img');
+  logoImgs.forEach(img => {
+    img.src = isEscuro ? 'img/HeaderDonaBentaBranco.png' : 'img/HeaderDonaBenta.png';
+  });
+
   sincronizarControlesTema();
+
+  try {
+    window.dispatchEvent(new CustomEvent('temaAlterado', { detail: { tema } }));
+  } catch (e) {}
 }
 
 function alternarTema() {
@@ -84,7 +102,7 @@ function montarHeader() {
 
       <!-- Logo centralizada no mobile / à esquerda no desktop -->
       <a href="index.html" class="nav-logo" aria-label="Página inicial Dona Benta">
-        <img src="img/HeaderDonaBenta.png" alt="Dona Benta Padaria & Confeitaria">
+        <img src="${isEscuro ? 'img/HeaderDonaBentaBranco.png' : 'img/HeaderDonaBenta.png'}" alt="Dona Benta Padaria & Confeitaria">
       </a>
 
       <!-- Links de navegação tradicionais para telas grandes (desktop) -->
@@ -120,7 +138,7 @@ function montarHeader() {
     <aside class="nav-drawer" id="navDrawer" aria-label="Menu de navegação mobile" aria-hidden="true">
       <div class="nav-drawer-topo">
         <a href="index.html" class="nav-drawer-marca">
-          <img src="img/HeaderDonaBenta.png" alt="Dona Benta">
+          <img src="${isEscuro ? 'img/HeaderDonaBentaBranco.png' : 'img/HeaderDonaBenta.png'}" alt="Dona Benta">
         </a>
         <button class="nav-drawer-fechar" id="navDrawerFechar" aria-label="Fechar menu">
           <span class="material-symbols-outlined">close</span>
@@ -192,9 +210,7 @@ function montarHeader() {
 
       <div class="nav-drawer-rodape">
         <a href="https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Vim%20pelo%20site%20Dona%20Benta" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-drawer">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
-          </svg>
+          ${ICONE_WHATSAPP_SVG}
           <span>Fale no WhatsApp</span>
         </a>
         <p class="nav-drawer-horario">Seg a Sáb, 8h às 19h</p>
@@ -306,9 +322,7 @@ function montarFooter() {
           </a>
 
           <a href="https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Vim%20pelo%20site%20Dona%20Benta%20e%20gostaria%20de%20saber%20mais%20sobre." aria-label="WhatsApp" target="_blank" rel="noopener noreferrer">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-whatsapp" viewBox="0 0 16 16">
-              <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
-            </svg>
+            ${ICONE_WHATSAPP_SVG}
           </a>
         </div>
       </div>
@@ -334,7 +348,7 @@ function montarFooter() {
         <ul class="footer-contato">
           <li><span class="material-symbols-outlined">location_on</span> Rua Padre Anacleto, 1168 - Nova Rússia</li>
           <li><span class="material-symbols-outlined">schedule</span> Seg a Sáb, 8h às 19h</li>
-          <li><span class="material-symbols-outlined">call</span><a href="https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Vim%20pelo%20site%20Dona%20Benta%20e%20gostaria%20de%20saber%20mais%20sobre." target="_blank" rel="noopener noreferrer"> (42) 99982-3994</a></li>
+          <li>${ICONE_WHATSAPP_SVG}<a href="https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Vim%20pelo%20site%20Dona%20Benta%20e%20gostaria%20de%20saber%20mais%20sobre." target="_blank" rel="noopener noreferrer">(42) 99982-3994</a></li>
           <li><span class="material-symbols-outlined">mail</span> contato@donabenta.com.br</li>
         </ul>
       </div>
@@ -354,10 +368,11 @@ function aplicarAvatarAoBotaoConta(avatarUrl) {
   const linkContaNav = document.getElementById('linkConta');
   const drawerLinkConta = document.getElementById('drawerLinkConta');
   const escapar = typeof escapeHtml === 'function' ? escapeHtml : (str => String(str || '').replace(/[&<>"']/g, ''));
+  const sanitizarLink = typeof sanitizeUrl === 'function' ? sanitizeUrl : escapar;
 
   if (linkContaNav) {
     if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim()) {
-      const urlSegura = escapar(avatarUrl.trim());
+      const urlSegura = sanitizarLink(avatarUrl.trim());
       linkContaNav.innerHTML = `<img src="${urlSegura}" alt="Minha conta" class="nav-avatar-img" onerror="this.onerror=null; this.parentElement.classList.remove('com-avatar'); this.parentElement.innerHTML='<span class=\\'material-symbols-outlined\\' id=\\'iconeContaNav\\'>person</span>';">`;
       linkContaNav.classList.add('com-avatar');
     } else {
@@ -370,7 +385,7 @@ function aplicarAvatarAoBotaoConta(avatarUrl) {
     const drawerTextoConta = document.getElementById('drawerTextoConta');
     const texto = drawerTextoConta ? escapar(drawerTextoConta.textContent) : 'Minha Conta';
     if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim()) {
-      const urlSegura = escapar(avatarUrl.trim());
+      const urlSegura = sanitizarLink(avatarUrl.trim());
       drawerLinkConta.innerHTML = `
         <img src="${urlSegura}" alt="Minha conta" class="drawer-avatar-img" onerror="this.onerror=null; this.outerHTML='<span class=\\'material-symbols-outlined\\'>person</span>';">
         <span id="drawerTextoConta">${texto}</span>

@@ -1,0 +1,464 @@
+/* ============================================
+   DONA BENTA — css/pagamentos.css
+   Estilos elegantes para Checkout Pix e Cartão
+   ============================================ */
+
+/* Seletor Moderno de Pagamento */
+.opcoes-pagamento-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+  margin-bottom: 18px;
+}
+
+.opcao-pagamento-card {
+  background: var(--branco);
+  border: 2px solid var(--azul-bebe);
+  border-radius: var(--raio-sm);
+  padding: 14px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  position: relative;
+}
+
+.opcao-pagamento-card:hover {
+  border-color: var(--dourado);
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-suave);
+}
+
+.opcao-pagamento-card.ativa {
+  border-color: var(--dourado-escuro);
+  background: linear-gradient(180deg, var(--creme) 0%, var(--branco) 100%);
+  box-shadow: 0 0 0 1px var(--dourado-escuro), var(--sombra-suave);
+}
+
+.opcao-pagamento-card .pagamento-icone {
+  font-size: 28px;
+  color: var(--marrom);
+}
+
+.opcao-pagamento-card.ativa .pagamento-icone {
+  color: var(--dourado-escuro);
+}
+
+.opcao-pagamento-card .pagamento-titulo {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--marrom);
+  line-height: 1.2;
+}
+
+.opcao-pagamento-card .pagamento-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(111, 169, 126, 0.18);
+  color: #3d7a4c;
+  padding: 2px 6px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+
+/* Área do Cartão de Crédito */
+.cartao-credito-area {
+  background: var(--creme);
+  border: 1px solid rgba(107, 66, 38, 0.12);
+  border-radius: var(--raio-sm);
+  padding: 16px;
+  margin-top: 12px;
+  margin-bottom: 14px;
+}
+
+/* Modal do Pix Dinâmico */
+.pix-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 34, 27, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+  animation: pixFadeIn 0.25s ease;
+}
+
+@keyframes pixFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pix-cartao {
+  background: var(--branco);
+  border-radius: var(--raio-md);
+  max-width: 440px;
+  width: 100%;
+  max-height: min(94vh, 680px);
+  overflow-y: auto;
+  box-shadow: var(--sombra-forte);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  animation: pixSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pixSlideUp {
+  from { transform: translateY(20px) scale(0.97); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.pix-topo {
+  padding: 22px 22px 14px;
+  text-align: center;
+  border-bottom: 1px solid rgba(107, 66, 38, 0.08);
+  position: relative;
+}
+
+.pix-fechar {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+  color: var(--marrom-claro);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.pix-fechar:hover {
+  background: rgba(107, 66, 38, 0.08);
+  color: var(--marrom);
+}
+
+.pix-badge-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.pix-topo h2 {
+  font-family: var(--fonte-display);
+  font-size: 1.45rem;
+  color: var(--marrom);
+  margin-bottom: 4px;
+}
+
+.pix-subtitulo {
+  font-size: 0.86rem;
+  color: var(--marrom-claro);
+  line-height: 1.35;
+}
+
+.pix-corpo {
+  padding: 20px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pix-valor-destaque {
+  background: var(--creme);
+  border-radius: var(--raio-sm);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pix-valor-destaque span {
+  font-size: 0.9rem;
+  color: var(--marrom-claro);
+  font-weight: 500;
+}
+
+.pix-valor-destaque strong {
+  font-size: 1.25rem;
+  color: var(--dourado-escuro);
+  font-family: var(--fonte-display);
+}
+
+.pix-qrcode-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.pix-qrcode-area img {
+  width: 200px;
+  height: 200px;
+  border-radius: 12px;
+  border: 1px solid rgba(107, 66, 38, 0.12);
+  padding: 8px;
+  background: #ffffff;
+  box-shadow: var(--sombra-suave);
+}
+
+.pix-timer-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--marrom-claro);
+  background: var(--creme-escuro);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.pix-copiacola-area label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--marrom);
+  margin-bottom: 6px;
+}
+
+.pix-input-btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+.pix-input-btn-group input {
+  flex: 1;
+  background: var(--creme);
+  border: 1px solid rgba(107, 66, 38, 0.18);
+  border-radius: var(--raio-sm);
+  padding: 10px 12px;
+  font-family: monospace;
+  font-size: 0.82rem;
+  color: var(--texto);
+  outline: none;
+}
+
+.pix-input-btn-group .btn {
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.pix-status-verificacao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 0.84rem;
+  color: var(--marrom-claro);
+  padding: 8px;
+  background: rgba(191, 221, 243, 0.25);
+  border-radius: var(--raio-sm);
+}
+
+.pulse-dot {
+  width: 10px;
+  height: 10px;
+  background-color: var(--dourado-escuro);
+  border-radius: 50%;
+  animation: pulseAnim 1.4s infinite ease-in-out;
+}
+
+@keyframes pulseAnim {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.5; }
+}
+
+/* Ícones SVG personalizados (Pix e WhatsApp) */
+.icone-pix-svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  vertical-align: middle;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.icone-whatsapp-svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  vertical-align: middle;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.opcao-pagamento-card .icone-pix-svg {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 6px;
+  color: var(--dourado-escuro);
+}
+
+[data-tema="escuro"] .opcao-pagamento-card .icone-pix-svg {
+  color: var(--dourado);
+}
+
+/* Dicas de Sandbox ficam ocultas por padrão; exibidas apenas dinamicamente para administradores */
+.pix-sandbox-dica,
+.cartao-sandbox-dica {
+  display: none;
+  background: rgba(242, 166, 90, 0.12);
+  border: 1px dashed var(--dourado);
+  border-radius: var(--raio-sm);
+  padding: 10px 12px;
+}
+
+.sucesso-animacao-icone span {
+  font-size: 64px;
+  color: var(--sucesso);
+  animation: sucessoPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes sucessoPop {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ============================================
+   Ajustes de Tema Escuro para Pagamento
+   ============================================ */
+
+/* Área do Cartão de Crédito */
+.cartao-credito-area {
+  background: var(--branco);
+  border: 1px solid rgba(107, 66, 38, 0.12);
+  border-radius: var(--raio-md);
+  padding: 16px;
+  box-shadow: var(--sombra-suave);
+  transition: all 0.25s ease;
+}
+
+[data-tema="escuro"] .cartao-credito-area {
+  background: #2b221b !important;
+  border: 1px solid rgba(242, 166, 90, 0.2) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+#cardPaymentBrick_container {
+  background: transparent !important;
+}
+
+/* Modo Escuro — Mercado Pago Brick */
+[data-tema="escuro"] #cardPaymentBrick_container label,
+[data-tema="escuro"] #cardPaymentBrick_container span:not(.material-symbols-outlined),
+[data-tema="escuro"] #cardPaymentBrick_container p,
+[data-tema="escuro"] #cardPaymentBrick_container h1,
+[data-tema="escuro"] #cardPaymentBrick_container h2,
+[data-tema="escuro"] #cardPaymentBrick_container h3,
+[data-tema="escuro"] #cardPaymentBrick_container h4 {
+  color: #f6efe8 !important;
+  font-weight: 500;
+}
+
+[data-tema="escuro"] #cardPaymentBrick_container input,
+[data-tema="escuro"] #cardPaymentBrick_container input[type="text"],
+[data-tema="escuro"] #cardPaymentBrick_container select {
+  background-color: #221a14 !important;
+  background: #221a14 !important;
+  color: #f6efe8 !important;
+  -webkit-text-fill-color: #f6efe8 !important;
+  border: 1px solid rgba(242, 166, 90, 0.28) !important;
+  border-radius: 8px !important;
+}
+
+[data-tema="escuro"] #cardPaymentBrick_container input:focus,
+[data-tema="escuro"] #cardPaymentBrick_container select:focus {
+  border-color: #f2a65a !important;
+  box-shadow: 0 0 0 2px rgba(242, 166, 90, 0.3) !important;
+}
+
+[data-tema="escuro"] #cardPaymentBrick_container input::placeholder {
+  color: #9f8c7e !important;
+  -webkit-text-fill-color: #9f8c7e !important;
+}
+
+/* Modo Claro — Mercado Pago Brick */
+#cardPaymentBrick_container label,
+#cardPaymentBrick_container span:not(.material-symbols-outlined),
+#cardPaymentBrick_container p,
+#cardPaymentBrick_container h1,
+#cardPaymentBrick_container h2,
+#cardPaymentBrick_container h3,
+#cardPaymentBrick_container h4 {
+  color: #3d3d3d;
+  font-weight: 500;
+}
+
+#cardPaymentBrick_container input,
+#cardPaymentBrick_container input[type="text"],
+#cardPaymentBrick_container select {
+  background-color: #ffffff;
+  color: #1a1a1a;
+  -webkit-text-fill-color: #1a1a1a;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+}
+
+#cardPaymentBrick_container input::placeholder {
+  color: #8c8c8c;
+  -webkit-text-fill-color: #8c8c8c;
+}
+
+/* Modal do Pix no modo escuro */
+[data-tema="escuro"] .pix-cartao {
+  background: #2b221b;
+  color: var(--texto);
+}
+
+[data-tema="escuro"] .pix-topo {
+  border-bottom: 1px solid rgba(245, 175, 102, 0.15);
+}
+
+[data-tema="escuro"] .pix-topo h2 {
+  color: var(--marrom);
+}
+
+[data-tema="escuro"] .pix-valor-destaque {
+  background: #362920;
+}
+
+[data-tema="escuro"] .pix-input-btn-group input {
+  background: #231b15;
+  color: #f6efe8;
+  border: 1px solid rgba(245, 175, 102, 0.3);
+}
+
+[data-tema="escuro"] .pix-timer-container {
+  background: #362920;
+  color: var(--marrom-claro);
+}
+
+[data-tema="escuro"] .cartao-sandbox-dica {
+  background: rgba(34, 26, 20, 0.95) !important;
+  border: 1px dashed rgba(242, 166, 90, 0.35) !important;
+  color: #f6efe8 !important;
+}
+
+[data-tema="escuro"] .cartao-sandbox-dica strong,
+[data-tema="escuro"] .cartao-sandbox-dica code {
+  color: #f5af66 !important;
+}

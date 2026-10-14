@@ -26,6 +26,20 @@ function escapeHtml(texto) {
     .replace(/'/g, '&#39;');
 }
 
+// Sanitização estrita de URLs para prevenir ataques de pseudo-protocolos perigosos (javascript:, data:, vbscript:)
+function sanitizeUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const limpo = url.trim();
+  if (/^(javascript|vbscript|data):/i.test(limpo)) {
+    console.warn('[SEGURANÇA] URL maliciosa bloqueada:', limpo);
+    return 'about:blank';
+  }
+  return escapeHtml(limpo);
+}
+
+window.escapeHtml = escapeHtml;
+window.sanitizeUrl = sanitizeUrl;
+
 // ============================================
 // Helpers de autenticação
 // ============================================
