@@ -817,8 +817,11 @@ function renderizarPerfil(area, usuario, perfil) {
 }
 
 // =========================================================
-// SEÇÃO: MEUS PEDIDOS
 // =========================================================
+// SEÇÃO: MEUS PEDIDOS & DETALHAMENTO
+// =========================================================
+let MEUS_PEDIDOS_CACHE = [];
+
 async function renderizarMeusPedidos(area, usuario) {
   let pedidos = [];
   try {
@@ -832,6 +835,8 @@ async function renderizarMeusPedidos(area, usuario) {
   } catch (e) {
     console.warn('Erro ao carregar pedidos:', e);
   }
+
+  MEUS_PEDIDOS_CACHE = pedidos;
 
   if (pedidos.length === 0) {
     area.innerHTML = `
@@ -853,7 +858,7 @@ async function renderizarMeusPedidos(area, usuario) {
     const numero = p.numero_pedido || (p.id ? `DB-${String(pedidos.length - index).padStart(2, '0')}` : 'DB-01');
 
     return `
-      <div class="cartao-meu-pedido">
+      <div class="cartao-meu-pedido" data-pedido-id="${escapeHtml(p.id)}" style="cursor: pointer;">
         <div class="meu-pedido-icone">
           <span class="material-symbols-outlined">${status.icone}</span>
         </div>
@@ -861,17 +866,26 @@ async function renderizarMeusPedidos(area, usuario) {
           <div class="meu-pedido-cabecalho">
             <span class="meu-pedido-numero">Pedido ${escapeHtml(numero)}</span>
             <span class="badge ${status.classe}">${escapeHtml(status.rotulo)}</span>
+            <span class="badge ${p.pago ? 'badge-sucesso' : 'badge-alerta'}" style="font-size:0.75rem;">
+              ${p.pago ? '✓ Pago' : '⏳ Pagamento pendente'}
+            </span>
           </div>
           <div class="meu-pedido-meta">
             ${escapeHtml(formatarData(p.data_agendada))} às ${escapeHtml(p.horario_agendado || '')} · 
-            <strong>${p.tipo_entrega === 'entrega' ? 'Entrega' : 'Retirada na loja'}</strong>
+            <strong>${p.tipo_entrega === 'entrega' ? 'Entrega em domicílio' : 'Retirada na loja'}</strong>
           </div>
           <div class="meu-pedido-itens">
             ${listaItens.map(i => `${Number(i.quantidade) || 1}x ${escapeHtml(i.nome || 'Produto')}`).join(', ')}
           </div>
         </div>
-        <div class="meu-pedido-valor">
-          ${formatarPreco(p.valor_total)}
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+          <div class="meu-pedido-valor">
+            ${formatarPreco(p.valor_total)}
+          </div>
+          <button type="button" class="btn btn-outline btn-sm btn-ver-detalhes" data-detalhe-id="${escapeHtml(p.id)}" style="padding:6px 14px; font-size:0.82rem; display:inline-flex; align-items:center; gap:5px; border-radius:999px;">
+            <span class="material-symbols-outlined" style="font-size:16px;">receipt_long</span>
+            Ver detalhes
+          </button>
         </div>
       </div>
     `;
@@ -888,6 +902,19 @@ async function renderizarMeusPedidos(area, usuario) {
       </div>
     </div>
   `;
+
+  area.querySelectorAll('.btn-ver-detalhes').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      abrirModalDetalhesPedido(btn.dataset.detalheId);
+    });
+  });
+
+  area.querySelectorAll('.cartao-meu-pedido').forEach(card => {
+    card.addEventListener('click', () => {
+      abrirModalDetalhesPedido(card.dataset.pedidoId);
+    });
+  });
 }
 
 // =========================================================
@@ -914,6 +941,10 @@ async function renderizarPainelAdmin(area, perfil) {
         <button class="btn btn-outline admin-tab-btn ativo" data-tab="visao-geral">Visão geral</button>
         <button class="btn btn-outline admin-tab-btn" data-tab="produtos">Produtos</button>
         <button class="btn btn-outline admin-tab-btn" data-tab="pedidos-admin">Gerenciar Pedidos</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="pagamentos-admin">
+          <span class="material-symbols-outlined" style="font-size:17px; vertical-align:middle; margin-right:4px;">paid</span>
+          Histórico Financeiro
+        </button>
       </div>
     </div>
     <div id="adminConteudoSecao"></div>
@@ -937,6 +968,7 @@ function carregarTabAdmin(tab) {
   if (tab === 'visao-geral') renderizarVisaoGeralAdmin(areaAdmin);
   else if (tab === 'produtos') renderizarProdutosAdmin(areaAdmin);
   else if (tab === 'pedidos-admin') renderizarPedidosAdmin(areaAdmin);
+  else if (tab === 'pagamentos-admin') renderizarPagamentosAdmin(areaAdmin);
 }
 
 function renderizarVisaoGeralAdmin(area) {
@@ -1071,6 +1103,7 @@ function renderizarPedidosAdmin(area) {
               <th>Agendamento</th>
               <th>Status do Pedido</th>
               <th>Pagamento</th>
+              <th style="text-align:center;">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -1116,14 +1149,20 @@ function renderizarPedidosAdmin(area) {
                   })()}
                 </td>
                 <td>
-                  <button class="badge btn-pagamento ${p.pago ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${Boolean(p.pago)}">
+                  <button class="badge btn-pagamento ${p.pago ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${Boolean(p.pago)}" title="Clique para alternar status do pagamento" style="cursor:pointer; border:none;">
                     ${p.pago ? 'Pago' : 'Pendente'}
+                  </button>
+                </td>
+                <td style="text-align:center;">
+                  <button type="button" class="btn btn-outline btn-sm btn-ver-detalhes-admin-pedidos" data-pedido="${escapeHtml(p.id)}" title="Ver detalhes completos do pedido" style="padding:5px 10px; font-size:0.78rem; display:inline-flex; align-items:center; gap:4px;">
+                    <span class="material-symbols-outlined" style="font-size:15px;">receipt_long</span>
+                    Detalhes
                   </button>
                 </td>
               </tr>
             `;
             }).join('')}
-            ${PEDIDOS_ADMIN.length === 0 ? '<tr><td colspan="4" style="text-align:center; padding: 20px;">Nenhum pedido encontrado.</td></tr>' : ''}
+            ${PEDIDOS_ADMIN.length === 0 ? '<tr><td colspan="5" style="text-align:center; padding: 20px;">Nenhum pedido encontrado.</td></tr>' : ''}
           </tbody>
         </table>
       </div>
@@ -1284,6 +1323,399 @@ function renderizarPedidosAdmin(area) {
       }
     });
   });
+
+  // Listener para botões de detalhes do pedido no gerenciador
+  area.querySelectorAll('.btn-ver-detalhes-admin-pedidos').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalDetalhesPedido(btn.dataset.pedido));
+  });
+}
+
+// =========================================================
+// SEÇÃO: HISTÓRICO DE COMPRAS E PAGAMENTOS (PAINEL ADMIN)
+// =========================================================
+function renderizarPagamentosAdmin(area) {
+  // Cálculo de KPIs
+  const pagos = PEDIDOS_ADMIN.filter(p => p.pago === true);
+  const totalFaturado = pagos.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+
+  const pagosPix = pagos.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
+  const totalPix = pagosPix.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+
+  const pagosCartao = pagos.filter(p => (p.forma_pagamento || '').toLowerCase().includes('cart'));
+  const totalCartao = pagosCartao.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+
+  const pendentes = PEDIDOS_ADMIN.filter(p => !p.pago);
+  const totalPendente = pendentes.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+
+  area.innerHTML = `
+    <!-- KPIs Financeiros -->
+    <div class="stats-grade" style="margin-bottom: 24px;">
+      <div class="cartao stat-cartao">
+        <span class="material-symbols-outlined" style="color:var(--sucesso);">paid</span>
+        <div class="stat-valor">${formatarPreco(totalFaturado)}</div>
+        <div class="stat-rotulo">Faturamento Pago (${pagos.length} vendas)</div>
+      </div>
+      <div class="cartao stat-cartao">
+        <span class="material-symbols-outlined" style="color:#00a650;">qr_code_2</span>
+        <div class="stat-valor">${formatarPreco(totalPix)}</div>
+        <div class="stat-rotulo">Recebido via Pix (${pagosPix.length})</div>
+      </div>
+      <div class="cartao stat-cartao">
+        <span class="material-symbols-outlined" style="color:var(--dourado-escuro);">credit_card</span>
+        <div class="stat-valor">${formatarPreco(totalCartao)}</div>
+        <div class="stat-rotulo">Recebido via Cartão (${pagosCartao.length})</div>
+      </div>
+      <div class="cartao stat-cartao">
+        <span class="material-symbols-outlined" style="color:var(--alerta);">hourglass_top</span>
+        <div class="stat-valor">${formatarPreco(totalPendente)}</div>
+        <div class="stat-rotulo">Aguardando Pagamento (${pendentes.length})</div>
+      </div>
+    </div>
+
+    <!-- Tabela do Histórico Financeiro -->
+    <div class="cartao">
+      <div class="tabela-topo" style="margin-bottom: 16px;">
+        <div>
+          <h3>Histórico de Compras e Pagamentos (${PEDIDOS_ADMIN.length})</h3>
+          <p style="color:var(--marrom-claro); font-size:0.88rem; margin:4px 0 0;">Relatório consolidado de transações, faturamento e conferência financeira.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btnImprimirFinanceiro" style="display:inline-flex; align-items:center; gap:6px;">
+          <span class="material-symbols-outlined" style="font-size:18px;">print</span>
+          Imprimir Relatório
+        </button>
+      </div>
+
+      <!-- Barra de Filtros Interativa -->
+      <div class="admin-filtros-barra">
+        <input type="text" id="filtroTextoFinanceiro" class="campo-busca-admin" placeholder="Buscar por cliente, telefone ou nº do pedido (DB-XX)...">
+        <select id="filtroStatusPagamento" class="admin-select-filtro">
+          <option value="todos">Todos os pagamentos</option>
+          <option value="pago">Somente Pagos</option>
+          <option value="pendente">Somente Pendentes</option>
+        </select>
+        <select id="filtroMetodoPagamento" class="admin-select-filtro">
+          <option value="todos">Todos os métodos</option>
+          <option value="pix">Pix</option>
+          <option value="cartao">Cartão de Crédito</option>
+        </select>
+      </div>
+
+      <div class="tabela-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Pedido & Data</th>
+              <th>Cliente</th>
+              <th>Valor Total</th>
+              <th>Forma</th>
+              <th>Status Pagamento</th>
+              <th>Status Encomenda</th>
+              <th style="text-align:center;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyFinanceiro"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  function renderLinhasFinanceiro() {
+    const termo = (document.getElementById('filtroTextoFinanceiro')?.value || '').toLowerCase().trim();
+    const filtroStatus = document.getElementById('filtroStatusPagamento')?.value || 'todos';
+    const filtroMetodo = document.getElementById('filtroMetodoPagamento')?.value || 'todos';
+    const tbody = document.getElementById('tbodyFinanceiro');
+    if (!tbody) return;
+
+    let lista = PEDIDOS_ADMIN;
+
+    if (filtroStatus === 'pago') lista = lista.filter(p => p.pago === true);
+    else if (filtroStatus === 'pendente') lista = lista.filter(p => !p.pago);
+
+    if (filtroMetodo === 'pix') lista = lista.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
+    else if (filtroMetodo === 'cartao') lista = lista.filter(p => (p.forma_pagamento || '').toLowerCase().includes('cart'));
+
+    if (termo) {
+      lista = lista.filter(p => {
+        const num = (p.numero_pedido || '').toLowerCase();
+        const nome = (p.perfis?.nome || '').toLowerCase();
+        const tel = (p.perfis?.telefone || '').toLowerCase();
+        return num.includes(termo) || nome.includes(termo) || tel.includes(termo);
+      });
+    }
+
+    if (lista.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 24px; color:var(--marrom-claro);">Nenhum pagamento ou compra encontrada para os filtros selecionados.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = lista.map((p, idx) => {
+      const numSeq = p.numero_pedido || (p.id ? `DB-${String(PEDIDOS_ADMIN.length - idx).padStart(2, '0')}` : 'DB-01');
+      const ehPix = (p.forma_pagamento || '').toLowerCase().includes('pix');
+      const dataCriacao = p.criado_em ? formatarDataHora(p.criado_em) : `${formatarData(p.data_agendada)} às ${p.horario_agendado || ''}`;
+      const statusInfo = STATUS_INFO[p.status] || STATUS_INFO.aguardando_confirmacao;
+
+      return `
+        <tr>
+          <td>
+            <span class="badge" style="background:var(--creme-escuro); color:var(--marrom); font-weight:700; font-size:0.75rem;">${escapeHtml(numSeq)}</span><br>
+            <span style="font-size:0.78rem; color:var(--marrom-claro);">${escapeHtml(dataCriacao)}</span>
+          </td>
+          <td>
+            <strong>${escapeHtml(p.perfis?.nome || 'Cliente')}</strong><br>
+            <span style="font-size:0.8rem; color:var(--marrom-claro);">${escapeHtml(p.perfis?.telefone || 'Sem telefone')}</span>
+          </td>
+          <td>
+            <strong style="font-size:0.95rem; color:var(--dourado-escuro); font-family:var(--fonte-display);">${formatarPreco(p.valor_total)}</strong>
+          </td>
+          <td>
+            <span class="badge" style="background:rgba(107, 66, 38, 0.08); color:var(--marrom); display:inline-flex; align-items:center; gap:4px; font-size:0.78rem;">
+              <span class="material-symbols-outlined" style="font-size:15px;">${ehPix ? 'qr_code_2' : 'credit_card'}</span>
+              ${escapeHtml(p.forma_pagamento || 'Pix')}
+            </span>
+          </td>
+          <td>
+            <button class="badge btn-pagamento-financeiro ${p.pago ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${Boolean(p.pago)}" title="Clique para alternar status do pagamento" style="cursor:pointer; border:none;">
+              ${p.pago ? '✓ Pago' : '⏳ Pendente'}
+            </button>
+          </td>
+          <td>
+            <span class="badge ${statusInfo.classe}">${escapeHtml(statusInfo.rotulo)}</span>
+          </td>
+          <td style="text-align:center;">
+            <div style="display:inline-flex; gap:6px; align-items:center;">
+              <button class="btn btn-outline btn-sm btn-ver-detalhes-financeiro" data-pedido="${escapeHtml(p.id)}" title="Ver detalhamento do pedido" style="padding:5px 10px; font-size:0.78rem; display:inline-flex; align-items:center; gap:4px;">
+                <span class="material-symbols-outlined" style="font-size:15px;">receipt_long</span>
+                Detalhes
+              </button>
+              ${p.perfis?.telefone ? `
+                <a href="https://api.whatsapp.com/send?phone=55${p.perfis.telefone.replace(/\D/g, '')}&text=Ol%C3%A1%20${encodeURIComponent(p.perfis.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numSeq)}." target="_blank" rel="noopener noreferrer" class="acao-icone-btn" title="Conversar no WhatsApp" style="color:#25D366;">
+                  <span class="material-symbols-outlined" style="font-size:18px;">chat</span>
+                </a>
+              ` : ''}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('.btn-ver-detalhes-financeiro').forEach(btn => {
+      btn.addEventListener('click', () => abrirModalDetalhesPedido(btn.dataset.pedido));
+    });
+
+    tbody.querySelectorAll('.btn-pagamento-financeiro').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pedidoId = btn.dataset.pedido;
+        const estadoAtualPago = btn.dataset.pago === 'true';
+        const novoEstadoPago = !estadoAtualPago;
+
+        btn.style.opacity = '0.5';
+        btn.disabled = true;
+
+        const { error } = await db.from('pedidos').update({ pago: novoEstadoPago }).eq('id', pedidoId);
+        if (error) {
+          mostrarToast('Erro ao atualizar pagamento', 'erro');
+          btn.style.opacity = '1';
+          btn.disabled = false;
+        } else {
+          mostrarToast(novoEstadoPago ? 'Pagamento marcado como Pago!' : 'Pagamento marcado como Pendente!', 'sucesso');
+          const pedido = PEDIDOS_ADMIN.find(p => p.id === pedidoId);
+          if (pedido) pedido.pago = novoEstadoPago;
+          renderizarPagamentosAdmin(area);
+        }
+      });
+    });
+  }
+
+  document.getElementById('filtroTextoFinanceiro')?.addEventListener('input', renderLinhasFinanceiro);
+  document.getElementById('filtroStatusPagamento')?.addEventListener('change', renderLinhasFinanceiro);
+  document.getElementById('filtroMetodoPagamento')?.addEventListener('change', renderLinhasFinanceiro);
+  document.getElementById('btnImprimirFinanceiro')?.addEventListener('click', () => window.print());
+
+  renderLinhasFinanceiro();
+}
+
+// =========================================================
+// MODAL: DETALHAMENTO DO PEDIDO (MEUS PEDIDOS & ADMIN)
+// =========================================================
+function injectarModalDetalhesPedido() {
+  if (document.getElementById('modalDetalhesPedido')) return;
+
+  const modalHTML = `
+    <div class="modal-overlay" id="modalDetalhesPedido">
+      <div class="modal-cartao modal-detalhes-cartao" style="max-width: 650px; width: 100%; max-height: 88vh; display: flex; flex-direction: column;">
+        <div class="modal-cabecalho">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;" id="modalDetalhesBadges"></div>
+            <h3 id="modalDetalhesTitulo" style="margin:0; font-size:1.25rem;">Detalhes da Encomenda</h3>
+          </div>
+          <button class="modal-fechar" id="fecharModalDetalhes" aria-label="Fechar"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="modal-detalhes-corpo" id="modalDetalhesCorpo"></div>
+        <div style="padding: 14px 20px; border-top: 1px solid rgba(107, 66, 38, 0.1); display:flex; gap:10px; justify-content:space-between; flex-wrap:wrap; background:var(--branco);" id="modalDetalhesRodape"></div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+  const fechar = () => {
+    const modal = document.getElementById('modalDetalhesPedido');
+    if (modal) modal.classList.remove('aberto');
+  };
+
+  document.getElementById('fecharModalDetalhes')?.addEventListener('click', fechar);
+  document.getElementById('modalDetalhesPedido')?.addEventListener('click', (e) => {
+    if (e.target.id === 'modalDetalhesPedido') fechar();
+  });
+}
+
+function abrirModalDetalhesPedido(pedidoId) {
+  injectarModalDetalhesPedido();
+
+  const pedido = (typeof PEDIDOS_ADMIN !== 'undefined' ? PEDIDOS_ADMIN.find(p => p.id === pedidoId) : null) ||
+                 (typeof MEUS_PEDIDOS_CACHE !== 'undefined' ? MEUS_PEDIDOS_CACHE.find(p => p.id === pedidoId) : null);
+
+  if (!pedido) {
+    if (typeof mostrarToast === 'function') mostrarToast('Pedido não localizado', 'alerta');
+    return;
+  }
+
+  const modal = document.getElementById('modalDetalhesPedido');
+  const badgesArea = document.getElementById('modalDetalhesBadges');
+  const corpo = document.getElementById('modalDetalhesCorpo');
+  const rodape = document.getElementById('modalDetalhesRodape');
+  if (!modal || !corpo) return;
+
+  const statusInfo = STATUS_INFO[pedido.status] || STATUS_INFO.aguardando_confirmacao;
+  const numero = pedido.numero_pedido || (pedido.id ? `DB-${String(pedido.id).slice(0, 4).toUpperCase()}` : 'DB-01');
+  const itens = pedido.itens_pedido || pedido.itens || [];
+
+  badgesArea.innerHTML = `
+    <span class="badge" style="background:var(--creme-escuro); color:var(--marrom); font-weight:700; font-size:0.82rem;">${escapeHtml(numero)}</span>
+    <span class="badge ${statusInfo.classe}">${escapeHtml(statusInfo.rotulo)}</span>
+    <span class="badge ${pedido.pago ? 'badge-sucesso' : 'badge-alerta'}">${pedido.pago ? '✓ Pagamento Confirmado' : '⏳ Aguardando Pagamento'}</span>
+  `;
+
+  document.getElementById('modalDetalhesTitulo').textContent = `Pedido ${numero}`;
+
+  corpo.innerHTML = `
+    <div class="detalhe-secao-bloco">
+      <h4 style="font-size:0.95rem; margin-bottom:12px; color:var(--marrom); display:flex; align-items:center; gap:6px;">
+        <span class="material-symbols-outlined" style="font-size:18px; color:var(--dourado-escuro);">schedule</span>
+        Agendamento & Entrega
+      </h4>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:0.88rem;">
+        <div>
+          <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Modalidade</span>
+          <strong>${pedido.tipo_entrega === 'entrega' ? '🚚 Entrega no Endereço' : '🏬 Retirada na Loja'}</strong>
+        </div>
+        <div>
+          <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Data & Horário</span>
+          <strong>${formatarData(pedido.data_agendada)} às ${escapeHtml(pedido.horario_agendado || 'A combinar')}</strong>
+        </div>
+        ${pedido.tipo_entrega === 'entrega' && pedido.endereco_entrega ? `
+          <div style="grid-column: 1 / -1;">
+            <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Endereço de Entrega</span>
+            <strong style="word-break: break-word;">${escapeHtml(pedido.endereco_entrega)}</strong>
+          </div>
+        ` : `
+          <div style="grid-column: 1 / -1;">
+            <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Local de Retirada</span>
+            <strong>Rua Padre Anacleto, 1168 - Nova Rússia, Ponta Grossa - PR</strong>
+          </div>
+        `}
+        ${pedido.perfis?.nome ? `
+          <div>
+            <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Nome do Cliente</span>
+            <strong>${escapeHtml(pedido.perfis.nome)}</strong>
+          </div>
+        ` : ''}
+        ${pedido.perfis?.telefone ? `
+          <div>
+            <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Telefone do Cliente</span>
+            <strong>${escapeHtml(pedido.perfis.telefone)}</strong>
+          </div>
+        ` : ''}
+        ${pedido.criado_em ? `
+          <div>
+            <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Data do Pedido</span>
+            <span>${formatarDataHora(pedido.criado_em)}</span>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+
+    ${pedido.observacoes ? `
+      <div class="detalhe-observacoes-bloco">
+        <h4 style="font-size:0.92rem; margin-bottom:6px; color:var(--marrom); display:flex; align-items:center; gap:6px;">
+          <span class="material-symbols-outlined" style="font-size:18px; color:var(--dourado-escuro);">edit_note</span>
+          Observações do Pedido
+        </h4>
+        <p style="font-size:0.88rem; margin:0; color:var(--texto); font-style:italic; line-height:1.45;">
+          "${escapeHtml(pedido.observacoes)}"
+        </p>
+      </div>
+    ` : ''}
+
+    <div class="detalhe-secao-bloco">
+      <h4 style="font-size:0.95rem; margin-bottom:12px; color:var(--marrom); display:flex; align-items:center; gap:6px;">
+        <span class="material-symbols-outlined" style="font-size:18px; color:var(--dourado-escuro);">shopping_bag</span>
+        Itens do Pedido (${itens.length})
+      </h4>
+      <div style="border:1px solid rgba(107, 66, 38, 0.12); border-radius:10px; overflow:hidden;">
+        <table class="detalhe-tabela-itens">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th style="text-align:center;">Qtd</th>
+              <th style="text-align:right;">Preço</th>
+              <th style="text-align:right;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itens.length > 0 ? itens.map(item => `
+              <tr>
+                <td><strong>${escapeHtml(item.nome || 'Produto')}</strong></td>
+                <td style="text-align:center;">${Number(item.quantidade) || 1}</td>
+                <td style="text-align:right;">${formatarPreco(item.preco || 0)}</td>
+                <td style="text-align:right; font-weight:700;">${formatarPreco((Number(item.preco) || 0) * (Number(item.quantidade) || 1))}</td>
+              </tr>
+            `).join('') : '<tr><td colspan="4" style="text-align:center; padding:12px;">Itens sob encomenda</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="detalhe-total-bloco">
+      <div>
+        <span style="font-size:0.78rem; color:var(--marrom-claro); display:block;">Forma de Pagamento</span>
+        <strong style="font-size:0.95rem; display:flex; align-items:center; gap:6px; color:var(--marrom);">
+          <span class="material-symbols-outlined" style="font-size:18px;">${(pedido.forma_pagamento || '').toLowerCase().includes('pix') ? 'qr_code_2' : 'credit_card'}</span>
+          ${escapeHtml(pedido.forma_pagamento || 'Pix')}
+        </strong>
+      </div>
+      <div style="text-align:right;">
+        <span style="font-size:0.78rem; color:var(--marrom-claro); display:block;">Valor Total</span>
+        <strong style="font-size:1.35rem; color:var(--dourado-escuro); font-family:var(--fonte-display);">${formatarPreco(pedido.valor_total)}</strong>
+      </div>
+    </div>
+  `;
+
+  const msgWhats = `Olá! Gostaria de falar sobre o pedido ${encodeURIComponent(numero)} na Dona Benta.`;
+  rodape.innerHTML = `
+    <a href="https://api.whatsapp.com/send?phone=5542999823994&text=${msgWhats}" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp" style="flex:1; min-width:200px; justify-content:center;">
+      <svg class="icone-whatsapp-svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 6px;"><path d="M11.42 9.49c-.19-.09-1.1-.54-1.27-.61s-.29-.09-.42.1-.48.6-.59.73-.21.14-.4 0a5.13 5.13 0 0 1-1.49-.92 5.25 5.25 0 0 1-1-1.29c-.11-.18 0-.28.08-.38s.18-.21.28-.32a1.39 1.39 0 0 0 .18-.31.38.38 0 0 0 0-.33c0-.09-.42-1-.58-1.37s-.3-.32-.41-.32h-.4a.72.72 0 0 0-.5.23 2.1 2.1 0 0 0-.65 1.55A3.59 3.59 0 0 0 5 8.2 8.32 8.32 0 0 0 8.19 11c.44.19.78.3 1.05.39a2.53 2.53 0 0 0 1.17.07 1.93 1.93 0 0 0 1.26-.88 1.67 1.67 0 0 0 .11-.88c-.05-.07-.17-.12-.36-.21z"></path><path d="M13.29 2.68A7.36 7.36 0 0 0 8 .5a7.44 7.44 0 0 0-6.41 11.15l-1 3.85 3.94-1a7.4 7.4 0 0 0 3.55.9H8a7.44 7.44 0 0 0 5.29-12.72zM8 14.12a6.12 6.12 0 0 1-3.15-.87l-.22-.13-2.34.61.62-2.28-.14-.23a6.18 6.18 0 0 1 9.6-7.65 6.12 6.12 0 0 1 1.81 4.37A6.19 6.19 0 0 1 8 14.12z"></path></svg>
+      <span>Falar no WhatsApp</span>
+    </a>
+    <button type="button" class="btn btn-outline" id="btnFecharModalDetalhesBtn" style="min-width:100px;">
+      Fechar
+    </button>
+  `;
+
+  document.getElementById('btnFecharModalDetalhesBtn')?.addEventListener('click', () => {
+    modal.classList.remove('aberto');
+  });
+
+  modal.classList.add('aberto');
 }
 
 // =========================================================

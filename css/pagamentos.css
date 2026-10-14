@@ -375,14 +375,32 @@
 }
 
 [data-tema="escuro"] #cardPaymentBrick_container input,
-[data-tema="escuro"] #cardPaymentBrick_container input[type="text"],
-[data-tema="escuro"] #cardPaymentBrick_container select {
+[data-tema="escuro"] #cardPaymentBrick_container input[type="text"] {
   background-color: #221a14 !important;
   background: #221a14 !important;
   color: #f6efe8 !important;
   -webkit-text-fill-color: #f6efe8 !important;
   border: 1px solid rgba(242, 166, 90, 0.28) !important;
   border-radius: 8px !important;
+}
+
+[data-tema="escuro"] #cardPaymentBrick_container select {
+  background-color: #221a14 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23f5af66' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 13px !important;
+  padding-right: 28px !important;
+  padding-left: 10px !important;
+  min-width: 78px !important;
+  color: #f6efe8 !important;
+  -webkit-text-fill-color: #f6efe8 !important;
+  border: 1px solid rgba(242, 166, 90, 0.28) !important;
+  border-radius: 8px !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  cursor: pointer !important;
 }
 
 [data-tema="escuro"] #cardPaymentBrick_container input:focus,
@@ -409,13 +427,31 @@
 }
 
 #cardPaymentBrick_container input,
-#cardPaymentBrick_container input[type="text"],
-#cardPaymentBrick_container select {
+#cardPaymentBrick_container input[type="text"] {
   background-color: #ffffff;
   color: #1a1a1a;
   -webkit-text-fill-color: #1a1a1a;
   border: 1px solid #dcdcdc;
   border-radius: 8px;
+}
+
+#cardPaymentBrick_container select {
+  background-color: #ffffff !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b4226' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 13px !important;
+  padding-right: 28px !important;
+  padding-left: 10px !important;
+  min-width: 78px !important;
+  color: #1a1a1a !important;
+  -webkit-text-fill-color: #1a1a1a !important;
+  border: 1px solid #dcdcdc !important;
+  border-radius: 8px !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  cursor: pointer !important;
 }
 
 #cardPaymentBrick_container input::placeholder {

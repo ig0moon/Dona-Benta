@@ -14,6 +14,30 @@ let horarioSelecionado = null;
 let tipoEntrega = 'retirada';
 let horariosOcupados = {};
 
+let PERFIL_CLIENTE = null;
+
+function montarEnderecoFormatado(perfil) {
+  if (!perfil) return '';
+  const partes = [];
+  if (perfil.logradouro) {
+    let rua = perfil.logradouro.trim();
+    if (perfil.numero && perfil.numero.trim()) {
+      rua += `, nº ${perfil.numero.trim()}`;
+    }
+    partes.push(rua);
+  }
+  if (perfil.complemento && perfil.complemento.trim()) {
+    partes.push(perfil.complemento.trim());
+  }
+  if (perfil.bairro && perfil.bairro.trim()) {
+    partes.push(`Bairro ${perfil.bairro.trim()}`);
+  }
+  if (perfil.cep && perfil.cep.trim()) {
+    partes.push(`CEP ${perfil.cep.trim()}`);
+  }
+  return partes.join(' - ');
+}
+
 async function iniciarCheckout() {
   const carrinho = typeof lerCarrinho === 'function' ? lerCarrinho() : [];
   const layout = document.getElementById('checkoutLayout');
@@ -46,6 +70,12 @@ async function iniciarCheckout() {
       </div>
     `;
     return;
+  }
+
+  try {
+    PERFIL_CLIENTE = typeof perfilAtual === 'function' ? await perfilAtual() : null;
+  } catch (e) {
+    console.warn('Erro ao carregar perfil do cliente:', e);
   }
 
   await carregarHorariosOcupados();
@@ -167,15 +197,42 @@ function renderizarCheckout() {
   }
 }
 
-function selecionarTipoEntrega(tipo) {
+async function selecionarTipoEntrega(tipo) {
   tipoEntrega = tipo;
   const optRetirada = document.getElementById('opcaoRetirada');
   const optEntrega = document.getElementById('opcaoEntrega');
   const campoEnd = document.getElementById('campoEndereco');
+  const inputEnd = document.getElementById('enderecoEntrega');
 
   if (optRetirada) optRetirada.classList.toggle('selecionada', tipo === 'retirada');
   if (optEntrega) optEntrega.classList.toggle('selecionada', tipo === 'entrega');
   if (campoEnd) campoEnd.style.display = tipo === 'entrega' ? 'block' : 'none';
+
+  if (tipo === 'entrega') {
+    if (!PERFIL_CLIENTE && typeof perfilAtual === 'function') {
+      try {
+        PERFIL_CLIENTE = await perfilAtual();
+      } catch (e) {
+        console.warn('Erro ao obter perfil para preencher endereço:', e);
+      }
+    }
+
+    if (inputEnd && (!inputEnd.value || !inputEnd.value.trim()) && PERFIL_CLIENTE) {
+      const enderecoPronto = montarEnderecoFormatado(PERFIL_CLIENTE);
+      if (enderecoPronto) {
+        inputEnd.value = enderecoPronto;
+        let badge = document.getElementById('avisoEnderecoPreenchido');
+        if (!badge && campoEnd) {
+          badge = document.createElement('div');
+          badge.id = 'avisoEnderecoPreenchido';
+          badge.style.cssText = 'font-size:0.83rem; color:var(--dourado-escuro); margin-top:6px; display:flex; align-items:center; gap:5px; font-weight:500;';
+          badge.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">verified</span> Endereço preenchido automaticamente com seus dados cadastrados.';
+          campoEnd.appendChild(badge);
+        }
+      }
+    }
+    inputEnd?.focus();
+  }
 }
 
 function mudarMes(delta) {
