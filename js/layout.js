@@ -71,7 +71,9 @@ function alternarTema() {
   const atual = obterTemaAtual();
   const novo = atual === 'escuro' ? 'claro' : 'escuro';
   aplicarTema(novo);
-  if (typeof mostrarToast === 'function') {
+  const gavetaAberta = document.body.classList.contains('drawer-aberto') ||
+                       document.querySelector('.nav-drawer.aberto') !== null;
+  if (!gavetaAberta && typeof mostrarToast === 'function') {
     mostrarToast(novo === 'escuro' ? 'Modo escuro ativado' : 'Modo claro ativado', 'info');
   }
 }
@@ -349,7 +351,7 @@ function montarFooter() {
           <li><span class="material-symbols-outlined">location_on</span> Rua Padre Anacleto, 1168 - Nova Rússia</li>
           <li><span class="material-symbols-outlined">schedule</span> Seg a Sáb, 8h às 19h</li>
           <li>${ICONE_WHATSAPP_SVG}<a href="https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Vim%20pelo%20site%20Dona%20Benta%20e%20gostaria%20de%20saber%20mais%20sobre." target="_blank" rel="noopener noreferrer">(42) 99982-3994</a></li>
-          <li><span class="material-symbols-outlined">mail</span> contato@donabenta.com.br</li>
+          <li><span class="material-symbols-outlined">mail</span><a href="mailto:contato@donabenta.com.br" class="footer-link-email">contato@donabenta.com.br</a></li>
         </ul>
       </div>
     </div>

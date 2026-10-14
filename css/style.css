@@ -479,9 +479,10 @@ select:focus-visible {
 }
 
 .nav-drawer-rodape {
-  padding: 16px;
+  padding: 16px 16px max(env(safe-area-inset-bottom, 24px), 24px);
   border-top: 1px solid rgba(107, 66, 38, 0.08);
   background: var(--branco);
+  flex-shrink: 0;
 }
 
 .btn-whatsapp-drawer {
@@ -514,6 +515,12 @@ select:focus-visible {
 body.drawer-aberto {
   overflow: hidden !important;
   touch-action: none !important;
+}
+
+body.drawer-aberto .toast {
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
 }
 
 body.drawer-aberto > *:not(.nav-drawer):not(.nav-drawer-overlay) {
@@ -1039,6 +1046,15 @@ input:disabled {
   width: calc(100% - 48px);
   font-size: 0.92rem;
   font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .toast {
+    z-index: 950;
+    bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+    right: 16px;
+    width: calc(100% - 32px);
+  }
 }
 
 .toast.mostrar {
@@ -3450,14 +3466,41 @@ td {
 @media (max-width: 860px) {
   .footer-conteudo {
     grid-template-columns: 1fr 1fr;
-    gap: 32px;
+    gap: 32px 24px;
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 580px) {
   .footer-conteudo {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px 16px;
+    padding: 0 16px 36px;
+  }
+
+  .footer-conteudo > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .footer-col:last-child {
+    grid-column: 1 / -1;
+    margin-top: 6px;
+    padding-top: 18px;
+    border-top: 1px dashed rgba(107, 66, 38, 0.14);
+  }
+
+  [data-tema="escuro"] .footer-col:last-child {
+    border-top-color: rgba(245, 175, 102, 0.16);
+  }
+
+  .footer-contato {
+    display: grid;
     grid-template-columns: 1fr;
-    gap: 28px;
+    gap: 12px;
+  }
+
+  .footer-contato li {
+    max-width: 100%;
+    margin-bottom: 0;
   }
 }
 
@@ -4768,4 +4811,211 @@ html, body, .header, .nav-drawer, .cartao, .modal-cartao, .campo input, .campo s
   background-color: #221a14 !important;
   border-color: rgba(242, 166, 90, 0.28) !important;
   color: var(--texto) !important;
+}
+
+/* ============================================
+   BOTÃO DE PAGAMENTO SEM EMOJI E FIXO
+   ============================================ */
+.btn-pagamento-financeiro {
+  min-width: 84px !important;
+  text-align: center !important;
+  justify-content: center !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  border: none !important;
+  font-weight: 600 !important;
+  transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.2s ease !important;
+}
+
+.btn-pagamento-financeiro:active {
+  transform: scale(0.96);
+}
+
+/* ============================================
+   ITENS DO PEDIDO RESPONSIVOS & DETALHADOS
+   ============================================ */
+.detalhe-itens-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(107, 66, 38, 0.12);
+  border-radius: var(--raio-sm);
+}
+
+[data-tema="escuro"] .detalhe-itens-scroll {
+  border-color: rgba(245, 175, 102, 0.18);
+}
+
+.detalhe-item-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--creme-escuro);
+}
+
+.detalhe-item-img-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(107, 66, 38, 0.08);
+  color: var(--marrom);
+  flex-shrink: 0;
+}
+
+[data-tema="escuro"] .detalhe-item-img-placeholder {
+  background: rgba(245, 175, 102, 0.1);
+  color: var(--dourado);
+}
+
+/* ============================================
+   RELATÓRIO FINANCEIRO ELABORADO
+   ============================================ */
+.relatorio-financeiro-container {
+  background: #ffffff;
+  color: #1a1a1a;
+  padding: 32px 36px;
+  border-radius: var(--raio-md);
+  font-family: var(--fonte-corpo);
+  line-height: 1.5;
+}
+
+.relatorio-cabecalho-bloco {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #6b4226;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.relatorio-empresa-titulo {
+  font-family: var(--fonte-display);
+  font-size: 1.6rem;
+  color: #6b4226;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.relatorio-subtitulo {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.relatorio-kpis-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.relatorio-kpi-item {
+  background: #fbf7f2;
+  border: 1px solid #e8dbce;
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: center;
+}
+
+.relatorio-kpi-valor {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #6b4226;
+  font-family: var(--fonte-display);
+}
+
+.relatorio-kpi-rotulo {
+  font-size: 0.75rem;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.relatorio-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  margin-bottom: 28px;
+}
+
+.relatorio-tabela th {
+  background: #6b4226;
+  color: #ffffff;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.relatorio-tabela td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #e5d8cc;
+  color: #2b2b2b;
+}
+
+.relatorio-tabela tr:nth-child(even) td {
+  background: #faf6f1;
+}
+
+.relatorio-rodape-assinatura {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  font-size: 0.82rem;
+  color: #666;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* ============================================
+   IMPRESSÃO PRECISA DO RELATÓRIO (@media print)
+   ============================================ */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #modalRelatorioFinanceiro,
+  #modalRelatorioFinanceiro * {
+    visibility: visible !important;
+  }
+  #modalRelatorioFinanceiro {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    display: block !important;
+    z-index: 999999 !important;
+  }
+  #modalRelatorioFinanceiro .modal-cartao {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+  .no-print,
+  .modal-fechar,
+  #fecharModalRelatorio,
+  #btnImprimirRelatorioAcao,
+  #btnFecharModalRelatorioAcao {
+    display: none !important;
+  }
 }
