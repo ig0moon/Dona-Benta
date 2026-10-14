@@ -941,10 +941,7 @@ async function renderizarPainelAdmin(area, perfil) {
         <button class="btn btn-outline admin-tab-btn ativo" data-tab="visao-geral">Visão geral</button>
         <button class="btn btn-outline admin-tab-btn" data-tab="produtos">Produtos</button>
         <button class="btn btn-outline admin-tab-btn" data-tab="pedidos-admin">Gerenciar Pedidos</button>
-        <button class="btn btn-outline admin-tab-btn" data-tab="pagamentos-admin">
-          <span class="material-symbols-outlined" style="font-size:17px; vertical-align:middle; margin-right:4px;">paid</span>
-          Histórico Financeiro
-        </button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="pagamentos-admin">Histórico Financeiro</button>
       </div>
     </div>
     <div id="adminConteudoSecao"></div>
@@ -1319,7 +1316,12 @@ function renderizarPedidosAdmin(area) {
         mostrarToast(novoEstadoPago ? 'Pedido marcado como Pago!' : 'Pedido marcado como Pendente!', 'sucesso');
         const pedido = PEDIDOS_ADMIN.find(p => p.id === pedidoId);
         if (pedido) pedido.pago = novoEstadoPago;
-        renderizarPedidosAdmin(area);
+
+        btn.dataset.pago = String(novoEstadoPago);
+        btn.className = `badge btn-pagamento ${novoEstadoPago ? 'badge-sucesso' : 'badge-alerta'}`;
+        btn.textContent = novoEstadoPago ? 'Pago' : 'Pendente';
+        btn.style.opacity = '1';
+        btn.disabled = false;
       }
     });
   });
@@ -1334,6 +1336,9 @@ function renderizarPedidosAdmin(area) {
 // SEÇÃO: HISTÓRICO DE COMPRAS E PAGAMENTOS (PAINEL ADMIN)
 // =========================================================
 function renderizarPagamentosAdmin(area) {
+  const pixSvg = window.ICONE_PIX_SVG || '<span class="material-symbols-outlined">qr_code_2</span>';
+  const whatsSvg = window.ICONE_WHATSAPP_SVG || '<span class="material-symbols-outlined">chat</span>';
+
   // Cálculo de KPIs
   const pagos = PEDIDOS_ADMIN.filter(p => p.pago === true);
   const totalFaturado = pagos.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
@@ -1351,24 +1356,24 @@ function renderizarPagamentosAdmin(area) {
     <!-- KPIs Financeiros -->
     <div class="stats-grade" style="margin-bottom: 24px;">
       <div class="cartao stat-cartao">
-        <span class="material-symbols-outlined" style="color:var(--sucesso);">paid</span>
-        <div class="stat-valor">${formatarPreco(totalFaturado)}</div>
-        <div class="stat-rotulo">Faturamento Pago (${pagos.length} vendas)</div>
+        <span class="material-symbols-outlined" style="color:var(--sucesso);">payments</span>
+        <div class="stat-valor" id="kpiTotalFaturado">${formatarPreco(totalFaturado)}</div>
+        <div class="stat-rotulo" id="kpiRotuloFaturado">Faturamento Pago (${pagos.length} vendas)</div>
       </div>
       <div class="cartao stat-cartao">
-        <span class="material-symbols-outlined" style="color:#00a650;">qr_code_2</span>
-        <div class="stat-valor">${formatarPreco(totalPix)}</div>
-        <div class="stat-rotulo">Recebido via Pix (${pagosPix.length})</div>
+        <span style="display:inline-flex; align-items:center; width:26px; height:26px; color:#00a650;">${pixSvg}</span>
+        <div class="stat-valor" id="kpiTotalPix">${formatarPreco(totalPix)}</div>
+        <div class="stat-rotulo" id="kpiRotuloPix">Recebido via Pix (${pagosPix.length})</div>
       </div>
       <div class="cartao stat-cartao">
         <span class="material-symbols-outlined" style="color:var(--dourado-escuro);">credit_card</span>
-        <div class="stat-valor">${formatarPreco(totalCartao)}</div>
-        <div class="stat-rotulo">Recebido via Cartão (${pagosCartao.length})</div>
+        <div class="stat-valor" id="kpiTotalCartao">${formatarPreco(totalCartao)}</div>
+        <div class="stat-rotulo" id="kpiRotuloCartao">Recebido via Cartão (${pagosCartao.length})</div>
       </div>
       <div class="cartao stat-cartao">
         <span class="material-symbols-outlined" style="color:var(--alerta);">hourglass_top</span>
-        <div class="stat-valor">${formatarPreco(totalPendente)}</div>
-        <div class="stat-rotulo">Aguardando Pagamento (${pendentes.length})</div>
+        <div class="stat-valor" id="kpiTotalPendente">${formatarPreco(totalPendente)}</div>
+        <div class="stat-rotulo" id="kpiRotuloPendente">Aguardando Pagamento (${pendentes.length})</div>
       </div>
     </div>
 
@@ -1380,8 +1385,8 @@ function renderizarPagamentosAdmin(area) {
           <p style="color:var(--marrom-claro); font-size:0.88rem; margin:4px 0 0;">Relatório consolidado de transações, faturamento e conferência financeira.</p>
         </div>
         <button class="btn btn-outline btn-sm" id="btnImprimirFinanceiro" style="display:inline-flex; align-items:center; gap:6px;">
-          <span class="material-symbols-outlined" style="font-size:18px;">print</span>
-          Imprimir Relatório
+          <span class="material-symbols-outlined" style="font-size:18px;">receipt_long</span>
+          Gerar Relatório Completo
         </button>
       </div>
 
@@ -1419,6 +1424,37 @@ function renderizarPagamentosAdmin(area) {
     </div>
   `;
 
+  function atualizarKPIsFinanceiro() {
+    const pagosAtual = PEDIDOS_ADMIN.filter(p => p.pago === true);
+    const totalFaturadoAtual = pagosAtual.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+    const pagosPixAtual = pagosAtual.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
+    const totalPixAtual = pagosPixAtual.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+    const pagosCartaoAtual = pagosAtual.filter(p => (p.forma_pagamento || '').toLowerCase().includes('cart'));
+    const totalCartaoAtual = pagosCartaoAtual.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+    const pendentesAtual = PEDIDOS_ADMIN.filter(p => !p.pago);
+    const totalPendenteAtual = pendentesAtual.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+
+    const elFat = document.getElementById('kpiTotalFaturado');
+    if (elFat) elFat.textContent = formatarPreco(totalFaturadoAtual);
+    const elRotFat = document.getElementById('kpiRotuloFaturado');
+    if (elRotFat) elRotFat.textContent = `Faturamento Pago (${pagosAtual.length} vendas)`;
+
+    const elPix = document.getElementById('kpiTotalPix');
+    if (elPix) elPix.textContent = formatarPreco(totalPixAtual);
+    const elRotPix = document.getElementById('kpiRotuloPix');
+    if (elRotPix) elRotPix.textContent = `Recebido via Pix (${pagosPixAtual.length})`;
+
+    const elCart = document.getElementById('kpiTotalCartao');
+    if (elCart) elCart.textContent = formatarPreco(totalCartaoAtual);
+    const elRotCart = document.getElementById('kpiRotuloCartao');
+    if (elRotCart) elRotCart.textContent = `Recebido via Cartão (${pagosCartaoAtual.length})`;
+
+    const elPend = document.getElementById('kpiTotalPendente');
+    if (elPend) elPend.textContent = formatarPreco(totalPendenteAtual);
+    const elRotPend = document.getElementById('kpiRotuloPendente');
+    if (elRotPend) elRotPend.textContent = `Aguardando Pagamento (${pendentesAtual.length})`;
+  }
+
   function renderLinhasFinanceiro() {
     const termo = (document.getElementById('filtroTextoFinanceiro')?.value || '').toLowerCase().trim();
     const filtroStatus = document.getElementById('filtroStatusPagamento')?.value || 'todos';
@@ -1453,9 +1489,10 @@ function renderizarPagamentosAdmin(area) {
       const ehPix = (p.forma_pagamento || '').toLowerCase().includes('pix');
       const dataCriacao = p.criado_em ? formatarDataHora(p.criado_em) : `${formatarData(p.data_agendada)} às ${p.horario_agendado || ''}`;
       const statusInfo = STATUS_INFO[p.status] || STATUS_INFO.aguardando_confirmacao;
+      const telLimpo = (p.perfis?.telefone || '').replace(/\D/g, '');
 
       return `
-        <tr>
+        <tr id="linhaFinanceiro-${escapeHtml(p.id)}">
           <td>
             <span class="badge" style="background:var(--creme-escuro); color:var(--marrom); font-weight:700; font-size:0.75rem;">${escapeHtml(numSeq)}</span><br>
             <span style="font-size:0.78rem; color:var(--marrom-claro);">${escapeHtml(dataCriacao)}</span>
@@ -1468,14 +1505,17 @@ function renderizarPagamentosAdmin(area) {
             <strong style="font-size:0.95rem; color:var(--dourado-escuro); font-family:var(--fonte-display);">${formatarPreco(p.valor_total)}</strong>
           </td>
           <td>
-            <span class="badge" style="background:rgba(107, 66, 38, 0.08); color:var(--marrom); display:inline-flex; align-items:center; gap:4px; font-size:0.78rem;">
-              <span class="material-symbols-outlined" style="font-size:15px;">${ehPix ? 'qr_code_2' : 'credit_card'}</span>
+            <span class="badge" style="background:rgba(107, 66, 38, 0.08); color:var(--marrom); display:inline-flex; align-items:center; gap:5px; font-size:0.78rem;">
+              ${ehPix
+                ? `<span style="display:inline-flex; align-items:center; width:15px; height:15px;">${pixSvg}</span>`
+                : '<span class="material-symbols-outlined" style="font-size:15px;">credit_card</span>'
+              }
               ${escapeHtml(p.forma_pagamento || 'Pix')}
             </span>
           </td>
           <td>
-            <button class="badge btn-pagamento-financeiro ${p.pago ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${Boolean(p.pago)}" title="Clique para alternar status do pagamento" style="cursor:pointer; border:none;">
-              ${p.pago ? '✓ Pago' : '⏳ Pendente'}
+            <button class="badge btn-pagamento-financeiro ${p.pago ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${Boolean(p.pago)}" title="Clique para alternar status do pagamento">
+              ${p.pago ? 'Pago' : 'Pendente'}
             </button>
           </td>
           <td>
@@ -1487,9 +1527,9 @@ function renderizarPagamentosAdmin(area) {
                 <span class="material-symbols-outlined" style="font-size:15px;">receipt_long</span>
                 Detalhes
               </button>
-              ${p.perfis?.telefone ? `
-                <a href="https://api.whatsapp.com/send?phone=55${p.perfis.telefone.replace(/\D/g, '')}&text=Ol%C3%A1%20${encodeURIComponent(p.perfis.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numSeq)}." target="_blank" rel="noopener noreferrer" class="acao-icone-btn" title="Conversar no WhatsApp" style="color:#25D366;">
-                  <span class="material-symbols-outlined" style="font-size:18px;">chat</span>
+              ${telLimpo ? `
+                <a href="https://api.whatsapp.com/send?phone=55${telLimpo}&text=Ol%C3%A1%20${encodeURIComponent(p.perfis?.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numSeq)}." target="_blank" rel="noopener noreferrer" class="acao-icone-btn" title="Conversar no WhatsApp" style="color:#25D366; display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:50%; background:rgba(37,211,102,0.1);">
+                  <span style="display:inline-flex; align-items:center; width:17px; height:17px;">${whatsSvg}</span>
                 </a>
               ` : ''}
             </div>
@@ -1520,7 +1560,15 @@ function renderizarPagamentosAdmin(area) {
           mostrarToast(novoEstadoPago ? 'Pagamento marcado como Pago!' : 'Pagamento marcado como Pendente!', 'sucesso');
           const pedido = PEDIDOS_ADMIN.find(p => p.id === pedidoId);
           if (pedido) pedido.pago = novoEstadoPago;
-          renderizarPagamentosAdmin(area);
+
+          // Atualização direta e suave sem saltos de layout
+          btn.dataset.pago = String(novoEstadoPago);
+          btn.className = `badge btn-pagamento-financeiro ${novoEstadoPago ? 'badge-sucesso' : 'badge-alerta'}`;
+          btn.textContent = novoEstadoPago ? 'Pago' : 'Pendente';
+          btn.style.opacity = '1';
+          btn.disabled = false;
+
+          atualizarKPIsFinanceiro();
         }
       });
     });
@@ -1529,9 +1577,197 @@ function renderizarPagamentosAdmin(area) {
   document.getElementById('filtroTextoFinanceiro')?.addEventListener('input', renderLinhasFinanceiro);
   document.getElementById('filtroStatusPagamento')?.addEventListener('change', renderLinhasFinanceiro);
   document.getElementById('filtroMetodoPagamento')?.addEventListener('change', renderLinhasFinanceiro);
-  document.getElementById('btnImprimirFinanceiro')?.addEventListener('click', () => window.print());
+  document.getElementById('btnImprimirFinanceiro')?.addEventListener('click', () => {
+    const termo = (document.getElementById('filtroTextoFinanceiro')?.value || '').trim();
+    const filtroStatus = document.getElementById('filtroStatusPagamento')?.value || 'todos';
+    const filtroMetodo = document.getElementById('filtroMetodoPagamento')?.value || 'todos';
+    abrirRelatorioFinanceiroElaborado({ termo, filtroStatus, filtroMetodo });
+  });
 
   renderLinhasFinanceiro();
+}
+
+// =========================================================
+// RELATÓRIO FINANCEIRO ELABORADO (MODAL & IMPRESSÃO PRECISA)
+// =========================================================
+function injectarModalRelatorioFinanceiro() {
+  if (document.getElementById('modalRelatorioFinanceiro')) return;
+
+  const modalHTML = `
+    <div class="modal-overlay" id="modalRelatorioFinanceiro">
+      <div class="modal-cartao" style="max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-cabecalho no-print">
+          <div>
+            <h3 style="margin:0; font-size:1.25rem; display:flex; align-items:center; gap:8px;">
+              <span class="material-symbols-outlined" style="color:var(--dourado-escuro);">receipt_long</span>
+              Relatório Contábil & Financeiro
+            </h3>
+            <span style="font-size:0.82rem; color:var(--marrom-claro);">Visualização executiva para conferência de caixa e prestação de contas.</span>
+          </div>
+          <button class="modal-fechar" id="fecharModalRelatorio" aria-label="Fechar"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div style="padding: 24px; overflow-y: auto; flex: 1;" id="conteudoRelatorioFinanceiro"></div>
+        <div class="modal-rodape no-print" style="padding: 14px 24px; border-top: 1px solid rgba(107, 66, 38, 0.1); display:flex; gap:12px; justify-content:flex-end; background:var(--branco);">
+          <button type="button" class="btn btn-primario" id="btnImprimirRelatorioAcao" style="display:inline-flex; align-items:center; gap:6px;">
+            <span class="material-symbols-outlined" style="font-size:18px;">print</span>
+            Imprimir / Salvar em PDF
+          </button>
+          <button type="button" class="btn btn-outline" id="btnFecharModalRelatorioAcao">
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+  const fechar = () => {
+    const modal = document.getElementById('modalRelatorioFinanceiro');
+    if (modal) modal.classList.remove('aberto');
+  };
+
+  document.getElementById('fecharModalRelatorio')?.addEventListener('click', fechar);
+  document.getElementById('btnFecharModalRelatorioAcao')?.addEventListener('click', fechar);
+  document.getElementById('btnImprimirRelatorioAcao')?.addEventListener('click', () => window.print());
+  document.getElementById('modalRelatorioFinanceiro')?.addEventListener('click', (e) => {
+    if (e.target.id === 'modalRelatorioFinanceiro') fechar();
+  });
+}
+
+function abrirRelatorioFinanceiroElaborado(filtros = {}) {
+  injectarModalRelatorioFinanceiro();
+
+  const modal = document.getElementById('modalRelatorioFinanceiro');
+  const corpo = document.getElementById('conteudoRelatorioFinanceiro');
+  if (!modal || !corpo) return;
+
+  let lista = Array.isArray(PEDIDOS_ADMIN) ? [...PEDIDOS_ADMIN] : [];
+
+  if (filtros.filtroStatus === 'pago') lista = lista.filter(p => p.pago === true);
+  else if (filtros.filtroStatus === 'pendente') lista = lista.filter(p => !p.pago);
+
+  if (filtros.filtroMetodo === 'pix') lista = lista.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
+  else if (filtros.filtroMetodo === 'cartao') lista = lista.filter(p => (p.forma_pagamento || '').toLowerCase().includes('cart'));
+
+  if (filtros.termo) {
+    lista = lista.filter(p => {
+      const num = (p.numero_pedido || '').toLowerCase();
+      const nome = (p.perfis?.nome || '').toLowerCase();
+      const tel = (p.perfis?.telefone || '').toLowerCase();
+      return num.includes(filtros.termo.toLowerCase()) || nome.includes(filtros.termo.toLowerCase()) || tel.includes(filtros.termo.toLowerCase());
+    });
+  }
+
+  const pagos = lista.filter(p => p.pago === true);
+  const totalFaturado = pagos.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+  const pagosPix = pagos.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
+  const totalPix = pagosPix.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+  const pagosCartao = pagos.filter(p => (p.forma_pagamento || '').toLowerCase().includes('cart'));
+  const totalCartao = pagosCartao.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+  const pendentes = lista.filter(p => !p.pago);
+  const totalPendente = pendentes.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+  const ticketMedio = pagos.length > 0 ? (totalFaturado / pagos.length) : 0;
+
+  const dataEmissao = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const horaEmissao = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  corpo.innerHTML = `
+    <div id="relatorioFinanceiroDocumento" class="relatorio-financeiro-container">
+      <!-- Cabeçalho Oficial -->
+      <div class="relatorio-cabecalho-bloco">
+        <div>
+          <h2 class="relatorio-empresa-titulo">Dona Benta — Confeitaria & Padaria Artesanal</h2>
+          <p class="relatorio-subtitulo">
+            Rua Padre Anacleto, 1168 - Nova Rússia, Ponta Grossa - PR<br>
+            Telefone / WhatsApp: (42) 99982-3994 · E-mail: contato@donabenta.com.br
+          </p>
+        </div>
+        <div style="text-align:right;">
+          <strong style="display:block; font-size:1rem; color:#6b4226; text-transform:uppercase;">Demonstrativo Financeiro</strong>
+          <span style="font-size:0.8rem; color:#666;">Emissão: ${dataEmissao} às ${horaEmissao}</span><br>
+          <span style="font-size:0.78rem; color:#888;">Escopo: ${lista.length} lançamentos consolidados</span>
+        </div>
+      </div>
+
+      <!-- Resumo Executivo -->
+      <div class="relatorio-kpis-grade">
+        <div class="relatorio-kpi-item">
+          <div class="relatorio-kpi-valor" style="color:#2b7c4d;">${formatarPreco(totalFaturado)}</div>
+          <div class="relatorio-kpi-rotulo">Faturamento Pago (${pagos.length})</div>
+        </div>
+        <div class="relatorio-kpi-item">
+          <div class="relatorio-kpi-valor" style="color:#00a650;">${formatarPreco(totalPix)}</div>
+          <div class="relatorio-kpi-rotulo">Pix Recebido (${pagosPix.length})</div>
+        </div>
+        <div class="relatorio-kpi-item">
+          <div class="relatorio-kpi-valor" style="color:#c57a2b;">${formatarPreco(totalCartao)}</div>
+          <div class="relatorio-kpi-rotulo">Cartão Recebido (${pagosCartao.length})</div>
+        </div>
+        <div class="relatorio-kpi-item">
+          <div class="relatorio-kpi-valor" style="color:#c54242;">${formatarPreco(totalPendente)}</div>
+          <div class="relatorio-kpi-rotulo">Aguardando Pagamento (${pendentes.length})</div>
+        </div>
+        <div class="relatorio-kpi-item">
+          <div class="relatorio-kpi-valor">${formatarPreco(ticketMedio)}</div>
+          <div class="relatorio-kpi-rotulo">Ticket Médio por Venda</div>
+        </div>
+      </div>
+
+      <!-- Tabela Financeira Analítica -->
+      <table class="relatorio-tabela">
+        <thead>
+          <tr>
+            <th>Nº Pedido</th>
+            <th>Data / Agendamento</th>
+            <th>Cliente & Contato</th>
+            <th>Modalidade</th>
+            <th>Forma</th>
+            <th>Status Pgto</th>
+            <th style="text-align:right;">Total (R$)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${lista.length > 0 ? lista.map((p, idx) => {
+            const numSeq = p.numero_pedido || (p.id ? `DB-${String(PEDIDOS_ADMIN.length - idx).padStart(2, '0')}` : 'DB-01');
+            const dataAgend = p.data_agendada ? `${formatarData(p.data_agendada)} ${p.horario_agendado || ''}` : formatarDataHora(p.criado_em);
+            return `
+              <tr>
+                <td><strong>${escapeHtml(numSeq)}</strong></td>
+                <td>${escapeHtml(dataAgend)}</td>
+                <td>
+                  <strong>${escapeHtml(p.perfis?.nome || 'Cliente')}</strong><br>
+                  <span style="font-size:0.76rem; color:#666;">${escapeHtml(p.perfis?.telefone || 'Sem telefone')}</span>
+                </td>
+                <td>${p.tipo_entrega === 'entrega' ? 'Entrega em domicílio' : 'Retirada na loja'}</td>
+                <td>${escapeHtml(p.forma_pagamento || 'Pix')}</td>
+                <td>
+                  <strong style="color: ${p.pago ? '#2b7c4d' : '#c54242'}; font-size:0.82rem;">
+                    ${p.pago ? 'PAGO' : 'PENDENTE'}
+                  </strong>
+                </td>
+                <td style="text-align:right; font-weight:700;">${formatarPreco(p.valor_total)}</td>
+              </tr>
+            `;
+          }).join('') : '<tr><td colspan="7" style="text-align:center; padding:16px;">Nenhum registro encontrado.</td></tr>'}
+        </tbody>
+      </table>
+
+      <!-- Rodapé de Auditoria e Assinatura -->
+      <div class="relatorio-rodape-assinatura">
+        <div>
+          <span style="display:block; font-weight:600; color:#333;">Dona Benta Sistema de Gestão</span>
+          <span>Relatório gerado em ambiente seguro · Conferência interna da confeitaria</span>
+        </div>
+        <div style="text-align:center; min-width: 250px;">
+          <div style="border-top: 1px solid #333; padding-top: 6px; margin-top: 24px;">
+            <span>Assinatura do Responsável</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  modal.classList.add('aberto');
 }
 
 // =========================================================
@@ -1542,7 +1778,7 @@ function injectarModalDetalhesPedido() {
 
   const modalHTML = `
     <div class="modal-overlay" id="modalDetalhesPedido">
-      <div class="modal-cartao modal-detalhes-cartao" style="max-width: 650px; width: 100%; max-height: 88vh; display: flex; flex-direction: column;">
+      <div class="modal-cartao modal-detalhes-cartao" style="max-width: 680px; width: 100%; max-height: 88vh; display: flex; flex-direction: column;">
         <div class="modal-cabecalho">
           <div>
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;" id="modalDetalhesBadges"></div>
@@ -1586,13 +1822,38 @@ function abrirModalDetalhesPedido(pedidoId) {
   if (!modal || !corpo) return;
 
   const statusInfo = STATUS_INFO[pedido.status] || STATUS_INFO.aguardando_confirmacao;
-  const numero = pedido.numero_pedido || (pedido.id ? `DB-${String(pedido.id).slice(0, 4).toUpperCase()}` : 'DB-01');
-  const itens = pedido.itens_pedido || pedido.itens || [];
 
+  // Cálculo rigoroso do código sequencial do pedido idêntico ao das tabelas
+  let numero = pedido.numero_pedido;
+  if (!numero) {
+    if (typeof PEDIDOS_ADMIN !== 'undefined' && Array.isArray(PEDIDOS_ADMIN)) {
+      const idx = PEDIDOS_ADMIN.findIndex(p => p.id === pedido.id);
+      if (idx !== -1) {
+        numero = `DB-${String(PEDIDOS_ADMIN.length - idx).padStart(2, '0')}`;
+      }
+    }
+    if (!numero && typeof MEUS_PEDIDOS_CACHE !== 'undefined' && Array.isArray(MEUS_PEDIDOS_CACHE)) {
+      const idx = MEUS_PEDIDOS_CACHE.findIndex(p => p.id === pedido.id);
+      if (idx !== -1) {
+        numero = `DB-${String(MEUS_PEDIDOS_CACHE.length - idx).padStart(2, '0')}`;
+      }
+    }
+    if (!numero) {
+      numero = 'DB-01';
+    }
+  }
+
+  const itens = pedido.itens_pedido || pedido.itens || [];
+  const telClienteLimpo = (pedido.perfis?.telefone || '').replace(/\D/g, '');
+  const telClienteFormatado = pedido.perfis?.telefone || '';
+  const pixSvg = window.ICONE_PIX_SVG || '<span class="material-symbols-outlined">qr_code_2</span>';
+  const whatsSvg = window.ICONE_WHATSAPP_SVG || '<span class="material-symbols-outlined">chat</span>';
+
+  // Badges sem emojis
   badgesArea.innerHTML = `
     <span class="badge" style="background:var(--creme-escuro); color:var(--marrom); font-weight:700; font-size:0.82rem;">${escapeHtml(numero)}</span>
     <span class="badge ${statusInfo.classe}">${escapeHtml(statusInfo.rotulo)}</span>
-    <span class="badge ${pedido.pago ? 'badge-sucesso' : 'badge-alerta'}">${pedido.pago ? '✓ Pagamento Confirmado' : '⏳ Aguardando Pagamento'}</span>
+    <span class="badge ${pedido.pago ? 'badge-sucesso' : 'badge-alerta'}">${pedido.pago ? 'Pagamento Confirmado' : 'Aguardando Pagamento'}</span>
   `;
 
   document.getElementById('modalDetalhesTitulo').textContent = `Pedido ${numero}`;
@@ -1606,7 +1867,10 @@ function abrirModalDetalhesPedido(pedidoId) {
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:0.88rem;">
         <div>
           <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Modalidade</span>
-          <strong>${pedido.tipo_entrega === 'entrega' ? '🚚 Entrega no Endereço' : '🏬 Retirada na Loja'}</strong>
+          <strong>
+            <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle; margin-right:4px;">${pedido.tipo_entrega === 'entrega' ? 'local_shipping' : 'storefront'}</span>
+            ${pedido.tipo_entrega === 'entrega' ? 'Entrega no Endereço' : 'Retirada na Loja'}
+          </strong>
         </div>
         <div>
           <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Data & Horário</span>
@@ -1629,10 +1893,15 @@ function abrirModalDetalhesPedido(pedidoId) {
             <strong>${escapeHtml(pedido.perfis.nome)}</strong>
           </div>
         ` : ''}
-        ${pedido.perfis?.telefone ? `
+        ${telClienteFormatado ? `
           <div>
             <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Telefone do Cliente</span>
-            <strong>${escapeHtml(pedido.perfis.telefone)}</strong>
+            ${telClienteLimpo ? `
+              <a href="https://api.whatsapp.com/send?phone=55${telClienteLimpo}&text=Ol%C3%A1%20${encodeURIComponent(pedido.perfis?.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numero)}." target="_blank" rel="noopener noreferrer" style="color:#25d366; display:inline-flex; align-items:center; gap:5px; text-decoration:none; font-weight:700;">
+                <span style="display:inline-flex; align-items:center; width:16px; height:16px;">${whatsSvg}</span>
+                ${escapeHtml(telClienteFormatado)}
+              </a>
+            ` : `<strong>${escapeHtml(telClienteFormatado)}</strong>`}
           </div>
         ` : ''}
         ${pedido.criado_em ? `
@@ -1656,30 +1925,57 @@ function abrirModalDetalhesPedido(pedidoId) {
       </div>
     ` : ''}
 
+    <!-- Seção de Itens Totalmente Detalhada & com Rolagem Touch -->
     <div class="detalhe-secao-bloco">
       <h4 style="font-size:0.95rem; margin-bottom:12px; color:var(--marrom); display:flex; align-items:center; gap:6px;">
         <span class="material-symbols-outlined" style="font-size:18px; color:var(--dourado-escuro);">shopping_bag</span>
         Itens do Pedido (${itens.length})
       </h4>
-      <div style="border:1px solid rgba(107, 66, 38, 0.12); border-radius:10px; overflow:hidden;">
-        <table class="detalhe-tabela-itens">
+      <div class="detalhe-itens-scroll">
+        <table class="detalhe-tabela-itens" style="min-width: 520px;">
           <thead>
             <tr>
-              <th>Produto</th>
-              <th style="text-align:center;">Qtd</th>
-              <th style="text-align:right;">Preço</th>
-              <th style="text-align:right;">Subtotal</th>
+              <th style="width: 50px;">Item</th>
+              <th>Descrição / Código</th>
+              <th style="text-align:center; width: 60px;">Qtd</th>
+              <th style="text-align:right; width: 90px;">Unitário</th>
+              <th style="text-align:right; width: 100px;">Subtotal</th>
             </tr>
           </thead>
           <tbody>
-            ${itens.length > 0 ? itens.map(item => `
-              <tr>
-                <td><strong>${escapeHtml(item.nome || 'Produto')}</strong></td>
-                <td style="text-align:center;">${Number(item.quantidade) || 1}</td>
-                <td style="text-align:right;">${formatarPreco(item.preco || 0)}</td>
-                <td style="text-align:right; font-weight:700;">${formatarPreco((Number(item.preco) || 0) * (Number(item.quantidade) || 1))}</td>
-              </tr>
-            `).join('') : '<tr><td colspan="4" style="text-align:center; padding:12px;">Itens sob encomenda</td></tr>'}
+            ${itens.length > 0 ? itens.map(item => {
+              const prodCatalogo = typeof PRODUTOS_ADMIN !== 'undefined' ? PRODUTOS_ADMIN.find(pr => pr.id === item.produto_id) : null;
+              const foto = item.foto_url || prodCatalogo?.foto_url || null;
+              const cat = item.categoria || prodCatalogo?.categoria || '';
+              const cod = item.produto_id ? `#${String(item.produto_id).slice(0, 8).toUpperCase()}` : '#ARTESANAL';
+              const qtd = Number(item.quantidade) || 1;
+              const precoUnit = Number(item.preco) || 0;
+              const sub = qtd * precoUnit;
+
+              return `
+                <tr>
+                  <td style="padding: 8px 10px;">
+                    ${foto ? `
+                      <img src="${escapeHtml(foto)}" alt="${escapeHtml(item.nome || 'Produto')}" class="detalhe-item-img" onerror="this.onerror=null; this.outerHTML='<div class=\\'detalhe-item-img-placeholder\\'><span class=\\'material-symbols-outlined\\' style=\\'font-size:20px;\\'>bakery_dining</span></div>';">
+                    ` : `
+                      <div class="detalhe-item-img-placeholder">
+                        <span class="material-symbols-outlined" style="font-size:20px;">bakery_dining</span>
+                      </div>
+                    `}
+                  </td>
+                  <td style="padding: 8px 10px;">
+                    <strong style="color:var(--marrom); font-size:0.92rem;">${escapeHtml(item.nome || 'Produto')}</strong>
+                    <div style="display:flex; align-items:center; gap:6px; margin-top:3px; flex-wrap:wrap;">
+                      <span style="font-size:0.75rem; color:var(--marrom-claro); font-family:monospace; background:rgba(107, 66, 38, 0.08); padding:1px 5px; border-radius:4px;">${escapeHtml(cod)}</span>
+                      ${cat ? `<span style="font-size:0.75rem; color:var(--dourado-escuro); font-weight:600;">${escapeHtml(cat)}</span>` : ''}
+                    </div>
+                  </td>
+                  <td style="text-align:center; padding: 8px 10px; font-weight:600;">${qtd}</td>
+                  <td style="text-align:right; padding: 8px 10px; color:var(--marrom-claro); font-size:0.88rem;">${formatarPreco(precoUnit)}</td>
+                  <td style="text-align:right; padding: 8px 10px; font-weight:700; color:var(--dourado-escuro); font-size:0.92rem;">${formatarPreco(sub)}</td>
+                </tr>
+              `;
+            }).join('') : '<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--marrom-claro);">Itens sob encomenda artesanal.</td></tr>'}
           </tbody>
         </table>
       </div>
@@ -1689,7 +1985,10 @@ function abrirModalDetalhesPedido(pedidoId) {
       <div>
         <span style="font-size:0.78rem; color:var(--marrom-claro); display:block;">Forma de Pagamento</span>
         <strong style="font-size:0.95rem; display:flex; align-items:center; gap:6px; color:var(--marrom);">
-          <span class="material-symbols-outlined" style="font-size:18px;">${(pedido.forma_pagamento || '').toLowerCase().includes('pix') ? 'qr_code_2' : 'credit_card'}</span>
+          ${(pedido.forma_pagamento || '').toLowerCase().includes('pix')
+            ? `<span style="display:inline-flex; align-items:center; width:18px; height:18px; color:var(--marrom);">${pixSvg}</span>`
+            : '<span class="material-symbols-outlined" style="font-size:18px;">credit_card</span>'
+          }
           ${escapeHtml(pedido.forma_pagamento || 'Pix')}
         </strong>
       </div>
@@ -1700,11 +1999,24 @@ function abrirModalDetalhesPedido(pedidoId) {
     </div>
   `;
 
-  const msgWhats = `Olá! Gostaria de falar sobre o pedido ${encodeURIComponent(numero)} na Dona Benta.`;
+  // Direcionamento correto do WhatsApp (Admin fala com cliente; Cliente fala com Dona Benta)
+  const ehAdmin = typeof PERFIL_USUARIO !== 'undefined' && PERFIL_USUARIO?.role === 'admin';
+  const abaAdminAtiva = document.querySelector('.admin-tab-btn.ativo') !== null;
+  let linkWhats = '';
+  let rotuloWhats = '';
+
+  if (telClienteLimpo && (ehAdmin || abaAdminAtiva)) {
+    linkWhats = `https://api.whatsapp.com/send?phone=55${telClienteLimpo}&text=Ol%C3%A1%20${encodeURIComponent(pedido.perfis?.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numero)}.`;
+    rotuloWhats = `Conversar com Cliente no WhatsApp`;
+  } else {
+    linkWhats = `https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Gostaria%20de%20falar%20sobre%20o%20meu%20pedido%20${encodeURIComponent(numero)}%20na%20Dona%20Benta.`;
+    rotuloWhats = `Falar com a Dona Benta no WhatsApp`;
+  }
+
   rodape.innerHTML = `
-    <a href="https://api.whatsapp.com/send?phone=5542999823994&text=${msgWhats}" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp" style="flex:1; min-width:200px; justify-content:center;">
-      <svg class="icone-whatsapp-svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 6px;"><path d="M11.42 9.49c-.19-.09-1.1-.54-1.27-.61s-.29-.09-.42.1-.48.6-.59.73-.21.14-.4 0a5.13 5.13 0 0 1-1.49-.92 5.25 5.25 0 0 1-1-1.29c-.11-.18 0-.28.08-.38s.18-.21.28-.32a1.39 1.39 0 0 0 .18-.31.38.38 0 0 0 0-.33c0-.09-.42-1-.58-1.37s-.3-.32-.41-.32h-.4a.72.72 0 0 0-.5.23 2.1 2.1 0 0 0-.65 1.55A3.59 3.59 0 0 0 5 8.2 8.32 8.32 0 0 0 8.19 11c.44.19.78.3 1.05.39a2.53 2.53 0 0 0 1.17.07 1.93 1.93 0 0 0 1.26-.88 1.67 1.67 0 0 0 .11-.88c-.05-.07-.17-.12-.36-.21z"></path><path d="M13.29 2.68A7.36 7.36 0 0 0 8 .5a7.44 7.44 0 0 0-6.41 11.15l-1 3.85 3.94-1a7.4 7.4 0 0 0 3.55.9H8a7.44 7.44 0 0 0 5.29-12.72zM8 14.12a6.12 6.12 0 0 1-3.15-.87l-.22-.13-2.34.61.62-2.28-.14-.23a6.18 6.18 0 0 1 9.6-7.65 6.12 6.12 0 0 1 1.81 4.37A6.19 6.19 0 0 1 8 14.12z"></path></svg>
-      <span>Falar no WhatsApp</span>
+    <a href="${linkWhats}" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp" style="flex:1; min-width:200px; justify-content:center; display:inline-flex; align-items:center; gap:8px;">
+      <span style="display:inline-flex; align-items:center; width:18px; height:18px;">${whatsSvg}</span>
+      <span>${rotuloWhats}</span>
     </a>
     <button type="button" class="btn btn-outline" id="btnFecharModalDetalhesBtn" style="min-width:100px;">
       Fechar
