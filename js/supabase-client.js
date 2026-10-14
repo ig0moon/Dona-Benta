@@ -178,3 +178,15 @@ function formatarData(dataStr) {
   const ano = dateObj.getFullYear();
   return `${dia}/${mes}/${ano}`;
 }
+
+function formatarDataHora(dataStr) {
+  if (!dataStr) return '';
+  const dateObj = new Date(dataStr);
+  if (isNaN(dateObj.getTime())) return String(dataStr);
+  const dia = String(dateObj.getDate()).padStart(2, '0');
+  const mes = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const ano = dateObj.getFullYear();
+  const hora = String(dateObj.getHours()).padStart(2, '0');
+  const minuto = String(dateObj.getMinutes()).padStart(2, '0');
+  return `${dia}/${mes}/${ano} às ${hora}:${minuto}`;
+}
