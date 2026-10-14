@@ -123,7 +123,7 @@ function renderizarCheckout() {
       <div class="cartao">
         <h3 style="margin-bottom: 16px;">Observações do pedido</h3>
         <div class="campo" style="margin-bottom: 0;">
-          <textarea id="observacoesPedido" rows="3" placeholder="Algum detalhe especial? (ex: sem açúcar, mensagem na embalagem, etc.)" maxlength="300"></textarea>
+          <textarea id="observacoesPedido" rows="4" placeholder="Algum detalhe especial? (ex: sem açúcar, mensagem na embalagem, etc.)" maxlength="300" style="resize: none; min-height: 125px;"></textarea>
         </div>
       </div>
     </div>
@@ -144,18 +144,11 @@ function renderizarCheckout() {
           <span>${formatarPreco(total)}</span>
         </div>
 
-        <div class="campo" style="margin-top: 18px;">
-          <label for="formaPagamento">Forma de pagamento</label>
-          <select id="formaPagamento">
-            <option value="Pix">Pix (Chave informada no WhatsApp)</option>
-            <option value="Cartão">Cartão (Débito / Crédito)</option>
-            <option value="Dinheiro">Dinheiro na entrega/retirada</option>
-          </select>
-        </div>
+        <div id="containerFormasPagamento" style="margin-top: 16px;"></div>
 
         <button class="btn btn-primario btn-bloco" id="btnConfirmarPedido" style="margin-top: 14px;">
-          <span class="material-symbols-outlined">task_alt</span>
-          Confirmar pedido
+          ${window.ICONE_PIX_SVG || ''}
+          Pagar com Pix
         </button>
       </div>
     </aside>
@@ -168,6 +161,10 @@ function renderizarCheckout() {
   document.getElementById('btnConfirmarPedido').addEventListener('click', confirmarPedido);
 
   renderizarCalendario();
+
+  if (typeof renderizarSeletorPagamento === 'function') {
+    renderizarSeletorPagamento('containerFormasPagamento');
+  }
 }
 
 function selecionarTipoEntrega(tipo) {
@@ -259,38 +256,95 @@ function selecionarData(dataStr) {
   cartaoHorarios.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-async function confirmarPedido() {
+// ============================================
+// Validação Global de Agendamento
+// ============================================
+function validarDadosAgendamento() {
   if (!dataSelecionada) {
-    mostrarToast('Por favor, escolha uma data para a encomenda.', 'alerta');
-    return;
+    mostrarToast('Por favor, escolha uma data no calendário para a encomenda.', 'alerta');
+    const cal = document.querySelector('.calendario-cartao');
+    if (cal) cal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
   }
   if (!horarioSelecionado) {
     mostrarToast('Por favor, selecione um horário para a encomenda.', 'alerta');
-    return;
+    const hor = document.getElementById('cartaoHorarios');
+    if (hor) {
+      hor.style.display = 'block';
+      hor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return false;
   }
-
-  const tipoEntregaAtual = tipoEntrega;
   const enderecoInput = document.getElementById('enderecoEntrega');
   const endereco = enderecoInput?.value?.trim() || '';
-
-  if (tipoEntregaAtual === 'entrega' && !endereco) {
+  if (tipoEntrega === 'entrega' && !endereco) {
     mostrarToast('Informe o endereço completo para a entrega.', 'alerta');
     enderecoInput?.focus();
+    return false;
+  }
+  return true;
+}
+window.validarDadosAgendamento = validarDadosAgendamento;
+
+async function confirmarPedido() {
+  if (!validarDadosAgendamento()) {
     return;
   }
 
   const btn = document.getElementById('btnConfirmarPedido');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="material-symbols-outlined spin">autorenew</span> Registrando...';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined spin">autorenew</span> Processando...';
+  }
 
-  const carrinho = lerCarrinho();
-  const total = totalCarrinho();
-  const observacoes = document.getElementById('observacoesPedido')?.value?.trim() || '';
-  const formaPagamento = document.getElementById('formaPagamento')?.value || 'Pix';
-  const usuario = await usuarioAtual();
   const perfil = await perfilAtual();
+  const metodo = typeof metodoPagamentoSelecionado !== 'undefined' ? metodoPagamentoSelecionado : 'pix';
 
-  // Calcula o próximo número de pedido sequencial (DB-01, DB-02, DB-03...)
+  if (metodo === 'pix') {
+    const pedidoCriado = await registrarPedidoNoBanco({
+      forma_pagamento: 'Pix',
+      status: 'aguardando_confirmacao',
+      pago: false
+    });
+    btn.disabled = false;
+    btn.innerHTML = `${window.ICONE_PIX_SVG || ''} Pagar com Pix`;
+
+    if (pedidoCriado && typeof iniciarFluxoPix === 'function') {
+      iniciarFluxoPix(pedidoCriado, perfil);
+    }
+  } else {
+    const pedidoCriado = await registrarPedidoNoBanco({
+      forma_pagamento: 'Pagar na Entrega / Retirada',
+      status: 'aguardando_confirmacao',
+      pago: false
+    });
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined">task_alt</span> Confirmar pedido';
+
+    if (pedidoCriado) {
+      exibirRecibo(pedidoCriado, perfil);
+    }
+  }
+}
+
+// ============================================
+// Helper: Registrar Pedido e Itens no Supabase
+// ============================================
+async function registrarPedidoNoBanco(dadosExtras = {}) {
+  const carrinho = typeof lerCarrinho === 'function' ? lerCarrinho() : [];
+  const total = typeof totalCarrinho === 'function' ? totalCarrinho() : 0;
+  const observacoes = document.getElementById('observacoesPedido')?.value?.trim() || '';
+  const tipoEntregaAtual = tipoEntrega;
+  const enderecoInput = document.getElementById('enderecoEntrega');
+  const endereco = enderecoInput?.value?.trim() || '';
+  const usuario = await usuarioAtual();
+
+  if (!usuario) {
+    if (typeof mostrarToast === 'function') mostrarToast('Você precisa estar logado.', 'erro');
+    return null;
+  }
+
+  // Calcula o próximo número de pedido sequencial (DB-01, DB-02...)
   let proximoNumeroPedido = 'DB-01';
   try {
     const { count, error: errCount } = await db
@@ -307,14 +361,15 @@ async function confirmarPedido() {
   const novoPedido = {
     cliente_id: usuario.id,
     valor_total: total,
-    status: 'aguardando_confirmacao',
+    status: dadosExtras.status || 'aguardando_confirmacao',
     tipo_entrega: tipoEntregaAtual,
     endereco_entrega: tipoEntregaAtual === 'entrega' ? endereco : null,
     data_agendada: dataSelecionada,
     horario_agendado: horarioSelecionado,
     observacoes: observacoes || null,
-    forma_pagamento: formaPagamento,
-    numero_pedido: proximoNumeroPedido
+    forma_pagamento: dadosExtras.forma_pagamento || 'Pix',
+    numero_pedido: proximoNumeroPedido,
+    pago: dadosExtras.pago || false
   };
 
   let { data: pedidoCriado, error: erroPedido } = await db
@@ -323,7 +378,7 @@ async function confirmarPedido() {
     .select()
     .single();
 
-  // Fallback seguro: se a coluna numero_pedido ainda não foi criada no banco Supabase
+  // Fallback se alguma coluna opcional ainda não existir
   if (erroPedido && (erroPedido.message?.includes('numero_pedido') || erroPedido.code === '42703')) {
     const pedidoSemColuna = { ...novoPedido };
     delete pedidoSemColuna.numero_pedido;
@@ -334,10 +389,8 @@ async function confirmarPedido() {
 
   if (erroPedido) {
     console.error('Erro ao registrar pedido:', erroPedido);
-    mostrarToast('Erro ao registrar pedido: ' + erroPedido.message, 'erro');
-    btn.disabled = false;
-    btn.textContent = 'Confirmar pedido';
-    return;
+    if (typeof mostrarToast === 'function') mostrarToast('Erro ao registrar pedido: ' + erroPedido.message, 'erro');
+    return null;
   }
 
   if (pedidoCriado && !pedidoCriado.numero_pedido) {
@@ -355,13 +408,11 @@ async function confirmarPedido() {
   const { error: erroItens } = await db.from('itens_pedido').insert(itensParaInserir);
   if (erroItens) {
     console.error('Erro ao salvar itens do pedido:', erroItens);
-    mostrarToast('Pedido salvo com observações, mas houve falha nos itens.', 'alerta');
+    if (typeof mostrarToast === 'function') mostrarToast('Pedido salvo com observações, mas houve falha nos itens.', 'alerta');
   }
 
   pedidoCriado.itens = carrinho;
-  exibirRecibo(pedidoCriado, perfil);
-  btn.disabled = false;
-  btn.textContent = 'Confirmar pedido';
+  return pedidoCriado;
 }
 
 function exibirRecibo(pedido, perfil) {
@@ -377,24 +428,29 @@ function exibirRecibo(pedido, perfil) {
       <div class="recibo-linha-detalhe"><span>Itens</span><span>${escapeHtml(itensFormatados)}</span></div>
       <div class="recibo-linha-detalhe"><span>Modalidade</span><span>${pedido.tipo_entrega === 'entrega' ? 'Entrega em domicílio' : 'Retirada na loja'}</span></div>
       ${pedido.endereco_entrega ? `<div class="recibo-linha-detalhe"><span>Endereço</span><span>${escapeHtml(pedido.endereco_entrega)}</span></div>` : ''}
-      <div class="recibo-linha-detalhe"><span>Data da encomenda</span><span>${escapeHtml(formatarData(pedido.data_agendada))}</span></div>
-      <div class="recibo-linha-detalhe"><span>Horário agendado</span><span>${escapeHtml(pedido.horario_agendado || '')}</span></div>
-      <div class="recibo-linha-detalhe"><span>Forma de pagamento</span><span>${escapeHtml(pedido.forma_pagamento || '')}</span></div>
+      <div class="recibo-linha-detalhe"><span>Data da encomenda</span><span>${escapeHtml((pedido.data_agendada && pedido.data_agendada !== 'null') ? formatarData(pedido.data_agendada) : 'A combinar com a loja')}</span></div>
+      <div class="recibo-linha-detalhe"><span>Horário agendado</span><span>${escapeHtml((pedido.horario_agendado && pedido.horario_agendado !== 'null') ? pedido.horario_agendado : 'A combinar')}</span></div>
+      <div class="recibo-linha-detalhe"><span>Forma de pagamento</span><span>${escapeHtml(pedido.forma_pagamento || 'Cartão de Crédito')}</span></div>
       <div class="recibo-linha-detalhe" style="font-weight:700;"><span>Total</span><span style="color:var(--dourado-escuro); font-size:1.1rem;">${formatarPreco(pedido.valor_total)}</span></div>
     `;
   }
 
   // Montagem limpa e segura da mensagem do WhatsApp (evita caracteres corrompidos no WhatsApp Web/Desktop)
   const totalFormatado = formatarPreco(pedido.valor_total).replace(/[\u00A0\u202F]/g, ' ');
+  const dataValida = pedido.data_agendada && pedido.data_agendada !== 'null';
+  const dataFormatada = dataValida ? (formatarData(pedido.data_agendada) || pedido.data_agendada) : 'A combinar com a loja';
+  const horarioValido = pedido.horario_agendado && pedido.horario_agendado !== 'null';
+  const dataHoraWhatsApp = horarioValido ? `${dataFormatada} às ${pedido.horario_agendado}` : dataFormatada;
+
   const linhasTexto = [
     `Olá! Gostaria de confirmar meu pedido *${numeroRecibo}* na Dona Benta:`,
     '',
     ...pedido.itens.map(i => `- ${i.quantidade}x ${i.nome}`),
     '',
-    `*Data:* ${formatarData(pedido.data_agendada)} às ${pedido.horario_agendado}`,
-    `*Entrega:* ${pedido.tipo_entrega === 'entrega' ? pedido.endereco_entrega : 'Retirada na loja'}`,
+    `*Data:* ${dataHoraWhatsApp}`,
+    `*Entrega:* ${pedido.tipo_entrega === 'entrega' ? (pedido.endereco_entrega || 'A informar') : 'Retirada na loja'}`,
     `*Total:* ${totalFormatado}`,
-    `*Pagamento:* ${pedido.forma_pagamento}`
+    `*Pagamento:* ${pedido.forma_pagamento || 'Cartão de Crédito'}`
   ];
 
   if (pedido.observacoes) {
