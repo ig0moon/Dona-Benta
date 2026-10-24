@@ -3,19 +3,73 @@
 // Integração de Pagamentos Mercado Pago (Pix Dinâmico + Cartão)
 // ============================================
 
-const MP_PUBLIC_KEY = 'TEST-e8687a34-dc25-4e97-a1de-3e207f5c3d6c';
-const API_PAGAMENTOS_URL = 'http://localhost:3001/api';
+const API_PAGAMENTOS_URL = window.API_PAGAMENTOS_URL || (
+  window.location.protocol.startsWith('http') && window.location.port !== '3001' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? '/api'
+    : 'http://localhost:3001/api'
+);
+
+let MP_PUBLIC_KEY = window.MP_PUBLIC_KEY || 'TEST-e8687a34-dc25-4e97-a1de-3e207f5c3d6c';
+let configuracaoGateway = null;
 
 let pollingInterval = null;
 let timerContadorInterval = null;
 let mpInstance = null;
 let cardBrickController = null;
-let metodoPagamentoSelecionado = 'pix'; // 'pix', 'cartao', 'dinheiro'
+let metodoPagamentoSelecionado = 'pix'; // 'pix', 'cartao', 'entrega'
+
+// Validação matemática de CPF
+function validarCPF(cpf) {
+  if (!cpf || typeof cpf !== 'string') return false;
+  const limpo = cpf.replace(/\D/g, '');
+  if (limpo.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(limpo)) return false;
+
+  let soma = 0;
+  for (let i = 0; i < 9; i++) {
+    soma += parseInt(limpo.charAt(i), 10) * (10 - i);
+  }
+  let resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(limpo.charAt(9), 10)) return false;
+
+  soma = 0;
+  for (let i = 0; i < 10; i++) {
+    soma += parseInt(limpo.charAt(i), 10) * (11 - i);
+  }
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(limpo.charAt(10), 10)) return false;
+
+  return true;
+}
+
+// Busca a chave pública e ambiente ativos no servidor
+async function obterConfiguracaoGateway() {
+  if (configuracaoGateway) return configuracaoGateway;
+  try {
+    const resp = await fetch(`${API_PAGAMENTOS_URL}/config`);
+    if (resp.ok) {
+      configuracaoGateway = await resp.json();
+      if (configuracaoGateway.publicKey) {
+        MP_PUBLIC_KEY = configuracaoGateway.publicKey;
+      }
+      return configuracaoGateway;
+    }
+  } catch (e) {
+    console.warn('[Pagamentos] Não foi possível obter /api/config dinâmico:', e.message);
+  }
+  return {
+    ambiente: MP_PUBLIC_KEY.startsWith('APP_USR-') ? 'producao' : 'sandbox',
+    publicKey: MP_PUBLIC_KEY
+  };
+}
 
 // Inicializa Mercado Pago SDK v2 se disponível
-function obterInstanciaMercadoPago() {
+async function obterInstanciaMercadoPago() {
   if (!mpInstance && window.MercadoPago) {
     try {
+      await obterConfiguracaoGateway();
       mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
     } catch (e) {
       console.warn('Não foi possível inicializar SDK do Mercado Pago:', e);
@@ -27,9 +81,20 @@ function obterInstanciaMercadoPago() {
 // ============================================
 // Renderização do Seletor de Pagamento
 // ============================================
-// Função para exibir dicas e botões do Sandbox APENAS para usuários Administradores
+// Oculta completamente elementos de Sandbox em produção
 async function verificarExibicaoSandbox() {
   try {
+    const config = await obterConfiguracaoGateway();
+    const isProducao = config?.ambiente === 'producao' || MP_PUBLIC_KEY.startsWith('APP_USR-');
+
+    if (isProducao) {
+      const cartaoDica = document.getElementById('cartaoSandboxDica');
+      if (cartaoDica) cartaoDica.style.display = 'none';
+      const pixDica = document.getElementById('pixSandboxDica');
+      if (pixDica) pixDica.style.display = 'none';
+      return;
+    }
+
     let isAdmin = false;
     if (typeof perfilAtual === 'function') {
       const perfil = await perfilAtual();
@@ -144,7 +209,7 @@ function selecionarMetodoPagamento(metodo) {
 // Inicializar Mercado Pago Card Brick
 // ============================================
 async function inicializarCartaoBrick() {
-  const mp = obterInstanciaMercadoPago();
+  const mp = await obterInstanciaMercadoPago();
   if (!mp) {
     console.warn('Mercado Pago SDK não carregado');
     return;
@@ -266,9 +331,14 @@ async function processarPagamentoCartao(cardFormData) {
 
   let resp, data;
   try {
+    const sessionData = window.db?.auth ? await window.db.auth.getSession() : null;
+    const sessionToken = sessionData?.data?.session?.access_token;
+    const headers = { 'Content-Type': 'application/json' };
+    if (sessionToken) headers['Authorization'] = `Bearer ${sessionToken}`;
+
     resp = await fetch(`${API_PAGAMENTOS_URL}/pagamento/cartao`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload)
     });
     data = await resp.json();
@@ -312,23 +382,92 @@ async function processarPagamentoCartao(cardFormData) {
 // ============================================
 async function iniciarFluxoPix(pedido, perfil) {
   abrirModalPix();
+
+  // Em produção, CPF é obrigatório para emissão de Pix pelo Banco Central e Mercado Pago
+  const config = await obterConfiguracaoGateway();
+  const isProducao = config?.ambiente === 'producao' || MP_PUBLIC_KEY.startsWith('APP_USR-');
+  let cpfAtual = (perfil?.cpf || '').replace(/\D/g, '');
+
+  if (isProducao && !validarCPF(cpfAtual)) {
+    mostrarCarregandoPix(false);
+    const corpoConteudo = document.getElementById('pixCorpoConteudo');
+    if (corpoConteudo) {
+      corpoConteudo.style.display = 'block';
+      corpoConteudo.innerHTML = `
+        <div style="padding: 18px 12px; text-align: center;">
+          <span class="material-symbols-outlined" style="font-size:38px; color:var(--marrom);">badge</span>
+          <h4 style="margin: 8px 0 6px; font-size:1.15rem; color:var(--marrom);">Informe seu CPF</h4>
+          <p style="font-size: 0.85rem; color: var(--marrom-claro); margin-bottom: 16px; line-height: 1.4;">
+            O Banco Central e o Mercado Pago exigem um CPF válido para emitir o QR Code Pix.
+          </p>
+          <div class="campo" style="max-width: 280px; margin: 0 auto 14px;">
+            <input type="text" id="inputCpfPixModal" placeholder="000.000.000-00" maxlength="14" style="text-align: center; font-size: 1.05rem; font-weight: 600; letter-spacing: 1px;">
+            <small id="erroCpfPixModal" style="color:var(--erro); font-size: 0.8rem; display: none; margin-top: 6px;">CPF inválido. Digite os 11 dígitos.</small>
+          </div>
+          <button id="btnConfirmarCpfPixModal" class="btn btn-primario" style="min-width: 190px;">Continuar com Pix</button>
+        </div>
+      `;
+
+      const inputCpf = document.getElementById('inputCpfPixModal');
+      const btnCpf = document.getElementById('btnConfirmarCpfPixModal');
+      const erroCpf = document.getElementById('erroCpfPixModal');
+
+      if (inputCpf) {
+        inputCpf.focus();
+        inputCpf.addEventListener('input', (e) => {
+          let v = e.target.value.replace(/\D/g, '');
+          if (v.length > 11) v = v.slice(0, 11);
+          if (v.length > 9) v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
+          else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
+          else if (v.length > 3) v = v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
+          e.target.value = v;
+        });
+      }
+
+      if (btnCpf) {
+        btnCpf.addEventListener('click', async () => {
+          const valLimpo = (inputCpf?.value || '').replace(/\D/g, '');
+          if (!validarCPF(valLimpo)) {
+            if (erroCpf) erroCpf.style.display = 'block';
+            return;
+          }
+          if (erroCpf) erroCpf.style.display = 'none';
+          if (!perfil) perfil = {};
+          perfil.cpf = valLimpo;
+          iniciarFluxoPix(pedido, perfil);
+        });
+      }
+      return;
+    }
+  }
+
   mostrarCarregandoPix(true);
 
   try {
+    const usuario = typeof usuarioAtual === 'function' ? await usuarioAtual() : null;
+    const sessionData = window.db?.auth ? await window.db.auth.getSession() : null;
+    const sessionToken = sessionData?.data?.session?.access_token;
+    const emailPagador = (perfil?.email || usuario?.email || '').trim().toLowerCase();
+
     const payload = {
       pedido_id: pedido.id,
       valor: pedido.valor_total,
       descricao: `Pedido Dona Benta #${pedido.numero_pedido || 'DB'}`,
       cliente: {
         nome: perfil?.nome || 'Cliente',
-        email: perfil?.email || (await usuarioAtual())?.email || 'cliente.donabenta@gmail.com',
+        email: emailPagador || (isProducao ? '' : 'cliente.donabenta@gmail.com'),
         cpf: perfil?.cpf || ''
       }
     };
 
+    const headers = { 'Content-Type': 'application/json' };
+    if (sessionToken) {
+      headers['Authorization'] = `Bearer ${sessionToken}`;
+    }
+
     const resp = await fetch(`${API_PAGAMENTOS_URL}/pagamento/pix`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload)
     });
 
@@ -362,9 +501,8 @@ async function iniciarFluxoPix(pedido, perfil) {
         <div style="text-align:center; padding:16px;">
           <span class="material-symbols-outlined" style="font-size:40px; color:var(--erro);">error</span>
           <p style="margin-top:8px; color:var(--erro); font-size:0.9rem;">
-            Não foi possível conectar ao servidor de pagamentos.<br>
-            <strong>Certifique-se de que o servidor local está rodando:</strong><br>
-            <code>node api-server.js</code>
+            ${typeof escapeHtml === 'function' ? escapeHtml(err.message) : err.message}<br>
+            <small style="color:var(--marrom-claro); display:block; margin-top:4px;">Se persistir, verifique a conexão do servidor de pagamentos.</small>
           </p>
           <button class="btn btn-primario" onclick="fecharModalPix()" style="margin-top:14px;">Entendido</button>
         </div>

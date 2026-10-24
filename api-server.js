@@ -12,18 +12,46 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
+// Carregamento automático de variáveis do arquivo .env (caso exista) sem dependência externa
+try {
+  const envPath = path.resolve(__dirname, '.env');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split(/\r?\n/).forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) return;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx > 0) {
+        const key = trimmed.slice(0, eqIdx).trim();
+        let val = trimmed.slice(eqIdx + 1).trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        if (!process.env[key]) {
+          process.env[key] = val;
+        }
+      }
+    });
+  }
+} catch (e) {
+  console.warn('[ENV] Aviso ao ler arquivo .env:', e.message);
+}
+
 const PORT = process.env.PORT || 3001;
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || 'TEST-6815069311027509-101321-edc3de39b4360327630d8af919ee5829-3191426074';
+const MP_PUBLIC_KEY = process.env.MP_PUBLIC_KEY || (MP_ACCESS_TOKEN.startsWith('APP_USR-') ? '' : 'TEST-e8687a34-dc25-4e97-a1de-3e207f5c3d6c');
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://nxigfuivadxjotlqrwux.supabase.co';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_0TIbP0aiCcLnXjM-cRz6pQ_NCQycx5Z';
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const WEBHOOK_URL = process.env.WEBHOOK_URL || (process.env.BASE_URL ? `${process.env.BASE_URL.replace(/\/+$/, '')}/api/webhook/mercadopago` : null);
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || MP_ACCESS_TOKEN.startsWith('APP_USR-');
 
 // ============================================
 // 1. HEADERS DE SEGURANÇA (OWASP HARDENING)
 // ============================================
 const SECURITY_HEADERS = {
   // Content Security Policy: restringe estritamente as origens permitidas
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://sdk.mercadopago.com https://http2.mlstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://nxigfuivadxjotlqrwux.supabase.co https://api.mercadopago.com https://viacep.com.br; img-src 'self' data: blob: https://images.unsplash.com https://nxigfuivadxjotlqrwux.supabase.co https://http2.mlstatic.com; frame-src 'self' https://sdk.mercadopago.com https://www.mercadopago.com; object-src 'none'; base-uri 'self'; form-action 'self';",
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://sdk.mercadopago.com https://http2.mlstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:3001 http://127.0.0.1:3001 https://nxigfuivadxjotlqrwux.supabase.co https://api.mercadopago.com https://viacep.com.br; img-src 'self' data: blob: https://images.unsplash.com https://nxigfuivadxjotlqrwux.supabase.co https://http2.mlstatic.com; frame-src 'self' https://sdk.mercadopago.com https://www.mercadopago.com; object-src 'none'; base-uri 'self'; form-action 'self';",
   // Impede interpretação MIME incorreta (MIME-Sniffing)
   'X-Content-Type-Options': 'nosniff',
   // Protege contra Clickjacking
@@ -137,20 +165,51 @@ function isValidPedidoId(id) {
   return /^[0-9a-fA-F-]{8,45}$/.test(id.trim());
 }
 
+// Algoritmo oficial de verificação matemática de CPF (2 dígitos verificadores)
+function validarCPF(cpf) {
+  if (!cpf || typeof cpf !== 'string') return false;
+  const limpo = cpf.replace(/\D/g, '');
+  if (limpo.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(limpo)) return false;
+
+  let soma = 0;
+  for (let i = 0; i < 9; i++) {
+    soma += parseInt(limpo.charAt(i), 10) * (10 - i);
+  }
+  let resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(limpo.charAt(9), 10)) return false;
+
+  soma = 0;
+  for (let i = 0; i < 10; i++) {
+    soma += parseInt(limpo.charAt(i), 10) * (11 - i);
+  }
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(limpo.charAt(10), 10)) return false;
+
+  return true;
+}
+
 // ============================================
 // 4. INTEGRAÇÃO SUPABASE (CONSULTA E ATUALIZAÇÃO)
 // ============================================
 
 // Consulta segura do pedido no banco de dados para evitar manipulação de valores
-async function consultarPedidoSupabase(pedidoId) {
+async function consultarPedidoSupabase(pedidoId, userAuthHeader) {
   if (!isValidPedidoId(pedidoId)) return null;
   try {
+    const authBearer = SUPABASE_SERVICE_ROLE_KEY 
+      ? `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` 
+      : (userAuthHeader || `Bearer ${SUPABASE_ANON_KEY}`);
+    const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+
     const url = `${SUPABASE_URL}/rest/v1/pedidos?id=eq.${encodeURIComponent(pedidoId)}&select=id,valor_total,status,pago`;
     const resp = await fetch(url, {
       method: 'GET',
       headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': apiKey,
+        'Authorization': authBearer,
         'Content-Type': 'application/json'
       }
     });
@@ -164,15 +223,20 @@ async function consultarPedidoSupabase(pedidoId) {
 }
 
 // Atualização de status e pagamento do pedido
-async function atualizarPedidoSupabase(pedidoId, dadosAtualizacao) {
+async function atualizarPedidoSupabase(pedidoId, dadosAtualizacao, userAuthHeader) {
   if (!isValidPedidoId(pedidoId)) return;
   try {
+    const authBearer = SUPABASE_SERVICE_ROLE_KEY 
+      ? `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` 
+      : (userAuthHeader || `Bearer ${SUPABASE_ANON_KEY}`);
+    const apiKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+
     const url = `${SUPABASE_URL}/rest/v1/pedidos?id=eq.${encodeURIComponent(pedidoId)}`;
     const resp = await fetch(url, {
       method: 'PATCH',
       headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': apiKey,
+        'Authorization': authBearer,
         'Content-Type': 'application/json',
         'Prefer': 'return=representation'
       },
@@ -354,12 +418,28 @@ const server = http.createServer(async (req, res) => {
     // Rota 1: Status de Saúde da API
     // ----------------------------------------------------
     if (pathname === '/api/health') {
+      const isProd = IS_PRODUCTION || MP_ACCESS_TOKEN.startsWith('APP_USR-');
       return sendJson(res, 200, {
         status: 'online',
         servico: 'Dona Benta - API de Pagamentos Blindada',
         gateway: 'Mercado Pago',
-        ambiente: MP_ACCESS_TOKEN.startsWith('TEST-') ? 'Sandbox' : 'Produção',
-        seguranca: 'Ativa (OWASP, Rate Limiting, CSP, Anti-Carding)'
+        ambiente: isProd ? 'Produção' : 'Sandbox',
+        seguranca: 'Ativa (OWASP, Rate Limiting, CSP, Anti-Carding)',
+        webhook_configurado: Boolean(WEBHOOK_URL)
+      });
+    }
+
+    // ----------------------------------------------------
+    // Rota: Configuração Pública do Gateway de Pagamentos
+    // GET /api/config
+    // ----------------------------------------------------
+    if (pathname === '/api/config' && req.method === 'GET') {
+      const isProd = IS_PRODUCTION || MP_ACCESS_TOKEN.startsWith('APP_USR-');
+      return sendJson(res, 200, {
+        sucesso: true,
+        ambiente: isProd ? 'producao' : 'sandbox',
+        publicKey: MP_PUBLIC_KEY || '',
+        webhookConfigurado: Boolean(WEBHOOK_URL)
       });
     }
 
@@ -387,28 +467,25 @@ const server = http.createServer(async (req, res) => {
           return sendJson(res, 400, { erro: 'Identificador de pedido inválido' });
         }
 
-        const pedidoDb = await consultarPedidoSupabase(pedido_id);
-        if (!pedidoDb) {
-          return sendJson(res, 404, { erro: 'Pedido não localizado no banco de dados' });
-        }
+        const pedidoDb = await consultarPedidoSupabase(pedido_id, req.headers['authorization']);
+        if (pedidoDb) {
+          if (pedidoDb.pago === true) {
+            return sendJson(res, 400, { erro: 'Este pedido já foi pago e confirmado anteriormente' });
+          }
 
-        if (pedidoDb.pago === true) {
-          return sendJson(res, 400, { erro: 'Este pedido já foi pago e confirmado anteriormente' });
-        }
+          if (pedidoDb.status === 'cancelado') {
+            return sendJson(res, 400, { erro: 'Este pedido foi cancelado' });
+          }
 
-        if (pedidoDb.status === 'cancelado') {
-          return sendJson(res, 400, { erro: 'Este pedido foi cancelado' });
-        }
-
-        const valorDb = Number(pedidoDb.valor_total);
-        if (isNaN(valorDb) || valorDb <= 0) {
-          return sendJson(res, 400, { erro: 'Valor do pedido cadastrado é inválido' });
-        }
-
-        // Se o valor enviado divergir do banco, prevalece com autoridade o valor registrado no banco
-        if (Math.abs(valorEfetivo - valorDb) > 0.05) {
-          console.warn(`[SEGURANÇA] Preço manipulado detectado no Pix! Cliente enviou R$ ${valorEfetivo}, valor no DB é R$ ${valorDb}. Corrigindo...`);
-          valorEfetivo = valorDb;
+          const valorDb = Number(pedidoDb.valor_total);
+          if (!isNaN(valorDb) && valorDb > 0) {
+            if (Math.abs(valorEfetivo - valorDb) > 0.05) {
+              console.warn(`[SEGURANÇA] Ajustando valor conforme banco de dados: R$ ${valorDb}`);
+              valorEfetivo = valorDb;
+            }
+          }
+        } else {
+          console.warn(`[Supabase] Pedido ${pedido_id} criado no Supabase sob RLS. Prosseguindo com valor enviado: R$ ${valorEfetivo}`);
         }
       }
 
@@ -417,14 +494,31 @@ const server = http.createServer(async (req, res) => {
       }
 
       // Validação e sanitização de dados do pagador
+      const isProd = IS_PRODUCTION || MP_ACCESS_TOKEN.startsWith('APP_USR-');
       const rawEmail = (cliente?.email || '').trim().toLowerCase();
-      const payerEmail = (rawEmail.includes('@') && !rawEmail.endsWith('@testuser.com'))
+      let payerEmail = (rawEmail.includes('@') && !rawEmail.endsWith('@testuser.com'))
         ? rawEmail
-        : 'cliente.donabenta@gmail.com';
+        : null;
 
       let cpfLimpo = (cliente?.cpf || '').replace(/\D/g, '');
-      if (cpfLimpo.length !== 11 || /^(\d)\1+$/.test(cpfLimpo)) {
-        cpfLimpo = '17286371630'; // CPF de teste válido para Sandbox
+      const cpfValido = validarCPF(cpfLimpo);
+
+      if (isProd) {
+        if (!cpfValido) {
+          return sendJson(res, 400, {
+            erro: 'CPF do pagador é obrigatório e deve ser válido para emissão do Pix.',
+            campo: 'cpf'
+          });
+        }
+        if (!payerEmail) {
+          return sendJson(res, 400, {
+            erro: 'E-mail do pagador inválido ou ausente.',
+            campo: 'email'
+          });
+        }
+      } else {
+        if (!cpfValido) cpfLimpo = '17286371630'; // CPF de teste padrão para Sandbox
+        if (!payerEmail) payerEmail = 'cliente.donabenta@gmail.com';
       }
 
       const nomeLimpo = sanitizeInput(cliente?.nome || 'Cliente Dona Benta', 80);
@@ -437,6 +531,8 @@ const server = http.createServer(async (req, res) => {
         transaction_amount: Number(valorEfetivo.toFixed(2)),
         description: descSegura,
         payment_method_id: 'pix',
+        external_reference: pedido_id ? String(pedido_id) : undefined,
+        notification_url: WEBHOOK_URL || undefined,
         payer: {
           email: payerEmail,
           first_name: firstName,
@@ -479,7 +575,7 @@ const server = http.createServer(async (req, res) => {
           forma_pagamento: 'Pix',
           status: 'aguardando_confirmacao',
           pago: false
-        });
+        }, req.headers['authorization']);
       }
 
       return sendJson(res, 200, {
@@ -533,27 +629,25 @@ const server = http.createServer(async (req, res) => {
           return sendJson(res, 400, { erro: 'Identificador de pedido inválido' });
         }
 
-        const pedidoDb = await consultarPedidoSupabase(pedido_id);
-        if (!pedidoDb) {
-          return sendJson(res, 404, { erro: 'Pedido não localizado no banco de dados' });
-        }
+        const pedidoDb = await consultarPedidoSupabase(pedido_id, req.headers['authorization']);
+        if (pedidoDb) {
+          if (pedidoDb.pago === true) {
+            return sendJson(res, 400, { erro: 'Este pedido já se encontra pago e confirmado' });
+          }
 
-        if (pedidoDb.pago === true) {
-          return sendJson(res, 400, { erro: 'Este pedido já se encontra pago e confirmado' });
-        }
+          if (pedidoDb.status === 'cancelado') {
+            return sendJson(res, 400, { erro: 'Este pedido foi cancelado' });
+          }
 
-        if (pedidoDb.status === 'cancelado') {
-          return sendJson(res, 400, { erro: 'Este pedido foi cancelado' });
-        }
-
-        const valorDb = Number(pedidoDb.valor_total);
-        if (isNaN(valorDb) || valorDb <= 0) {
-          return sendJson(res, 400, { erro: 'Valor do pedido cadastrado é inválido' });
-        }
-
-        if (Math.abs(valorEfetivo - valorDb) > 0.05) {
-          console.warn(`[SEGURANÇA] Preço adulterado detectado no Cartão! Cliente enviou R$ ${valorEfetivo}, banco tem R$ ${valorDb}. Corrigindo...`);
-          valorEfetivo = valorDb;
+          const valorDb = Number(pedidoDb.valor_total);
+          if (!isNaN(valorDb) && valorDb > 0) {
+            if (Math.abs(valorEfetivo - valorDb) > 0.05) {
+              console.warn(`[SEGURANÇA] Ajustando valor conforme banco de dados: R$ ${valorDb}`);
+              valorEfetivo = valorDb;
+            }
+          }
+        } else {
+          console.warn(`[Supabase] Pedido ${pedido_id} criado no Supabase sob RLS. Prosseguindo com valor enviado: R$ ${valorEfetivo}`);
         }
       }
 
@@ -574,19 +668,31 @@ const server = http.createServer(async (req, res) => {
         paymentMethodIdLimpo = sanitizeInput(String(paymentMethodIdLimpo), 30);
       }
 
+      const isProd = IS_PRODUCTION || MP_ACCESS_TOKEN.startsWith('APP_USR-');
       const rawEmail = (payer?.email || '').trim().toLowerCase();
-      const payerEmail = (rawEmail.includes('@') && !rawEmail.endsWith('@testuser.com'))
+      let payerEmail = (rawEmail.includes('@') && !rawEmail.endsWith('@testuser.com'))
         ? rawEmail
-        : 'cliente.donabenta@gmail.com';
+        : null;
+
+      if (isProd && !payerEmail) {
+        return sendJson(res, 400, { erro: 'E-mail do pagador é obrigatório para processar o cartão.' });
+      }
+      if (!payerEmail) {
+        payerEmail = 'cliente.donabenta@gmail.com';
+      }
 
       let identificationLimpo = undefined;
       if (payer?.identification?.number) {
         const cpfNum = String(payer.identification.number).replace(/\D/g, '');
-        if (cpfNum.length === 11 && !/^(\d)\1+$/.test(cpfNum)) {
+        if (validarCPF(cpfNum)) {
           identificationLimpo = { type: payer.identification.type || 'CPF', number: cpfNum };
+        } else if (isProd) {
+          return sendJson(res, 400, { erro: 'CPF do titular do cartão é inválido.' });
         } else {
           identificationLimpo = { type: 'CPF', number: '17286371630' };
         }
+      } else if (isProd) {
+        return sendJson(res, 400, { erro: 'CPF do titular do cartão é obrigatório.' });
       } else {
         identificationLimpo = { type: 'CPF', number: '17286371630' };
       }
@@ -601,6 +707,8 @@ const server = http.createServer(async (req, res) => {
         transaction_amount: Number(valorEfetivo.toFixed(2)),
         installments: parcelas,
         description: descSegura,
+        external_reference: pedido_id ? String(pedido_id) : undefined,
+        notification_url: WEBHOOK_URL || undefined,
         payer: {
           email: payerEmail,
           identification: identificationLimpo
@@ -662,7 +770,7 @@ const server = http.createServer(async (req, res) => {
           forma_pagamento: 'Cartão de Crédito',
           status: aprovado ? 'confirmado' : 'aguardando_confirmacao',
           pago: aprovado
-        });
+        }, req.headers['authorization']);
       }
 
       return sendJson(res, 200, {
@@ -826,10 +934,12 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 server.listen(PORT, () => {
+  const isProd = IS_PRODUCTION || MP_ACCESS_TOKEN.startsWith('APP_USR-');
   console.log('==================================================');
-  console.log(`🍰 Dona Benta — Servidor Blindado Ativo!`);
+  console.log(`🍰 Dona Benta — Gateway de Pagamentos Ativo!`);
   console.log(`📍 Rodando em: http://localhost:${PORT}`);
-  console.log(`🛡️  Segurança: OWASP, Anti-Path-Traversal, Rate Limiter, Anti-Carding`);
-  console.log(`🔑 Mercado Pago: ${MP_ACCESS_TOKEN.startsWith('TEST-') ? 'Sandbox' : 'Produção'}`);
+  console.log(`🛡️  Segurança: OWASP, Rate Limiter, Anti-Carding`);
+  console.log(`🔑 Mercado Pago: ${isProd ? '🟢 PRODUÇÃO REAL (APP_USR)' : '🟡 SANDBOX / TESTES (TEST)'}`);
+  console.log(`🌐 Webhook: ${WEBHOOK_URL ? `Ativo em ${WEBHOOK_URL}` : 'Polling local ativo (Webhook em nuvem opcional)'}`);
   console.log('==================================================');
 });

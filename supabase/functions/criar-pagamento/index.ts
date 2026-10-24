@@ -40,6 +40,7 @@ serve(async (req) => {
         transaction_amount: Number(Number(valor).toFixed(2)),
         description: descricao || `Pedido Dona Benta #${pedido_id || 'DB'}`,
         payment_method_id: 'pix',
+        external_reference: pedido_id ? String(pedido_id) : undefined,
         payer: {
           email: payerEmail,
           first_name: cliente?.nome?.split(' ')[0] || 'Cliente',
@@ -103,6 +104,7 @@ serve(async (req) => {
         transaction_amount: Number(Number(valor).toFixed(2)),
         installments: Number(installments) || 1,
         description: descricao || `Pedido Dona Benta #${pedido_id || 'DB'}`,
+        external_reference: pedido_id ? String(pedido_id) : undefined,
         payer: {
           email: payer?.email || 'cliente.donabenta@gmail.com',
           identification: payer?.identification
