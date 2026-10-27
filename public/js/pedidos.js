@@ -1,0 +1,555 @@
+// ============================================
+// DONA BENTA — js/pedidos.js
+// Agendamento, Checkout e Confirmação de Pedidos
+// ============================================
+
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const DIAS_SEMANA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+const HORARIOS_PADRAO = ['09:00', '11:00', '14:00', '16:00', '17:30', '19:00'];
+
+let mesAtual = new Date().getMonth();
+let anoAtual = new Date().getFullYear();
+let dataSelecionada = null;
+let horarioSelecionado = null;
+let tipoEntrega = 'retirada';
+let horariosOcupados = {};
+
+let PERFIL_CLIENTE = null;
+
+function montarEnderecoFormatado(perfil) {
+  if (!perfil) return '';
+  const partes = [];
+  if (perfil.logradouro) {
+    let rua = perfil.logradouro.trim();
+    if (perfil.numero && perfil.numero.trim()) {
+      rua += `, nº ${perfil.numero.trim()}`;
+    }
+    partes.push(rua);
+  }
+  if (perfil.complemento && perfil.complemento.trim()) {
+    partes.push(perfil.complemento.trim());
+  }
+  if (perfil.bairro && perfil.bairro.trim()) {
+    partes.push(`Bairro ${perfil.bairro.trim()}`);
+  }
+  if (perfil.cep && perfil.cep.trim()) {
+    partes.push(`CEP ${perfil.cep.trim()}`);
+  }
+  return partes.join(' - ');
+}
+
+async function iniciarCheckout() {
+  const carrinho = typeof lerCarrinho === 'function' ? lerCarrinho() : [];
+  const layout = document.getElementById('checkoutLayout');
+  if (!layout) return;
+
+  if (carrinho.length === 0) {
+    layout.innerHTML = `
+      <div class="vazio" style="grid-column: 1/-1;">
+        <span class="material-symbols-outlined vazio-icone">shopping_bag</span>
+        <h3>Seu carrinho está vazio</h3>
+        <p>Adicione produtos artesanais antes de agendar seu pedido.</p>
+        <a href="catalogo" class="btn btn-primario">
+          <span class="material-symbols-outlined">storefront</span> Ver catálogo
+        </a>
+      </div>
+    `;
+    return;
+  }
+
+  const usuario = await usuarioAtual();
+  if (!usuario) {
+    layout.innerHTML = `
+      <div class="vazio" style="grid-column: 1/-1;">
+        <span class="material-symbols-outlined">lock</span>
+        <h3>Entre na sua conta para continuar</h3>
+        <p>Você precisa estar logado para agendar e confirmar seu pedido.</p>
+        <a href="login" class="btn btn-primario" style="margin-top:16px;">
+          <span class="material-symbols-outlined">login</span> Entrar / Cadastrar
+        </a>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    PERFIL_CLIENTE = typeof perfilAtual === 'function' ? await perfilAtual() : null;
+  } catch (e) {
+    console.warn('Erro ao carregar perfil do cliente:', e);
+  }
+
+  await carregarHorariosOcupados();
+  renderizarCheckout();
+}
+
+async function carregarHorariosOcupados() {
+  try {
+    const { data, error } = await db
+      .from('pedidos')
+      .select('data_agendada, horario_agendado')
+      .neq('status', 'cancelado');
+
+    if (!error && data) {
+      horariosOcupados = {};
+      data.forEach(p => {
+        if (!p.data_agendada || !p.horario_agendado) return;
+        if (!horariosOcupados[p.data_agendada]) horariosOcupados[p.data_agendada] = [];
+        horariosOcupados[p.data_agendada].push(p.horario_agendado);
+      });
+    }
+  } catch (e) {
+    console.warn('Não foi possível carregar horários ocupados:', e);
+  }
+}
+
+function renderizarCheckout() {
+  const layout = document.getElementById('checkoutLayout');
+  if (!layout) return;
+
+  const carrinho = lerCarrinho();
+  const total = totalCarrinho();
+
+  layout.innerHTML = `
+    <div class="checkout-principal">
+      <div class="cartao" style="margin-bottom: 20px;">
+        <h3 style="margin-bottom: 16px;">Tipo de entrega</h3>
+        <div class="tipo-entrega-opcoes">
+          <div class="opcao-entrega selecionada" id="opcaoRetirada" role="button" tabindex="0">
+            <span class="material-symbols-outlined">storefront</span>
+            <h4>Retirar na loja</h4>
+            <p style="font-size:0.8rem; color:var(--marrom-claro); margin-top:4px;">Sem taxa adicional</p>
+          </div>
+          <div class="opcao-entrega" id="opcaoEntrega" role="button" tabindex="0">
+            <span class="material-symbols-outlined">local_shipping</span>
+            <h4>Entrega no endereço</h4>
+            <p style="font-size:0.8rem; color:var(--marrom-claro); margin-top:4px;">Em Ponta Grossa e região</p>
+          </div>
+        </div>
+        <div class="campo" id="campoEndereco" style="display:none;">
+          <label for="enderecoEntrega">Endereço completo de entrega *</label>
+          <input type="text" id="enderecoEntrega" placeholder="Rua, número, bairro, complemento" maxlength="200">
+        </div>
+      </div>
+
+      <div class="cartao calendario-cartao">
+        <h3 style="margin-bottom: 16px;">Escolha a data da encomenda</h3>
+        <div class="calendario-cabecalho">
+          <button id="mesAnterior" class="btn-calendario-nav" aria-label="Mês anterior"><span class="material-symbols-outlined">chevron_left</span></button>
+          <span class="calendario-mes" id="calendarioMes"></span>
+          <button id="mesProximo" class="btn-calendario-nav" aria-label="Próximo mês"><span class="material-symbols-outlined">chevron_right</span></button>
+        </div>
+        <div class="calendario-grade-dias">
+          ${DIAS_SEMANA.map(d => `<span>${d}</span>`).join('')}
+        </div>
+        <div class="calendario-grade-datas" id="calendarioDatas"></div>
+      </div>
+
+      <div class="cartao" id="cartaoHorarios" style="display:none; margin-bottom: 20px;">
+        <h3 style="margin-bottom: 4px;">Escolha o horário</h3>
+        <p style="font-size: 0.88rem; color: var(--marrom-claro); margin-bottom: 12px;" id="dataEscolhidaTexto"></p>
+        <div class="horarios-grade" id="horariosGrade"></div>
+      </div>
+
+      <div class="cartao">
+        <h3 style="margin-bottom: 16px;">Observações do pedido</h3>
+        <div class="campo" style="margin-bottom: 0;">
+          <textarea id="observacoesPedido" rows="4" placeholder="Algum detalhe especial? (ex: sem açúcar, mensagem na embalagem, etc.)" maxlength="300" style="resize: none; min-height: 125px;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <aside class="checkout-resumo-container">
+      <div class="cartao resumo-cartao">
+        <h3 style="margin-bottom: 16px;">Resumo do pedido</h3>
+        <div class="resumo-itens-lista">
+          ${carrinho.map(item => `
+            <div class="resumo-item-mini">
+              <span>${Number(item.quantidade) || 1}x ${escapeHtml(item.nome)}</span>
+              <span>${formatarPreco(item.preco * item.quantidade)}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="resumo-linha total">
+          <span>Total</span>
+          <span>${formatarPreco(total)}</span>
+        </div>
+
+        <div id="containerFormasPagamento" style="margin-top: 16px;"></div>
+
+        <button class="btn btn-primario btn-bloco" id="btnConfirmarPedido" style="margin-top: 14px;">
+          ${window.ICONE_PIX_SVG || ''}
+          Pagar com Pix
+        </button>
+      </div>
+    </aside>
+  `;
+
+  document.getElementById('opcaoRetirada').addEventListener('click', () => selecionarTipoEntrega('retirada'));
+  document.getElementById('opcaoEntrega').addEventListener('click', () => selecionarTipoEntrega('entrega'));
+  document.getElementById('mesAnterior').addEventListener('click', () => mudarMes(-1));
+  document.getElementById('mesProximo').addEventListener('click', () => mudarMes(1));
+  document.getElementById('btnConfirmarPedido').addEventListener('click', confirmarPedido);
+
+  renderizarCalendario();
+
+  if (typeof renderizarSeletorPagamento === 'function') {
+    renderizarSeletorPagamento('containerFormasPagamento');
+  }
+}
+
+async function selecionarTipoEntrega(tipo) {
+  tipoEntrega = tipo;
+  const optRetirada = document.getElementById('opcaoRetirada');
+  const optEntrega = document.getElementById('opcaoEntrega');
+  const campoEnd = document.getElementById('campoEndereco');
+  const inputEnd = document.getElementById('enderecoEntrega');
+
+  if (optRetirada) optRetirada.classList.toggle('selecionada', tipo === 'retirada');
+  if (optEntrega) optEntrega.classList.toggle('selecionada', tipo === 'entrega');
+  if (campoEnd) campoEnd.style.display = tipo === 'entrega' ? 'block' : 'none';
+
+  if (tipo === 'entrega') {
+    if (!PERFIL_CLIENTE && typeof perfilAtual === 'function') {
+      try {
+        PERFIL_CLIENTE = await perfilAtual();
+      } catch (e) {
+        console.warn('Erro ao obter perfil para preencher endereço:', e);
+      }
+    }
+
+    if (inputEnd && (!inputEnd.value || !inputEnd.value.trim()) && PERFIL_CLIENTE) {
+      const enderecoPronto = montarEnderecoFormatado(PERFIL_CLIENTE);
+      if (enderecoPronto) {
+        inputEnd.value = enderecoPronto;
+        let badge = document.getElementById('avisoEnderecoPreenchido');
+        if (!badge && campoEnd) {
+          badge = document.createElement('div');
+          badge.id = 'avisoEnderecoPreenchido';
+          badge.style.cssText = 'font-size:0.83rem; color:var(--dourado-escuro); margin-top:6px; display:flex; align-items:center; gap:5px; font-weight:500;';
+          badge.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">verified</span> Endereço preenchido automaticamente com seus dados cadastrados.';
+          campoEnd.appendChild(badge);
+        }
+      }
+    }
+    inputEnd?.focus();
+  }
+}
+
+function mudarMes(delta) {
+  mesAtual += delta;
+  if (mesAtual < 0) { mesAtual = 11; anoAtual--; }
+  if (mesAtual > 11) { mesAtual = 0; anoAtual++; }
+  renderizarCalendario();
+}
+
+function renderizarCalendario() {
+  const mesLabel = document.getElementById('calendarioMes');
+  if (!mesLabel) return;
+  mesLabel.textContent = `${MESES[mesAtual]} de ${anoAtual}`;
+
+  const primeiroDia = new Date(anoAtual, mesAtual, 1).getDay();
+  const diasNoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  let html = '';
+  for (let i = 0; i < primeiroDia; i++) {
+    html += `<div class="data-celula vazia"></div>`;
+  }
+
+  for (let dia = 1; dia <= diasNoMes; dia++) {
+    const dataObj = new Date(anoAtual, mesAtual, dia);
+    const dataStr = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+    const passada = dataObj < hoje;
+    const domingo = dataObj.getDay() === 0;
+    const selecionada = dataStr === dataSelecionada;
+
+    if (passada || domingo) {
+      html += `<div class="data-celula passada" title="${domingo ? 'Fechado aos domingos' : 'Data passada'}">${dia}</div>`;
+    } else {
+      html += `<div class="data-celula ${selecionada ? 'selecionada' : ''}" data-data="${dataStr}">${dia}</div>`;
+    }
+  }
+
+  const containerDatas = document.getElementById('calendarioDatas');
+  if (containerDatas) {
+    containerDatas.innerHTML = html;
+    containerDatas.querySelectorAll('.data-celula[data-data]').forEach(cel => {
+      cel.addEventListener('click', () => selecionarData(cel.dataset.data));
+    });
+  }
+}
+
+function selecionarData(dataStr) {
+  dataSelecionada = dataStr;
+  horarioSelecionado = null;
+  renderizarCalendario();
+
+  const cartaoHorarios = document.getElementById('cartaoHorarios');
+  if (!cartaoHorarios) return;
+  cartaoHorarios.style.display = 'block';
+
+  const [ano, mes, dia] = dataStr.split('-');
+  document.getElementById('dataEscolhidaTexto').textContent = `Horários disponíveis para ${dia}/${mes}/${ano}:`;
+
+  const ocupados = horariosOcupados[dataStr] || [];
+  document.getElementById('horariosGrade').innerHTML = HORARIOS_PADRAO.map(h => {
+    const indisponivel = ocupados.includes(h);
+    return `
+      <button class="horario-btn ${indisponivel ? 'indisponivel' : ''}" data-horario="${h}" ${indisponivel ? 'disabled' : ''}>
+        ${h} ${indisponivel ? '(Esgotado)' : ''}
+      </button>
+    `;
+  }).join('');
+
+  document.querySelectorAll('.horario-btn:not(:disabled)').forEach(btn => {
+    btn.addEventListener('click', () => {
+      horarioSelecionado = btn.dataset.horario;
+      document.querySelectorAll('.horario-btn').forEach(b => b.classList.remove('selecionado'));
+      btn.classList.add('selecionado');
+    });
+  });
+
+  cartaoHorarios.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ============================================
+// Validação Global de Agendamento
+// ============================================
+function validarDadosAgendamento() {
+  if (!dataSelecionada) {
+    mostrarToast('Por favor, escolha uma data no calendário para a encomenda.', 'alerta');
+    const cal = document.querySelector('.calendario-cartao');
+    if (cal) cal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+  }
+  if (!horarioSelecionado) {
+    mostrarToast('Por favor, selecione um horário para a encomenda.', 'alerta');
+    const hor = document.getElementById('cartaoHorarios');
+    if (hor) {
+      hor.style.display = 'block';
+      hor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return false;
+  }
+  const enderecoInput = document.getElementById('enderecoEntrega');
+  const endereco = enderecoInput?.value?.trim() || '';
+  if (tipoEntrega === 'entrega' && !endereco) {
+    mostrarToast('Informe o endereço completo para a entrega.', 'alerta');
+    enderecoInput?.focus();
+    return false;
+  }
+  return true;
+}
+window.validarDadosAgendamento = validarDadosAgendamento;
+
+async function confirmarPedido() {
+  if (!validarDadosAgendamento()) {
+    return;
+  }
+
+  const btn = document.getElementById('btnConfirmarPedido');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined spin">autorenew</span> Processando...';
+  }
+
+  const perfil = await perfilAtual();
+  const metodo = typeof metodoPagamentoSelecionado !== 'undefined' ? metodoPagamentoSelecionado : 'pix';
+
+  if (metodo === 'pix') {
+    const pedidoCriado = await registrarPedidoNoBanco({
+      forma_pagamento: 'Pix',
+      status: 'aguardando_confirmacao',
+      pago: false
+    });
+    btn.disabled = false;
+    btn.innerHTML = `${window.ICONE_PIX_SVG || ''} Pagar com Pix`;
+
+    if (pedidoCriado && typeof iniciarFluxoPix === 'function') {
+      iniciarFluxoPix(pedidoCriado, perfil);
+    }
+  } else {
+    const pedidoCriado = await registrarPedidoNoBanco({
+      forma_pagamento: 'Pagar na Entrega / Retirada',
+      status: 'aguardando_confirmacao',
+      pago: false
+    });
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined">task_alt</span> Confirmar pedido';
+
+    if (pedidoCriado) {
+      exibirRecibo(pedidoCriado, perfil);
+    }
+  }
+}
+
+// ============================================
+// Helper: Registrar Pedido e Itens no Supabase
+// ============================================
+async function registrarPedidoNoBanco(dadosExtras = {}) {
+  const carrinho = typeof lerCarrinho === 'function' ? lerCarrinho() : [];
+
+  // Validação segura contra adulteração de preços locais (sincroniza com o catálogo oficial)
+  try {
+    const ids = carrinho.map(i => i.id).filter(Boolean);
+    if (ids.length > 0 && window.db) {
+      const { data: prodsDb } = await db.from('produtos').select('id, preco').in('id', ids);
+      if (Array.isArray(prodsDb) && prodsDb.length > 0) {
+        const mapa = new Map(prodsDb.map(p => [String(p.id), Number(p.preco)]));
+        carrinho.forEach(item => {
+          if (mapa.has(String(item.id))) {
+            item.preco = mapa.get(String(item.id));
+          }
+        });
+        if (typeof salvarCarrinho === 'function') {
+          salvarCarrinho(carrinho);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Verificação de preços pré-checkout:', e);
+  }
+
+  const total = carrinho.reduce((acc, item) => acc + (Number(item.preco) || 0) * (Number(item.quantidade) || 1), 0);
+  const observacoes = document.getElementById('observacoesPedido')?.value?.trim() || '';
+  const tipoEntregaAtual = tipoEntrega;
+  const enderecoInput = document.getElementById('enderecoEntrega');
+  const endereco = enderecoInput?.value?.trim() || '';
+  const usuario = await usuarioAtual();
+
+  if (!usuario) {
+    if (typeof mostrarToast === 'function') mostrarToast('Você precisa estar logado.', 'erro');
+    return null;
+  }
+
+  // Calcula o próximo número de pedido sequencial (DB-01, DB-02...)
+  let proximoNumeroPedido = 'DB-01';
+  try {
+    const { count, error: errCount } = await db
+      .from('pedidos')
+      .select('id', { count: 'exact', head: true });
+    if (!errCount && typeof count === 'number') {
+      const proximo = count + 1;
+      proximoNumeroPedido = `DB-${String(proximo).padStart(2, '0')}`;
+    }
+  } catch (e) {
+    console.warn('Não foi possível obter contagem de pedidos:', e);
+  }
+
+  const novoPedido = {
+    cliente_id: usuario.id,
+    valor_total: total,
+    status: dadosExtras.status || 'aguardando_confirmacao',
+    tipo_entrega: tipoEntregaAtual,
+    endereco_entrega: tipoEntregaAtual === 'entrega' ? endereco : null,
+    data_agendada: dataSelecionada,
+    horario_agendado: horarioSelecionado,
+    observacoes: observacoes || null,
+    forma_pagamento: dadosExtras.forma_pagamento || 'Pix',
+    numero_pedido: proximoNumeroPedido,
+    pago: dadosExtras.pago || false
+  };
+
+  let { data: pedidoCriado, error: erroPedido } = await db
+    .from('pedidos')
+    .insert(novoPedido)
+    .select()
+    .single();
+
+  // Fallback se alguma coluna opcional ainda não existir
+  if (erroPedido && (erroPedido.message?.includes('numero_pedido') || erroPedido.code === '42703')) {
+    const pedidoSemColuna = { ...novoPedido };
+    delete pedidoSemColuna.numero_pedido;
+    const retry = await db.from('pedidos').insert(pedidoSemColuna).select().single();
+    pedidoCriado = retry.data;
+    erroPedido = retry.error;
+  }
+
+  if (erroPedido) {
+    console.error('Erro ao registrar pedido:', erroPedido);
+    if (typeof mostrarToast === 'function') mostrarToast('Erro ao registrar pedido: ' + erroPedido.message, 'erro');
+    return null;
+  }
+
+  if (pedidoCriado && !pedidoCriado.numero_pedido) {
+    pedidoCriado.numero_pedido = proximoNumeroPedido;
+  }
+
+  const itensParaInserir = carrinho.map(i => ({
+    pedido_id: pedidoCriado.id,
+    produto_id: i.id,
+    nome: i.nome,
+    preco: Number(i.preco) || 0,
+    quantidade: Number(i.quantidade) || 1
+  }));
+
+  const { error: erroItens } = await db.from('itens_pedido').insert(itensParaInserir);
+  if (erroItens) {
+    console.error('Erro ao salvar itens do pedido:', erroItens);
+    if (typeof mostrarToast === 'function') mostrarToast('Pedido salvo com observações, mas houve falha nos itens.', 'alerta');
+  }
+
+  pedidoCriado.itens = carrinho;
+  return pedidoCriado;
+}
+
+function exibirRecibo(pedido, perfil) {
+  const nomeCliente = perfil?.nome || 'Cliente';
+  const numeroRecibo = pedido.numero_pedido || (pedido.id ? `DB-${String(pedido.id).slice(0, 4).toUpperCase()}` : 'DB-01');
+  const itensFormatados = pedido.itens.map(i => `${i.quantidade}x ${i.nome}`).join(', ');
+
+  const reciboConteudo = document.getElementById('reciboConteudo');
+  if (reciboConteudo) {
+    reciboConteudo.innerHTML = `
+      <div class="recibo-linha-detalhe"><span>Nº do pedido</span><span style="font-weight:700; color:var(--marrom);">${escapeHtml(numeroRecibo)}</span></div>
+      <div class="recibo-linha-detalhe"><span>Cliente</span><span>${escapeHtml(nomeCliente)}</span></div>
+      <div class="recibo-linha-detalhe"><span>Itens</span><span>${escapeHtml(itensFormatados)}</span></div>
+      <div class="recibo-linha-detalhe"><span>Modalidade</span><span>${pedido.tipo_entrega === 'entrega' ? 'Entrega em domicílio' : 'Retirada na loja'}</span></div>
+      ${pedido.endereco_entrega ? `<div class="recibo-linha-detalhe"><span>Endereço</span><span>${escapeHtml(pedido.endereco_entrega)}</span></div>` : ''}
+      <div class="recibo-linha-detalhe"><span>Data da encomenda</span><span>${escapeHtml((pedido.data_agendada && pedido.data_agendada !== 'null') ? formatarData(pedido.data_agendada) : 'A combinar com a loja')}</span></div>
+      <div class="recibo-linha-detalhe"><span>Horário agendado</span><span>${escapeHtml((pedido.horario_agendado && pedido.horario_agendado !== 'null') ? pedido.horario_agendado : 'A combinar')}</span></div>
+      <div class="recibo-linha-detalhe"><span>Forma de pagamento</span><span>${escapeHtml(pedido.forma_pagamento || 'Cartão de Crédito')}</span></div>
+      <div class="recibo-linha-detalhe" style="font-weight:700;"><span>Total</span><span style="color:var(--dourado-escuro); font-size:1.1rem;">${formatarPreco(pedido.valor_total)}</span></div>
+    `;
+  }
+
+  // Montagem limpa e segura da mensagem do WhatsApp (evita caracteres corrompidos no WhatsApp Web/Desktop)
+  const totalFormatado = formatarPreco(pedido.valor_total).replace(/[\u00A0\u202F]/g, ' ');
+  const dataValida = pedido.data_agendada && pedido.data_agendada !== 'null';
+  const dataFormatada = dataValida ? (formatarData(pedido.data_agendada) || pedido.data_agendada) : 'A combinar com a loja';
+  const horarioValido = pedido.horario_agendado && pedido.horario_agendado !== 'null';
+  const dataHoraWhatsApp = horarioValido ? `${dataFormatada} às ${pedido.horario_agendado}` : dataFormatada;
+
+  const linhasTexto = [
+    `Olá! Gostaria de confirmar meu pedido *${numeroRecibo}* na Dona Benta:`,
+    '',
+    ...pedido.itens.map(i => `- ${i.quantidade}x ${i.nome}`),
+    '',
+    `*Data:* ${dataHoraWhatsApp}`,
+    `*Entrega:* ${pedido.tipo_entrega === 'entrega' ? (pedido.endereco_entrega || 'A informar') : 'Retirada na loja'}`,
+    `*Total:* ${totalFormatado}`,
+    `*Pagamento:* ${pedido.forma_pagamento || 'Cartão de Crédito'}`
+  ];
+
+  if (pedido.observacoes) {
+    linhasTexto.push(`*Obs:* ${pedido.observacoes}`);
+  }
+
+  const mensagemCodificada = encodeURIComponent(linhasTexto.join('\n'));
+  const btnWhatsapp = document.getElementById('btnWhatsapp');
+  if (btnWhatsapp) {
+    btnWhatsapp.href = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${mensagemCodificada}`;
+  }
+
+  if (typeof limparCarrinho === 'function') {
+    limparCarrinho();
+  }
+
+  const overlay = document.getElementById('reciboOverlay');
+  if (overlay) overlay.classList.add('aberto');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  iniciarCheckout();
+});

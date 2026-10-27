@@ -1,0 +1,63 @@
+<?= $this->extend('layouts/main') ?>
+
+<?= $this->section('content') ?>
+  <section class="auth-secao">
+    <div class="container">
+      <div class="cartao auth-cartao" id="authContent">
+        <div class="auth-topo">
+          <span class="material-symbols-outlined">bakery_dining</span>
+          <h1>Bem-vindo(a)</h1>
+          <p>Entre ou crie sua conta para encomendar</p>
+        </div>
+
+        <div class="auth-abas">
+          <button type="button" class="auth-aba ativa" id="abaEntrar">Entrar</button>
+          <button type="button" class="auth-aba" id="abaCadastrar">Criar conta</button>
+        </div>
+
+        <form class="form-auth ativo" id="formEntrar">
+          <div class="campo">
+            <label for="emailEntrar">E-mail</label>
+            <input type="email" id="emailEntrar" placeholder="seuemail@exemplo.com" required autocomplete="email">
+          </div>
+          <div class="campo">
+            <label for="senhaEntrar">Senha</label>
+            <input type="password" id="senhaEntrar" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <div class="senha-esqueci">
+            <a href="#" id="linkEsqueciSenha">Esqueci minha senha</a>
+          </div>
+          <button type="submit" class="btn btn-primario btn-bloco" id="btnEntrar">
+            Entrar
+          </button>
+        </form>
+
+        <form class="form-auth" id="formCadastrar">
+          <div class="campo">
+            <label for="nomeCadastro">Nome completo</label>
+            <input type="text" id="nomeCadastro" placeholder="Seu nome" required autocomplete="name">
+          </div>
+          <div class="campo">
+            <label for="telefoneCadastro">Telefone / WhatsApp</label>
+            <input type="tel" id="telefoneCadastro" placeholder="(42) 99999-9999" required autocomplete="tel">
+          </div>
+          <div class="campo">
+            <label for="emailCadastro">E-mail</label>
+            <input type="email" id="emailCadastro" placeholder="seuemail@exemplo.com" required autocomplete="email">
+          </div>
+          <div class="campo">
+            <label for="senhaCadastro">Senha (mínimo 6 caracteres)</label>
+            <input type="password" id="senhaCadastro" placeholder="••••••••" minlength="6" required autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn btn-primario btn-bloco" id="btnCadastrar">
+            Criar conta
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+  <script src="<?= base_url('js/login.js?v=3.0') ?>"></script>
+<?= $this->endSection() ?>

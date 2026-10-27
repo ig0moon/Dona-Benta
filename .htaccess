@@ -1,0 +1,45 @@
+# ============================================
+# DONA BENTA — Root Security Hardening .htaccess
+# Bloqueio total de arquivos sensíveis e redirecionamento para public/
+# ============================================
+
+# Desativa listagem de diretórios
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    Options +FollowSymlinks
+    RewriteEngine On
+
+    # 1. Bloqueia estritamente arquivos sensíveis de sistema e configuração
+    RewriteRule ^(\.env|env|\.git|\.github|\.vscode|composer\.(json|lock)|phpunit.*|spark|preload\.php|README\.md|LICENSE|api-server\.js) - [F,L,NC]
+
+    # 2. Bloqueia acesso direto a pastas de backend protegidas
+    RewriteRule ^(app|vendor|writable|tests|backup_original|supabase)/ - [F,L,NC]
+
+    # 3. Redireciona qualquer requisição na raiz para a pasta public/ (quando o DocumentRoot aponta para a raiz do projeto)
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+</IfModule>
+
+# Fallback para proibir acesso a dotfiles e arquivos críticos em servidores sem mod_rewrite
+<FilesMatch "^(\.env|env|\.git|composer\.|phpunit|spark|preload)">
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>
+
+# Headers de Segurança OWASP no nível do Servidor Web
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header unset X-Powered-By
+</IfModule>
