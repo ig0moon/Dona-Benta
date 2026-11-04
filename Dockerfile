@@ -4,7 +4,7 @@ ENV CI_ENVIRONMENT=production \
     PORT=10000
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libicu-dev libcurl4-openssl-dev libonig-dev \
+    && apt-get install -y --no-install-recommends libicu-dev libcurl4-openssl-dev libonig-dev unzip \
     && docker-php-ext-install curl intl mbstring mysqli pdo_mysql \
     && a2enmod rewrite headers \
     && sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
