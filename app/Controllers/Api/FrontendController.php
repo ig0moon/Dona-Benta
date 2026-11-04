@@ -15,7 +15,7 @@ abstract class FrontendController extends BaseController
         }
 
         $originParts = parse_url($origin);
-        $baseParts = parse_url((string) env('APP_BASE_URL', base_url('/')));
+        $baseParts = parse_url(config('App')->baseURL);
         $originPort = $originParts['port'] ?? (($originParts['scheme'] ?? '') === 'https' ? 443 : 80);
         $basePort = $baseParts['port'] ?? (($baseParts['scheme'] ?? '') === 'https' ? 443 : 80);
         if (!is_array($originParts)

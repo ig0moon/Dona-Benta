@@ -23,7 +23,7 @@ class SupabaseProxyService
             'update'   => ['PUT', '/auth/v1/user'],
         ];
         if ($action === 'recovery') {
-            $redirect = rtrim((string) env('APP_BASE_URL', ''), '/') . '/login';
+            $redirect = rtrim(config('App')->baseURL, '/') . '/login';
             $path = '/auth/v1/recover?redirect_to=' . rawurlencode($redirect);
             $result = $this->request('POST', $path, $payload, null);
             return $result;

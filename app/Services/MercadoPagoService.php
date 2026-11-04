@@ -274,7 +274,7 @@ class MercadoPagoService
             $payerEmail = 'cliente.donabenta@gmail.com';
         }
 
-        $baseUrl = rtrim((string) env('APP_BASE_URL', ''), '/');
+        $baseUrl = rtrim(config('App')->baseURL, '/');
         if ($baseUrl === '') {
             return ['status' => 503, 'data' => ['erro' => 'APP_BASE_URL precisa estar configurada para pagamentos com cartão.']];
         }

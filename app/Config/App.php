@@ -21,7 +21,13 @@ class App extends BaseConfig
     public function __construct()
     {
         parent::__construct();
-        $this->baseURL = (string) env('APP_BASE_URL', $this->baseURL);
+
+        $baseURL = trim((string) env('APP_BASE_URL', ''));
+        if ($baseURL === '') {
+            $baseURL = trim((string) env('RENDER_EXTERNAL_URL', $this->baseURL));
+        }
+
+        $this->baseURL = rtrim($baseURL, '/') . '/';
     }
 
     /**

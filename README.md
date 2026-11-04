@@ -10,7 +10,7 @@ Site da confeitaria Dona Benta, construído com CodeIgniter 4, PHP e Supabase. O
 | Variável | Uso |
 | --- | --- |
 | `CI_ENVIRONMENT` | Use `production`. |
-| `APP_BASE_URL` | URL pública do serviço, incluindo `https://` e a barra final. |
+| `APP_BASE_URL` | Opcional. URL pública do serviço, incluindo `https://` e a barra final. O Render usa automaticamente `RENDER_EXTERNAL_URL` quando essa variável não está definida. Configure `APP_BASE_URL` somente se usar um domínio personalizado. |
 | `SUPABASE_URL` | URL do projeto Supabase. |
 | `SUPABASE_ANON_KEY` | Chave pública do Supabase, usada somente no servidor. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Acesso administrativo usado pelo servidor para atualizar pedidos via webhook. Mantenha estritamente privada. |

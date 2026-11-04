@@ -46,4 +46,50 @@ final class HealthTest extends CIUnitTestCase
             'baseURL "' . $reader->baseURL . '" in app/Config/App.php is not valid URL',
         );
     }
+
+    public function testRenderExternalUrlIsUsedWhenAppBaseUrlIsNotSet(): void
+    {
+        $keys = ['APP_BASE_URL', 'RENDER_EXTERNAL_URL'];
+        $original = [];
+
+        foreach ($keys as $key) {
+            $original[$key] = [
+                'envExists'    => array_key_exists($key, $_ENV),
+                'env'          => $_ENV[$key] ?? null,
+                'serverExists' => array_key_exists($key, $_SERVER),
+                'server'       => $_SERVER[$key] ?? null,
+                'process'      => getenv($key),
+            ];
+            unset($_ENV[$key], $_SERVER[$key]);
+            putenv($key);
+        }
+
+        try {
+            $_ENV['RENDER_EXTERNAL_URL'] = 'https://dona-benta.onrender.com';
+            $this->assertSame('https://dona-benta.onrender.com/', (new App())->baseURL);
+
+            $_ENV['APP_BASE_URL'] = 'https://loja.example.com';
+            $this->assertSame('https://loja.example.com/', (new App())->baseURL);
+        } finally {
+            foreach ($original as $key => $values) {
+                if ($values['envExists']) {
+                    $_ENV[$key] = $values['env'];
+                } else {
+                    unset($_ENV[$key]);
+                }
+
+                if ($values['serverExists']) {
+                    $_SERVER[$key] = $values['server'];
+                } else {
+                    unset($_SERVER[$key]);
+                }
+
+                if ($values['process'] === false) {
+                    putenv($key);
+                } else {
+                    putenv($key . '=' . $values['process']);
+                }
+            }
+        }
+    }
 }

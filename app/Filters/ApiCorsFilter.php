@@ -18,7 +18,7 @@ class ApiCorsFilter implements FilterInterface
             return '*';
         }
 
-        $baseUrl = rtrim(env('app.baseURL', 'http://localhost:8080/'), '/');
+        $baseUrl = rtrim(config('App')->baseURL, '/');
         $allowedOrigins = [
             $baseUrl,
             'http://localhost:8080',
