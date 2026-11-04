@@ -7,6 +7,7 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // ============================================
+// ============================================
 // ROTAS DO FRONTEND (MVC VIEWS)
 // ============================================
 $routes->get('/', 'Home::index');

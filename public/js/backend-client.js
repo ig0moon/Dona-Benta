@@ -1,4 +1,4 @@
-// Same-origin application client. Credentials and access tokens stay on the server.
+// Same-origin application client. Database access and password verification stay on the server.
 const BACKEND_API_URL = new URL('api/', window.BASE_URL || `${window.location.origin}/`);
 const BUCKET_PRODUTOS = 'produtos';
 const BUCKET_AVATARES = 'fotos-perfil';

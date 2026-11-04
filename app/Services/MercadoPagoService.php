@@ -7,14 +7,14 @@ class MercadoPagoService
     protected string $accessToken;
     protected ?string $webhookUrl;
     protected bool $isProduction;
-    protected SupabaseService $supabase;
+    protected TiDBStoreService $tidb;
 
     public function __construct()
     {
         $this->accessToken  = (string) env('MP_ACCESS_TOKEN', '');
         $this->webhookUrl   = env('WEBHOOK_URL', null);
         $this->isProduction = str_starts_with($this->accessToken, 'APP_USR-') || env('CI_ENVIRONMENT') === 'production';
-        $this->supabase     = new SupabaseService();
+        $this->tidb         = new TiDBStoreService();
     }
 
     public function isProduction(): bool
@@ -93,12 +93,12 @@ class MercadoPagoService
 
         $valorEfetivo = $valorRaw;
 
-        // Anti-tampering estrito de preço: consulta Supabase e recalcula com base no catálogo real
-        if (!is_string($pedidoId) || !$this->supabase->isValidPedidoId($pedidoId)) {
+        // Recalcula o valor do pedido com os preços atuais do catálogo no TiDB.
+        if (!is_string($pedidoId) || !$this->tidb->isValidPedidoId($pedidoId)) {
             return ['status' => 400, 'data' => ['erro' => 'Identificador de pedido inválido']];
         }
 
-        $pedidoDb = $this->supabase->consultarPedido($pedidoId, $userAuthHeader);
+        $pedidoDb = $this->tidb->consultarPedido($pedidoId, $userAuthHeader);
         if (!$this->pedidoPertenceAoUsuario($pedidoDb, $userId)) {
             return ['status' => 404, 'data' => ['erro' => 'Pedido não encontrado']];
         }
@@ -111,7 +111,7 @@ class MercadoPagoService
             }
 
             // Recalcula o valor real com os produtos cadastrados
-            $valorReal = $this->supabase->calcularValorRealPedido($pedidoId, $userAuthHeader);
+            $valorReal = $this->tidb->calcularValorRealPedido($pedidoId, $userAuthHeader);
             if ($valorReal === null) {
                 return ['status' => 409, 'data' => ['erro' => 'Não foi possível validar os preços dos itens do pedido.']];
             }
@@ -120,7 +120,7 @@ class MercadoPagoService
             if ($valorDb > 0 && abs($valorEfetivo - $valorDb) > 0.05) {
                 log_message('warning', "[SEGURANÇA] Ajustando valor conforme catálogo oficial: R$ {$valorDb} (enviado: R$ {$valorEfetivo})");
                 // Sincroniza o valor correto no registro do pedido
-                $this->supabase->atualizarPedido($pedidoId, ['valor_total' => $valorDb], $userAuthHeader);
+                $this->tidb->atualizarPedido($pedidoId, ['valor_total' => $valorDb], $userAuthHeader);
             }
             $valorEfetivo = $valorDb;
         }
@@ -217,7 +217,7 @@ class MercadoPagoService
         $qrCodeBase64 = !empty($poi['qr_code_base64']) ? 'data:image/png;base64,' . $poi['qr_code_base64'] : null;
 
         if (!empty($pedidoId)) {
-            $this->supabase->atualizarPedido($pedidoId, [
+            $this->tidb->atualizarPedido($pedidoId, [
                 'forma_pagamento' => 'Pix',
                 'status'          => 'aguardando_confirmacao',
                 'pago'            => false
@@ -245,11 +245,11 @@ class MercadoPagoService
     public function processarCartao(array $payload, ?string $userAuthHeader = null, ?string $userId = null): array
     {
         $pedidoId = $payload['pedido_id'] ?? null;
-        if (!is_string($pedidoId) || !$this->supabase->isValidPedidoId($pedidoId)) {
+        if (!is_string($pedidoId) || !$this->tidb->isValidPedidoId($pedidoId)) {
             return ['status' => 400, 'data' => ['erro' => 'Identificador de pedido inválido']];
         }
 
-        $pedidoDb = $this->supabase->consultarPedido($pedidoId, $userAuthHeader);
+        $pedidoDb = $this->tidb->consultarPedido($pedidoId, $userAuthHeader);
         if (!$this->pedidoPertenceAoUsuario($pedidoDb, $userId)) {
             return ['status' => 404, 'data' => ['erro' => 'Pedido não encontrado']];
         }
@@ -257,7 +257,7 @@ class MercadoPagoService
             return ['status' => 400, 'data' => ['erro' => 'Este pedido não pode ser pago']];
         }
 
-        $valorReal = $this->supabase->calcularValorRealPedido($pedidoId, $userAuthHeader);
+        $valorReal = $this->tidb->calcularValorRealPedido($pedidoId, $userAuthHeader);
         if ($valorReal === null) {
             return ['status' => 409, 'data' => ['erro' => 'Não foi possível validar os preços dos itens do pedido.']];
         }
@@ -324,7 +324,7 @@ class MercadoPagoService
             return ['status' => 502, 'data' => ['erro' => 'O Mercado Pago não retornou um endereço de checkout válido.']];
         }
 
-        $this->supabase->atualizarPedido($pedidoId, [
+        $this->tidb->atualizarPedido($pedidoId, [
             'forma_pagamento' => 'Cartão de Crédito',
             'status'          => 'aguardando_confirmacao',
             'pago'            => false,
@@ -345,7 +345,7 @@ class MercadoPagoService
     public function consultarStatus(string $pagamentoId, ?string $pedidoId = null, ?string $userAuthHeader = null, ?string $userId = null): array
     {
         if ($pedidoId !== null) {
-            $pedidoDb = $this->supabase->consultarPedido($pedidoId, $userAuthHeader);
+            $pedidoDb = $this->tidb->consultarPedido($pedidoId, $userAuthHeader);
             if (!$this->pedidoPertenceAoUsuario($pedidoDb, $userId)) {
                 return ['status' => 404, 'data' => ['erro' => 'Pedido não encontrado']];
             }
@@ -361,7 +361,7 @@ class MercadoPagoService
         $aprovado = ($mpData['status'] ?? '') === 'approved';
 
         if ($aprovado && !empty($pedidoId)) {
-            $this->supabase->atualizarPedido($pedidoId, [
+            $this->tidb->atualizarPedido($pedidoId, [
                 'status' => 'confirmado',
                 'pago'   => true
             ], $userAuthHeader);
@@ -387,15 +387,15 @@ class MercadoPagoService
             return ['status' => 403, 'data' => ['erro' => 'Simulação estritamente desabilitada em ambiente de produção']];
         }
 
-        if (!$this->supabase->isValidPedidoId($pedidoId)) {
+        if (!$this->tidb->isValidPedidoId($pedidoId)) {
             return ['status' => 400, 'data' => ['erro' => 'pedido_id obrigatório e deve ter formato válido']];
         }
 
-        if (empty($userAuthHeader)) {
+        if ($userId === null) {
             return ['status' => 401, 'data' => ['erro' => 'Autenticação necessária para simular aprovação']];
         }
 
-        $pedidoDb = $this->supabase->consultarPedido($pedidoId, $userAuthHeader);
+        $pedidoDb = $this->tidb->consultarPedido($pedidoId, $userAuthHeader);
         if (!$this->pedidoPertenceAoUsuario($pedidoDb, $userId)) {
             return ['status' => 404, 'data' => ['erro' => 'Pedido não localizado ou acesso não autorizado']];
         }
@@ -404,7 +404,7 @@ class MercadoPagoService
             return ['status' => 400, 'data' => ['erro' => 'Este pedido já se encontra pago']];
         }
 
-        $this->supabase->atualizarPedido($pedidoId, [
+        $this->tidb->atualizarPedido($pedidoId, [
             'status' => 'confirmado',
             'pago'   => true
         ], $userAuthHeader);
@@ -422,8 +422,7 @@ class MercadoPagoService
     {
         return $pedido !== null
             && $userId !== null
-            && isset($pedido['cliente_id'])
-            && hash_equals((string) $pedido['cliente_id'], $userId);
+            && hash_equals((string) ($pedido['cliente_id'] ?? $pedido['usuario_id'] ?? ''), $userId);
     }
 
     /**
@@ -441,8 +440,8 @@ class MercadoPagoService
                 $pagamento = $res['data'];
                 if (($pagamento['status'] ?? '') === 'approved' && !empty($pagamento['external_reference'])) {
                     $pedidoId = $pagamento['external_reference'];
-                    if ($this->supabase->isValidPedidoId($pedidoId)) {
-                        $this->supabase->atualizarPedido($pedidoId, [
+                    if ($this->tidb->isValidPedidoId($pedidoId)) {
+                        $this->tidb->atualizarPedido($pedidoId, [
                             'status' => 'confirmado',
                             'pago'   => true
                         ]);

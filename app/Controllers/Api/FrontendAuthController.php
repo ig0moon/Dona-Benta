@@ -2,21 +2,21 @@
 
 namespace App\Controllers\Api;
 
-use App\Services\SupabaseProxyService;
+use App\Services\TiDBAuthService;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class FrontendAuthController extends FrontendController
 {
-    private SupabaseProxyService $supabase;
+    private TiDBAuthService $auth;
 
     public function __construct()
     {
-        $this->supabase = new SupabaseProxyService();
+        $this->auth = new TiDBAuthService();
     }
 
     public function session(): ResponseInterface
     {
-        $user = $this->supabase->currentUser();
+        $user = $this->auth->currentUser();
         return $this->response->setJSON([
             'data' => ['user' => $this->rewriteStorageUrls($user)],
             'error' => null,
@@ -52,7 +52,7 @@ class FrontendAuthController extends FrontendController
         if ($blocked = $this->rejectCrossOrigin()) {
             return $blocked;
         }
-        if ($this->supabase->currentUser() === null) {
+        if ($this->auth->currentUser() === null) {
             return $this->response->setStatusCode(401)->setJSON(['data' => null, 'error' => ['message' => 'Autenticação necessária.']]);
         }
         return $this->authResult('update');
@@ -63,7 +63,7 @@ class FrontendAuthController extends FrontendController
         if ($blocked = $this->rejectCrossOrigin()) {
             return $blocked;
         }
-        $this->supabase->logout();
+        $this->auth->logout();
         return $this->response->setJSON(['data' => true, 'error' => null]);
     }
 
@@ -77,7 +77,7 @@ class FrontendAuthController extends FrontendController
             $payload = ['email' => $payload['email'] ?? ''];
         }
 
-        $result = $this->supabase->auth($action, $payload);
+        $result = $this->auth->auth($action, $payload);
         $data = $result['data'];
         if (is_array($data)) {
             $data = isset($data['user']) ? ['user' => $data['user']] : null;

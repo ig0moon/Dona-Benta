@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS perfis (
     id VARCHAR(255) NOT NULL,
     nome VARCHAR(255) DEFAULT NULL,
     email VARCHAR(255) DEFAULT NULL,
+    senha_hash VARCHAR(255) DEFAULT NULL,
     telefone VARCHAR(50) DEFAULT NULL,
     cep VARCHAR(20) DEFAULT NULL,
     bairro VARCHAR(100) DEFAULT NULL,
@@ -32,6 +33,15 @@ CREATE TABLE IF NOT EXISTS perfis (
     UNIQUE KEY uq_perfis_email (email),
     INDEX idx_perfis_role (role),
     INDEX idx_perfis_telefone (telefone)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS arquivos (
+    bucket VARCHAR(40) NOT NULL,
+    path VARCHAR(500) NOT NULL,
+    mime_type VARCHAR(100) NOT NULL,
+    conteudo LONGBLOB NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (bucket, path)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ====================================================================
@@ -232,21 +242,3 @@ ON DUPLICATE KEY UPDATE
     destaque = VALUES(destaque),
     disponivel = VALUES(disponivel),
     ativo = VALUES(ativo);
-
--- ====================================================================
--- 6. SEED INICIAL: PERFIL ADMINISTRADOR PADRÃO
--- ====================================================================
-INSERT INTO perfis (
-    id, nome, email, telefone, role, avatar_url
-)
-VALUES (
-    'admin-dona-benta',
-    'Administrador Dona Benta',
-    'admin@donabenta.com.br',
-    '(11) 98765-4321',
-    'admin',
-    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80'
-)
-ON DUPLICATE KEY UPDATE 
-    nome = VALUES(nome),
-    role = VALUES(role);

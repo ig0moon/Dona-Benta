@@ -3,84 +3,10 @@
 // Lista de produtos: busca rápida, filtro por categoria e cards
 // ============================================
 
-const PRODUTOS_MODELO = [
-  {
-    id: 'mod-1',
-    nome: 'Bolo de Chocolate com Ganache Belga',
-    descricao: 'Massa fofa de cacau nobre recheada e coberta com autêntica ganache meio amargo.',
-    preco: 89.90,
-    categoria: 'bolos',
-    imagem_url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&q=80',
-    disponivel: true
-  },
-  {
-    id: 'mod-2',
-    nome: 'Pão Artesanal de Fermentação Natural (Levain)',
-    descricao: 'Casca dourada e crocante com miolo alveolado em fermentação lenta de 36 horas.',
-    preco: 22.00,
-    categoria: 'paes',
-    imagem_url: 'https://images.unsplash.com/photo-1585478259715-876a6a81fc08?w=600&q=80',
-    disponivel: true
-  },
-  {
-    id: 'mod-3',
-    nome: 'Caixa de Brigadeiros Gourmet (12 un)',
-    descricao: 'Seleção artesanal com brigadeiro tradicional belga, ninho com nutella e pistache.',
-    preco: 45.00,
-    categoria: 'doces',
-    imagem_url: 'https://images.unsplash.com/photo-1548907040-4baa419dea28?w=600&q=80',
-    disponivel: true
-  },
-  {
-    id: 'mod-4',
-    nome: 'Torta de Frango com Catupiry Artesanal',
-    descricao: 'Massa podre tradicional que derrete na boca com recheio cremoso e peito de frango desfiado.',
-    preco: 68.00,
-    categoria: 'salgados',
-    imagem_url: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=600&q=80',
-    disponivel: true
-  },
-  {
-    id: 'mod-5',
-    nome: 'Croissants Amanteigados Tradicionais',
-    descricao: 'Folhados com manteiga pura de primeira linha, dourados por fora e macios por dentro.',
-    preco: 38.00,
-    categoria: 'paes',
-    imagem_url: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&q=80',
-    disponivel: true
-  },
-  {
-    id: 'mod-6',
-    nome: 'Torta Holandesa Cremosa',
-    descricao: 'Base crocante de biscoitos com creme aveludado de baunilha e cobertura de chocolate puro.',
-    preco: 62.00,
-    categoria: 'tortas',
-    imagem_url: 'https://images.unsplash.com/photo-1519340333755-56e9c1d04579?w=600&q=80',
-    disponivel: true
-  },
-  {
-    id: 'mod-7',
-    nome: 'Empadão Rústico de Palmito',
-    descricao: 'Recheio cremoso de palmito selecionado, azeitonas e temperos verdes caseiros.',
-    preco: 58.00,
-    categoria: 'salgados',
-    imagem_url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&q=80',
-    disponivel: false
-  },
-  {
-    id: 'mod-8',
-    nome: 'Bolo Caseiro de Cenoura com Chocolate',
-    descricao: 'Receita clássica de vó com calda quente e crocante de brigadeiro.',
-    preco: 55.00,
-    categoria: 'bolos',
-    imagem_url: 'https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=600&q=80',
-    disponivel: true
-  }
-];
-
 let TODOS_PRODUTOS = [];
 let categoriaAtiva = 'todos';
 let termoBusca = '';
+let erroCarregamentoCatalogo = false;
 
 // Normaliza texto removendo acentos e deixando em minúsculas
 function normalizar(texto) {
@@ -127,15 +53,14 @@ async function carregarCatalogo() {
 
     const { data, error } = await Promise.race([consultaPromise, timeoutPromise]);
 
-    if (!error && Array.isArray(data) && data.length > 0) {
-      TODOS_PRODUTOS = data;
-    } else {
-      console.info('Carregando catálogo com produtos de vitrine Dona Benta.');
-      TODOS_PRODUTOS = PRODUTOS_MODELO;
+    if (error) {
+      throw new Error(error.message || 'Falha ao carregar os produtos do TiDB.');
     }
+    TODOS_PRODUTOS = Array.isArray(data) ? data : [];
   } catch (err) {
-    console.warn('Usando vitrine padrão (banco vazio ou indisponível):', err.message || err);
-    TODOS_PRODUTOS = PRODUTOS_MODELO;
+    console.error('Não foi possível carregar o catálogo do TiDB:', err.message || err);
+    TODOS_PRODUTOS = [];
+    erroCarregamentoCatalogo = true;
   }
 
   // Categoria via parâmetro de URL (?categoria=bolos)
@@ -154,6 +79,18 @@ async function carregarCatalogo() {
 function renderizarCatalogo() {
   const area = document.getElementById('areaCatalogo');
   if (!area) return;
+
+  if (erroCarregamentoCatalogo) {
+    area.innerHTML = `
+      <div class="vazio cartao">
+        <span class="material-symbols-outlined">database_off</span>
+        <h3>Não foi possível carregar os produtos</h3>
+        <p>Verifique a conexão do banco TiDB e tente novamente.</p>
+        <button type="button" class="btn btn-primario" onclick="window.location.reload()">Tentar novamente</button>
+      </div>
+    `;
+    return;
+  }
 
   let lista = TODOS_PRODUTOS;
 

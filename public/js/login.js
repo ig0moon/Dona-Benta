@@ -119,19 +119,6 @@ formCadastrar?.addEventListener('submit', async (e) => {
     return;
   }
 
-  if (data.user) {
-    try {
-      await db.from('perfis').upsert({
-        id: data.user.id,
-        nome,
-        telefone,
-        role: 'cliente'
-      });
-    } catch (errPerfil) {
-      console.warn('Aviso: inserção inicial em perfis:', errPerfil);
-    }
-  }
-
   btn.disabled = false;
   btn.textContent = 'Criar conta';
   mostrarToast('Conta criada com sucesso! Redirecionando...', 'sucesso');

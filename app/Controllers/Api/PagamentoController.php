@@ -4,18 +4,18 @@ namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
 use App\Services\MercadoPagoService;
-use App\Services\SupabaseProxyService;
+use App\Services\TiDBAuthService;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class PagamentoController extends BaseController
 {
     protected MercadoPagoService $mpService;
-    protected SupabaseProxyService $authService;
+    protected TiDBAuthService $authService;
 
     public function __construct()
     {
         $this->mpService = new MercadoPagoService();
-        $this->authService = new SupabaseProxyService();
+        $this->authService = new TiDBAuthService();
     }
 
     /**
@@ -60,15 +60,14 @@ class PagamentoController extends BaseController
         }
 
         $user = $this->authService->currentUser();
-        $authHeader = $this->authService->authorizationHeader();
-        if ($user === null || $authHeader === null) {
+        if ($user === null) {
             return $this->response->setStatusCode(401)->setJSON(['erro' => 'Entre na sua conta para pagar.']);
         }
         if (!isset($payload['cliente']) || !is_array($payload['cliente'])) {
             $payload['cliente'] = [];
         }
         $payload['cliente']['email'] = $user['email'] ?? ($payload['cliente']['email'] ?? '');
-        $resultado = $this->mpService->gerarPix($payload, $authHeader, (string) $user['id']);
+        $resultado = $this->mpService->gerarPix($payload, null, (string) $user['id']);
 
         return $this->response->setStatusCode($resultado['status'])->setJSON($resultado['data']);
     }
@@ -84,12 +83,11 @@ class PagamentoController extends BaseController
         }
 
         $user = $this->authService->currentUser();
-        $authHeader = $this->authService->authorizationHeader();
-        if ($user === null || $authHeader === null) {
+        if ($user === null) {
             return $this->response->setStatusCode(401)->setJSON(['erro' => 'Entre na sua conta para pagar.']);
         }
         $payload['email'] = $user['email'] ?? ($payload['email'] ?? '');
-        $resultado = $this->mpService->processarCartao($payload, $authHeader, (string) $user['id']);
+        $resultado = $this->mpService->processarCartao($payload, null, (string) $user['id']);
 
         return $this->response->setStatusCode($resultado['status'])->setJSON($resultado['data']);
     }
@@ -107,15 +105,14 @@ class PagamentoController extends BaseController
         }
 
         $user = $this->authService->currentUser();
-        $authHeader = $this->authService->authorizationHeader();
-        if ($user === null || $authHeader === null) {
+        if ($user === null) {
             return $this->response->setStatusCode(401)->setJSON(['erro' => 'Autenticação necessária.']);
         }
         if ($pedidoId === '' || !preg_match('/^[0-9a-fA-F-]{8,45}$/', trim($pedidoId))) {
             return $this->response->setStatusCode(400)->setJSON(['erro' => 'Pedido inválido ou ausente.']);
         }
 
-        $resultado = $this->mpService->consultarStatus(trim($pagamentoId), $pedidoId, $authHeader, (string) $user['id']);
+        $resultado = $this->mpService->consultarStatus(trim($pagamentoId), $pedidoId, null, (string) $user['id']);
 
         return $this->response->setStatusCode($resultado['status'])->setJSON($resultado['data']);
     }
@@ -136,15 +133,13 @@ class PagamentoController extends BaseController
         }
 
         $user = $this->authService->currentUser();
-        $authHeader = $this->authService->authorizationHeader();
-        if ($user === null || $authHeader === null) {
+        if ($user === null) {
             return $this->response->setStatusCode(401)->setJSON(['erro' => 'Autenticação necessária.']);
         }
-        $profile = (new \App\Services\SupabaseService())->obterPerfilUsuario((string) $user['id'], $authHeader);
-        if (($profile['role'] ?? '') !== 'admin') {
+        if (($user['user_metadata']['role'] ?? '') !== 'admin') {
             return $this->response->setStatusCode(403)->setJSON(['erro' => 'Apenas administradores podem simular pagamentos.']);
         }
-        $resultado = $this->mpService->simularAprovacao($pedidoId, $authHeader, (string) $user['id']);
+        $resultado = $this->mpService->simularAprovacao($pedidoId, null, (string) $user['id']);
 
         return $this->response->setStatusCode($resultado['status'])->setJSON($resultado['data']);
     }

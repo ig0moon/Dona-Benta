@@ -27,7 +27,9 @@
     }
 
     .diagnostico-resultado[data-status="failure"],
-    .diagnostico-resultado[data-status="missing"] {
+    .diagnostico-resultado[data-status="missing"],
+    .diagnostico-resultado[data-status="schema_missing"],
+    .diagnostico-resultado[data-status="migration_missing"] {
       border-left: 5px solid var(--erro);
     }
 
@@ -64,7 +66,7 @@
             <strong>
               <?php if ($diagnostic['status'] === 'success'): ?>
                 Conexão funcionando
-              <?php elseif ($diagnostic['status'] === 'missing'): ?>
+              <?php elseif (in_array($diagnostic['status'], ['missing', 'schema_missing', 'migration_missing'], true)): ?>
                 Configuração incompleta
               <?php else: ?>
                 Falha na conexão
@@ -73,7 +75,13 @@
             <p><?= esc($diagnostic['message']) ?></p>
 
             <?php if (!empty($diagnostic['missing'])): ?>
-              <p>Configure no Render:</p>
+              <p>
+                <?php if (in_array($diagnostic['status'], ['schema_missing', 'migration_missing'], true)): ?>
+                  Execute no TiDB:
+                <?php else: ?>
+                  Configure no Render:
+                <?php endif ?>
+              </p>
               <ul class="diagnostico-lista">
                 <?php foreach ($diagnostic['missing'] as $variable): ?>
                   <li><code><?= esc($variable) ?></code></li>
@@ -88,8 +96,8 @@
         </form>
 
         <p class="diagnostico-aviso">
-          Importante: atualmente, o catálogo do site consulta o Supabase, não o TiDB.
-          Este teste confirma apenas a conexão com o TiDB; ele não muda a origem dos produtos.
+          O catálogo, os pedidos, as contas e os arquivos do site usam somente o TiDB.
+          Este teste verifica a mesma conexão configurada para esses dados.
         </p>
       </div>
     </div>

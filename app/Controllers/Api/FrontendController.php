@@ -50,28 +50,6 @@ abstract class FrontendController extends BaseController
             }
             return $value;
         }
-        if (!is_string($value)) {
-            return $value;
-        }
-
-        $url = parse_url($value);
-        $supabaseHost = parse_url((string) env('SUPABASE_URL', ''), PHP_URL_HOST);
-        $marker = '/storage/v1/object/public/';
-        if (!is_array($url)
-            || !is_string($supabaseHost)
-            || strcasecmp((string) ($url['host'] ?? ''), $supabaseHost) !== 0
-            || !str_starts_with($url['path'] ?? '', $marker)) {
-            return $value;
-        }
-
-        $object = explode('/', substr($url['path'], strlen($marker)), 2);
-        if (count($object) !== 2) {
-            return $value;
-        }
-
-        return base_url('api/storage/public') . '?' . http_build_query([
-            'bucket' => rawurldecode($object[0]),
-            'path'   => rawurldecode($object[1]),
-        ], '', '&', PHP_QUERY_RFC3986);
+        return $value;
     }
 }

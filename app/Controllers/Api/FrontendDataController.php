@@ -2,16 +2,16 @@
 
 namespace App\Controllers\Api;
 
-use App\Services\SupabaseProxyService;
+use App\Services\TiDBDataService;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class FrontendDataController extends FrontendController
 {
-    private SupabaseProxyService $supabase;
+    private TiDBDataService $database;
 
     public function __construct()
     {
-        $this->supabase = new SupabaseProxyService();
+        $this->database = new TiDBDataService();
     }
 
     public function handle(string $table): ResponseInterface
@@ -43,7 +43,7 @@ class FrontendDataController extends FrontendController
             }
         }
 
-        return $this->result($this->supabase->databaseRequest($method, $table, $query, $payload));
+        return $this->result($this->database->databaseRequest($method, $table, $query, $payload));
     }
 
     private function validatedQuery(): ?array

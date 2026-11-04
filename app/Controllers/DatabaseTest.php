@@ -39,12 +39,10 @@ class DatabaseTest extends BaseController
             if ((int) ($row['connection_ok'] ?? 0) !== 1) {
                 throw new \RuntimeException('A consulta de teste não retornou o resultado esperado.');
             }
-
-            return $this->renderPage([
-                'status'  => 'success',
-                'message' => 'Conexão estabelecida e consulta SELECT 1 executada com sucesso.',
-            ]);
         } catch (Throwable $exception) {
+            if ($connection !== null) {
+                $connection->close();
+            }
             log_message(
                 'error',
                 'Falha no diagnóstico do banco ({exception}, código {code}).',
@@ -55,11 +53,42 @@ class DatabaseTest extends BaseController
                 'status'  => 'failure',
                 'message' => 'Não foi possível conectar ou executar a consulta. Confira os dados do banco e o TLS no Render.',
             ]);
-        } finally {
-            if ($connection !== null) {
-                $connection->close();
+        }
+
+        $missingTables = [];
+        foreach (['perfis', 'produtos', 'pedidos', 'itens_pedido', 'arquivos'] as $table) {
+            try {
+                $connection->table($table)->countAllResults();
+            } catch (Throwable $exception) {
+                $missingTables[] = $table;
             }
         }
+
+        if ($missingTables !== []) {
+            $connection->close();
+            return $this->renderPage([
+                'status'  => 'schema_missing',
+                'message' => 'O TiDB respondeu, mas falta importar o esquema da loja.',
+                'missing' => $missingTables,
+            ]);
+        }
+
+        try {
+            $connection->query('SELECT senha_hash FROM perfis LIMIT 0');
+        } catch (Throwable $exception) {
+            $connection->close();
+            return $this->renderPage([
+                'status'  => 'migration_missing',
+                'message' => 'O TiDB está conectado, mas falta a migração de contas e imagens.',
+                'missing' => ['app/Database/migrate_tidb.sql'],
+            ]);
+        }
+
+        $connection->close();
+        return $this->renderPage([
+            'status'  => 'success',
+            'message' => 'Conexão, tabelas e colunas necessárias verificadas com sucesso no TiDB.',
+        ]);
     }
 
     private function renderPage(array $diagnostic = []): string

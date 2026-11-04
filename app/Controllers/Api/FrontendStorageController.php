@@ -2,16 +2,16 @@
 
 namespace App\Controllers\Api;
 
-use App\Services\SupabaseProxyService;
+use App\Services\TiDBDataService;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class FrontendStorageController extends FrontendController
 {
-    private SupabaseProxyService $supabase;
+    private TiDBDataService $database;
 
     public function __construct()
     {
-        $this->supabase = new SupabaseProxyService();
+        $this->database = new TiDBDataService();
     }
 
     public function upload(): ResponseInterface
@@ -27,7 +27,7 @@ class FrontendStorageController extends FrontendController
             return $this->response->setStatusCode(400)->setJSON(['data' => null, 'error' => ['message' => 'Arquivo obrigatório.']]);
         }
 
-        return $this->result($this->supabase->upload(
+        return $this->result($this->database->upload(
             $bucket,
             $path,
             $file,
@@ -37,7 +37,7 @@ class FrontendStorageController extends FrontendController
 
     public function publicObject(): ResponseInterface
     {
-        $result = $this->supabase->publicObject(
+        $result = $this->database->publicObject(
             (string) $this->request->getGet('bucket'),
             (string) $this->request->getGet('path'),
         );
