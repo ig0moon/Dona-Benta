@@ -21,6 +21,12 @@ O Render define `PORT` automaticamente. Não configure um `.env` com credenciais
 
 No Supabase, configure a URL pública do site como URL autorizada para autenticação e recuperação de senha. Mantenha ativas as políticas RLS das tabelas e buckets, pois os endpoints do backend encaminham as operações com a sessão do usuário.
 
+### Diagnóstico do TiDB
+
+A página `/teste-banco` executa `SELECT 1` para verificar a conexão configurada, sem alterar dados. Configure no Render as variáveis `database.default.hostname`, `database.default.database`, `database.default.username`, `database.default.password` e `database.default.port` usando os dados de conexão do TiDB Cloud. Use `database.default.DBDriver=MySQLi` e habilite `database.default.encrypt=true` se o provedor exigir TLS.
+
+O catálogo do site atualmente consulta o Supabase; o teste do TiDB não transfere nem altera essa integração. Para carregar produtos do TiDB, será necessário implementar essa integração separadamente.
+
 ## Rodar localmente
 
 Requisitos: PHP 8.2+, Composer e extensões PHP `curl`, `intl`, `mbstring`, `mysqli` e `pdo_mysql`.

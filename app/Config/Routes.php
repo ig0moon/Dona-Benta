@@ -19,6 +19,8 @@ $routes->get('conta', 'Conta::index');
 $routes->get('login', 'Auth::login');
 $routes->get('sobre', 'Sobre::index');
 $routes->get('faq', 'Faq::index');
+$routes->get('teste-banco', 'DatabaseTest::index');
+$routes->post('teste-banco', 'DatabaseTest::test');
 
 // Compatibilidade de URLs legadas (.html)
 $routes->addRedirect('index.html', '/');
