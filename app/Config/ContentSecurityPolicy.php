@@ -19,17 +19,11 @@ class ContentSecurityPolicy extends BaseConfig
     public $scriptSrc = [
         'self',
         'unsafe-inline',
-        'https://cdn.jsdelivr.net',
-        'https://sdk.mercadopago.com',
-        'https://http2.mlstatic.com'
     ];
 
     public array|string $scriptSrcElem = [
         'self',
         'unsafe-inline',
-        'https://cdn.jsdelivr.net',
-        'https://sdk.mercadopago.com',
-        'https://http2.mlstatic.com'
     ];
 
     public array|string $scriptSrcAttr = [
@@ -59,24 +53,13 @@ class ContentSecurityPolicy extends BaseConfig
         'data:',
         'blob:',
         'https://images.unsplash.com',
-        'https://nxigfuivadxjotlqrwux.supabase.co',
-        'https://*.supabase.co',
-        'https://http2.mlstatic.com'
     ];
 
     public $baseURI = 'self';
     public $childSrc = 'self';
 
     public $connectSrc = [
-        'self',
-        'http://localhost:8080',
-        'http://127.0.0.1:8080',
-        'http://localhost:3001',
-        'http://127.0.0.1:3001',
-        'https://nxigfuivadxjotlqrwux.supabase.co',
-        'https://*.supabase.co',
-        'https://api.mercadopago.com',
-        'https://viacep.com.br'
+        'self'
     ];
 
     public $fontSrc = [
@@ -87,11 +70,7 @@ class ContentSecurityPolicy extends BaseConfig
     public $formAction = 'self';
     public $frameAncestors = 'self';
 
-    public $frameSrc = [
-        'self',
-        'https://sdk.mercadopago.com',
-        'https://www.mercadopago.com'
-    ];
+    public $frameSrc = 'self';
 
     public $mediaSrc = 'self';
     public $objectSrc = 'none';

@@ -5,7 +5,6 @@ namespace App\Services;
 class MercadoPagoService
 {
     protected string $accessToken;
-    protected string $publicKey;
     protected ?string $webhookUrl;
     protected bool $isProduction;
     protected SupabaseService $supabase;
@@ -13,7 +12,6 @@ class MercadoPagoService
     public function __construct()
     {
         $this->accessToken  = (string) env('MP_ACCESS_TOKEN', '');
-        $this->publicKey    = (string) env('MP_PUBLIC_KEY', '');
         $this->webhookUrl   = env('WEBHOOK_URL', null);
         $this->isProduction = str_starts_with($this->accessToken, 'APP_USR-') || env('CI_ENVIRONMENT') === 'production';
         $this->supabase     = new SupabaseService();
@@ -22,11 +20,6 @@ class MercadoPagoService
     public function isProduction(): bool
     {
         return $this->isProduction;
-    }
-
-    public function getPublicKey(): string
-    {
-        return $this->publicKey;
     }
 
     public function hasWebhook(): bool
@@ -91,7 +84,7 @@ class MercadoPagoService
     /**
      * Gera Cobrança Pix Dinâmica no Mercado Pago com proteção anti-tampering
      */
-    public function gerarPix(array $payload, ?string $userAuthHeader = null): array
+    public function gerarPix(array $payload, ?string $userAuthHeader = null, ?string $userId = null): array
     {
         $pedidoId  = $payload['pedido_id'] ?? null;
         $valorRaw  = (float) ($payload['valor'] ?? 0);
@@ -101,31 +94,35 @@ class MercadoPagoService
         $valorEfetivo = $valorRaw;
 
         // Anti-tampering estrito de preço: consulta Supabase e recalcula com base no catálogo real
-        if (!empty($pedidoId)) {
-            if (!$this->supabase->isValidPedidoId($pedidoId)) {
-                return ['status' => 400, 'data' => ['erro' => 'Identificador de pedido inválido']];
+        if (!is_string($pedidoId) || !$this->supabase->isValidPedidoId($pedidoId)) {
+            return ['status' => 400, 'data' => ['erro' => 'Identificador de pedido inválido']];
+        }
+
+        $pedidoDb = $this->supabase->consultarPedido($pedidoId, $userAuthHeader);
+        if (!$this->pedidoPertenceAoUsuario($pedidoDb, $userId)) {
+            return ['status' => 404, 'data' => ['erro' => 'Pedido não encontrado']];
+        }
+        if ($pedidoDb) {
+            if (!empty($pedidoDb['pago'])) {
+                return ['status' => 400, 'data' => ['erro' => 'Este pedido já foi pago e confirmado anteriormente']];
+            }
+            if (($pedidoDb['status'] ?? '') === 'cancelado') {
+                return ['status' => 400, 'data' => ['erro' => 'Este pedido foi cancelado']];
             }
 
-            $pedidoDb = $this->supabase->consultarPedido($pedidoId, $userAuthHeader);
-            if ($pedidoDb) {
-                if (!empty($pedidoDb['pago'])) {
-                    return ['status' => 400, 'data' => ['erro' => 'Este pedido já foi pago e confirmado anteriormente']];
-                }
-                if (($pedidoDb['status'] ?? '') === 'cancelado') {
-                    return ['status' => 400, 'data' => ['erro' => 'Este pedido foi cancelado']];
-                }
-
-                // Recalcula o valor real com os produtos cadastrados
-                $valorReal = $this->supabase->calcularValorRealPedido($pedidoId, $userAuthHeader);
-                $valorDb   = $valorReal ?: (float) ($pedidoDb['valor_total'] ?? 0);
-
-                if ($valorDb > 0 && abs($valorEfetivo - $valorDb) > 0.05) {
-                    log_message('warning', "[SEGURANÇA] Ajustando valor conforme catálogo oficial: R$ {$valorDb} (enviado: R$ {$valorEfetivo})");
-                    $valorEfetivo = $valorDb;
-                    // Sincroniza o valor correto no registro do pedido
-                    $this->supabase->atualizarPedido($pedidoId, ['valor_total' => $valorDb], $userAuthHeader);
-                }
+            // Recalcula o valor real com os produtos cadastrados
+            $valorReal = $this->supabase->calcularValorRealPedido($pedidoId, $userAuthHeader);
+            if ($valorReal === null) {
+                return ['status' => 409, 'data' => ['erro' => 'Não foi possível validar os preços dos itens do pedido.']];
             }
+            $valorDb = $valorReal;
+
+            if ($valorDb > 0 && abs($valorEfetivo - $valorDb) > 0.05) {
+                log_message('warning', "[SEGURANÇA] Ajustando valor conforme catálogo oficial: R$ {$valorDb} (enviado: R$ {$valorEfetivo})");
+                // Sincroniza o valor correto no registro do pedido
+                $this->supabase->atualizarPedido($pedidoId, ['valor_total' => $valorDb], $userAuthHeader);
+            }
+            $valorEfetivo = $valorDb;
         }
 
         if ($valorEfetivo < 0.50 || $valorEfetivo > 50000) {
@@ -243,160 +240,101 @@ class MercadoPagoService
     }
 
     /**
-     * Processa Pagamento via Cartão de Crédito com verificação de autoridade de valor
+     * Cria um checkout hospedado pelo Mercado Pago, sem expor chave pública no navegador.
      */
-    public function processarCartao(array $payload, ?string $userAuthHeader = null): array
+    public function processarCartao(array $payload, ?string $userAuthHeader = null, ?string $userId = null): array
     {
-        $pedidoId          = $payload['pedido_id'] ?? null;
-        $token             = $payload['token'] ?? null;
-        $issuerId          = $payload['issuer_id'] ?? null;
-        $paymentMethodId   = $payload['payment_method_id'] ?? null;
-        $transactionAmount = (float) ($payload['transaction_amount'] ?? 0);
-        $installments      = max(1, min(12, (int) ($payload['installments'] ?? 1)));
-        $payer             = $payload['payer'] ?? [];
-        $descricao         = $payload['descricao'] ?? null;
-
-        if (empty($token) || !is_string($token) || !preg_match('/^[a-zA-Z0-9_-]{10,140}$/', trim($token))) {
-            return ['status' => 400, 'data' => ['erro' => 'Token de cartão de crédito inválido ou ausente']];
+        $pedidoId = $payload['pedido_id'] ?? null;
+        if (!is_string($pedidoId) || !$this->supabase->isValidPedidoId($pedidoId)) {
+            return ['status' => 400, 'data' => ['erro' => 'Identificador de pedido inválido']];
         }
 
-        $valorEfetivo = $transactionAmount;
-
-        // Anti-tampering estrito de preço no cartão
-        if (!empty($pedidoId)) {
-            if (!$this->supabase->isValidPedidoId($pedidoId)) {
-                return ['status' => 400, 'data' => ['erro' => 'Identificador de pedido inválido']];
-            }
-
-            $pedidoDb = $this->supabase->consultarPedido($pedidoId, $userAuthHeader);
-            if ($pedidoDb) {
-                if (!empty($pedidoDb['pago'])) {
-                    return ['status' => 400, 'data' => ['erro' => 'Este pedido já se encontra pago e confirmado']];
-                }
-                if (($pedidoDb['status'] ?? '') === 'cancelado') {
-                    return ['status' => 400, 'data' => ['erro' => 'Este pedido foi cancelado']];
-                }
-
-                $valorReal = $this->supabase->calcularValorRealPedido($pedidoId, $userAuthHeader);
-                $valorDb   = $valorReal ?: (float) ($pedidoDb['valor_total'] ?? 0);
-
-                if ($valorDb > 0 && abs($valorEfetivo - $valorDb) > 0.05) {
-                    log_message('warning', "[SEGURANÇA] Ajustando valor conforme catálogo oficial: R$ {$valorDb} (enviado: R$ {$valorEfetivo})");
-                    $valorEfetivo = $valorDb;
-                    $this->supabase->atualizarPedido($pedidoId, ['valor_total' => $valorDb], $userAuthHeader);
-                }
-            }
+        $pedidoDb = $this->supabase->consultarPedido($pedidoId, $userAuthHeader);
+        if (!$this->pedidoPertenceAoUsuario($pedidoDb, $userId)) {
+            return ['status' => 404, 'data' => ['erro' => 'Pedido não encontrado']];
+        }
+        if (!empty($pedidoDb['pago']) || ($pedidoDb['status'] ?? '') === 'cancelado') {
+            return ['status' => 400, 'data' => ['erro' => 'Este pedido não pode ser pago']];
         }
 
+        $valorReal = $this->supabase->calcularValorRealPedido($pedidoId, $userAuthHeader);
+        if ($valorReal === null) {
+            return ['status' => 409, 'data' => ['erro' => 'Não foi possível validar os preços dos itens do pedido.']];
+        }
+        $valorEfetivo = $valorReal;
         if ($valorEfetivo < 0.50 || $valorEfetivo > 50000) {
             return ['status' => 400, 'data' => ['erro' => 'Valor do pedido inválido para cartão de crédito']];
         }
 
-        $issuerIdLimpo = (!empty($issuerId) && is_numeric($issuerId) && (int) $issuerId > 0) ? (int) $issuerId : null;
-        $paymentMethodIdLimpo = (!empty($paymentMethodId) && $paymentMethodId !== 'null' && $paymentMethodId !== 'undefined')
-            ? $this->sanitizeInput((string) $paymentMethodId, 30)
-            : null;
-
-        $rawEmail = strtolower(trim($payer['email'] ?? ''));
-        $payerEmail = (!empty($rawEmail) && filter_var($rawEmail, FILTER_VALIDATE_EMAIL) && !str_ends_with($rawEmail, '@testuser.com'))
-            ? $rawEmail
-            : null;
-
-        if ($this->isProduction && !$payerEmail) {
-            return ['status' => 400, 'data' => ['erro' => 'E-mail do pagador é obrigatório para processar o cartão.']];
-        }
-        if (!$payerEmail) {
+        $payerEmail = strtolower(trim((string) ($payload['email'] ?? '')));
+        if (!filter_var($payerEmail, FILTER_VALIDATE_EMAIL) || str_ends_with($payerEmail, '@testuser.com')) {
+            if ($this->isProduction) {
+                return ['status' => 400, 'data' => ['erro' => 'E-mail do pagador inválido ou ausente.']];
+            }
             $payerEmail = 'cliente.donabenta@gmail.com';
         }
 
-        $identificationLimpo = null;
-        $cpfNum = preg_replace('/\D/', '', $payer['identification']['number'] ?? '');
-        if ($this->validarCPF($cpfNum)) {
-            $identificationLimpo = ['type' => $payer['identification']['type'] ?? 'CPF', 'number' => $cpfNum];
-        } elseif ($this->isProduction) {
-            return ['status' => 400, 'data' => ['erro' => 'CPF do titular do cartão é obrigatório e deve ser válido.']];
-        } else {
-            $identificationLimpo = ['type' => 'CPF', 'number' => '17286371630'];
+        $baseUrl = rtrim((string) env('APP_BASE_URL', ''), '/');
+        if ($baseUrl === '') {
+            return ['status' => 503, 'data' => ['erro' => 'APP_BASE_URL precisa estar configurada para pagamentos com cartão.']];
         }
-
-        $descSegura = $this->sanitizeInput($descricao ?: ('Pedido Dona Benta #' . ($pedidoId ? substr($pedidoId, 0, 8) : 'DB')), 120);
-
+        $returnUrl = $baseUrl . '/conta?aba=pedidos&checkout=retorno';
         $mpPayload = [
-            'token'              => trim($token),
-            'transaction_amount' => round($valorEfetivo, 2),
-            'installments'       => $installments,
-            'description'        => $descSegura,
-            'payer'              => [
-                'email'          => $payerEmail,
-                'identification' => $identificationLimpo
-            ]
+            'items' => [[
+                'title'       => 'Pedido Dona Benta ' . ($pedidoDb['id'] ?? $pedidoId),
+                'quantity'    => 1,
+                'unit_price'  => round($valorEfetivo, 2),
+                'currency_id' => 'BRL',
+            ]],
+            'payer' => ['email' => $payerEmail],
+            'external_reference' => (string) $pedidoId,
+            'back_urls' => [
+                'success' => $returnUrl,
+                'pending' => $returnUrl,
+                'failure' => $returnUrl,
+            ],
         ];
-
-        if ($issuerIdLimpo !== null) {
-            $mpPayload['issuer_id'] = $issuerIdLimpo;
-        }
-        if ($paymentMethodIdLimpo !== null) {
-            $mpPayload['payment_method_id'] = $paymentMethodIdLimpo;
-        }
-        if (!empty($pedidoId)) {
-            $mpPayload['external_reference'] = (string) $pedidoId;
+        if ($this->isProduction) {
+            $mpPayload['auto_return'] = 'approved';
         }
         if (!empty($this->webhookUrl)) {
             $mpPayload['notification_url'] = $this->webhookUrl;
         }
 
-        $idempotencyKey = 'card-' . ($pedidoId ?: time()) . '-' . bin2hex(random_bytes(6));
-
-        $res = $this->callMercadoPago('POST', 'https://api.mercadopago.com/v1/payments', $mpPayload, $idempotencyKey);
-
-        // Fallback para Sandbox caso código 2131 de issuer_id ocorra
-        if (($res['http_code'] < 200 || $res['http_code'] >= 300) && isset($mpPayload['issuer_id'])) {
-            $causes = $res['data']['cause'] ?? [];
-            $has2131 = false;
-            if (is_array($causes)) {
-                foreach ($causes as $c) {
-                    if (($c['code'] ?? null) === 2131) {
-                        $has2131 = true;
-                        break;
-                    }
-                }
-            }
-            if ($has2131) {
-                unset($mpPayload['issuer_id']);
-                $res = $this->callMercadoPago('POST', 'https://api.mercadopago.com/v1/payments', $mpPayload, 'retry-' . $idempotencyKey);
-            }
-        }
+        $res = $this->callMercadoPago(
+            'POST',
+            'https://api.mercadopago.com/checkout/preferences',
+            $mpPayload,
+            'checkout-' . $pedidoId,
+        );
 
         if ($res['http_code'] < 200 || $res['http_code'] >= 300) {
             return [
-                'status' => $res['http_code'] ?: 400,
+                'status' => $res['http_code'] ?: 502,
                 'data' => [
-                    'erro'     => 'Pagamento com cartão não autorizado',
-                    'status'   => $res['data']['status'] ?? 'rejected',
-                    'detalhes' => $res['data']['message'] ?? 'Dados do cartão recusados pelo gateway.'
+                    'erro'     => 'Não foi possível iniciar o checkout do Mercado Pago.',
+                    'detalhes' => $res['data']['message'] ?? 'Tente novamente mais tarde.',
                 ]
             ];
         }
 
         $mpData = $res['data'];
-        $aprovado = ($mpData['status'] ?? '') === 'approved';
-
-        if (!empty($pedidoId)) {
-            $this->supabase->atualizarPedido($pedidoId, [
-                'forma_pagamento' => 'Cartão de Crédito',
-                'status'          => $aprovado ? 'confirmado' : 'aguardando_confirmacao',
-                'pago'            => $aprovado
-            ], $userAuthHeader);
+        $checkoutUrl = $this->isProduction ? ($mpData['init_point'] ?? null) : ($mpData['sandbox_init_point'] ?? $mpData['init_point'] ?? null);
+        if (!is_string($checkoutUrl) || !str_starts_with($checkoutUrl, 'https://')) {
+            return ['status' => 502, 'data' => ['erro' => 'O Mercado Pago não retornou um endereço de checkout válido.']];
         }
+
+        $this->supabase->atualizarPedido($pedidoId, [
+            'forma_pagamento' => 'Cartão de Crédito',
+            'status'          => 'aguardando_confirmacao',
+            'pago'            => false,
+        ], $userAuthHeader);
 
         return [
             'status' => 200,
             'data'   => [
-                'sucesso'        => $aprovado,
-                'pagamento_id'   => $mpData['id'] ?? null,
-                'status'         => $mpData['status'] ?? null,
-                'status_detalhe' => $mpData['status_detail'] ?? null,
-                'mensagem'       => $aprovado ? 'Pagamento aprovado com sucesso!' : 'Pagamento em análise ou pendente'
+                'sucesso' => true,
+                'checkout_url' => $checkoutUrl,
             ]
         ];
     }
@@ -404,8 +342,15 @@ class MercadoPagoService
     /**
      * Consulta status de pagamento no Mercado Pago
      */
-    public function consultarStatus(string $pagamentoId, ?string $pedidoId = null): array
+    public function consultarStatus(string $pagamentoId, ?string $pedidoId = null, ?string $userAuthHeader = null, ?string $userId = null): array
     {
+        if ($pedidoId !== null) {
+            $pedidoDb = $this->supabase->consultarPedido($pedidoId, $userAuthHeader);
+            if (!$this->pedidoPertenceAoUsuario($pedidoDb, $userId)) {
+                return ['status' => 404, 'data' => ['erro' => 'Pedido não encontrado']];
+            }
+        }
+
         $res = $this->callMercadoPago('GET', "https://api.mercadopago.com/v1/payments/{$pagamentoId}");
 
         if ($res['http_code'] < 200 || $res['http_code'] >= 300) {
@@ -419,7 +364,7 @@ class MercadoPagoService
             $this->supabase->atualizarPedido($pedidoId, [
                 'status' => 'confirmado',
                 'pago'   => true
-            ]);
+            ], $userAuthHeader);
         }
 
         return [
@@ -436,7 +381,7 @@ class MercadoPagoService
     /**
      * Simula aprovação imediata (Exclusiva Sandbox + Autenticação de Admin Obrigatória)
      */
-    public function simularAprovacao(string $pedidoId, ?string $userAuthHeader = null): array
+    public function simularAprovacao(string $pedidoId, ?string $userAuthHeader = null, ?string $userId = null): array
     {
         if ($this->isProduction || !str_starts_with($this->accessToken, 'TEST-')) {
             return ['status' => 403, 'data' => ['erro' => 'Simulação estritamente desabilitada em ambiente de produção']];
@@ -451,7 +396,7 @@ class MercadoPagoService
         }
 
         $pedidoDb = $this->supabase->consultarPedido($pedidoId, $userAuthHeader);
-        if (!$pedidoDb) {
+        if (!$this->pedidoPertenceAoUsuario($pedidoDb, $userId)) {
             return ['status' => 404, 'data' => ['erro' => 'Pedido não localizado ou acesso não autorizado']];
         }
 
@@ -471,6 +416,14 @@ class MercadoPagoService
                 'mensagem' => "Pedido {$pedidoId} marcado como pago e confirmado com sucesso no Sandbox!"
             ]
         ];
+    }
+
+    private function pedidoPertenceAoUsuario(?array $pedido, ?string $userId): bool
+    {
+        return $pedido !== null
+            && $userId !== null
+            && isset($pedido['cliente_id'])
+            && hash_equals((string) $pedido['cliente_id'], $userId);
     }
 
     /**

@@ -637,7 +637,7 @@ document.addEventListener('DOMContentLoaded', () => {
   montarFooter();
   atualizarAuthLayout();
 
-  // Escuta mudanças de auth em tempo real no Supabase
+  // Atualiza o layout quando o backend informa uma mudança de autenticação.
   if (typeof db !== 'undefined' && db.auth) {
     db.auth.onAuthStateChange(() => {
       atualizarAuthLayout();

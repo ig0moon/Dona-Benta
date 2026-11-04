@@ -53,7 +53,7 @@ class ApiCorsFilter implements FilterInterface
             return $response
                 ->setHeader('Access-Control-Allow-Origin', $origin)
                 ->setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-                ->setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Idempotency-Key')
+                ->setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With')
                 ->setHeader('Access-Control-Allow-Credentials', 'true')
                 ->setHeader('Access-Control-Max-Age', '86400')
                 ->setHeader('Vary', 'Origin')
@@ -69,7 +69,7 @@ class ApiCorsFilter implements FilterInterface
 
         $response->setHeader('Access-Control-Allow-Origin', $origin);
         $response->setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        $response->setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Idempotency-Key');
+        $response->setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
         $response->setHeader('Access-Control-Allow-Credentials', 'true');
         $response->setHeader('Vary', 'Origin');
 
@@ -79,8 +79,10 @@ class ApiCorsFilter implements FilterInterface
         $response->setHeader('X-XSS-Protection', '1; mode=block');
         $response->setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-        $response->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-        $response->setHeader('Pragma', 'no-cache');
+        if (trim($request->getUri()->getPath(), '/') !== 'api/storage/public') {
+            $response->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+            $response->setHeader('Pragma', 'no-cache');
+        }
         $response->setHeader('X-Powered-By', 'Dona-Benta-Secure-Gateway');
 
         return $response;

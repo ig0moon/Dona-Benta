@@ -357,6 +357,15 @@ async function confirmarPedido() {
   const perfil = await perfilAtual();
   const metodo = typeof metodoPagamentoSelecionado !== 'undefined' ? metodoPagamentoSelecionado : 'pix';
 
+  if (metodo === 'cartao') {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined">credit_card</span> Continuar para o pagamento';
+    }
+    await window.iniciarFluxoCartao();
+    return;
+  }
+
   if (metodo === 'pix') {
     const pedidoCriado = await registrarPedidoNoBanco({
       forma_pagamento: 'Pix',
@@ -385,7 +394,7 @@ async function confirmarPedido() {
 }
 
 // ============================================
-// Helper: Registrar Pedido e Itens no Supabase
+// Helper: Registrar Pedido e Itens pelo backend da aplicação.
 // ============================================
 async function registrarPedidoNoBanco(dadosExtras = {}) {
   const carrinho = typeof lerCarrinho === 'function' ? lerCarrinho() : [];

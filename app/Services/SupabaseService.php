@@ -10,9 +10,9 @@ class SupabaseService
 
     public function __construct()
     {
-        $this->url            = rtrim(env('SUPABASE_URL', 'https://nxigfuivadxjotlqrwux.supabase.co'), '/');
-        $this->anonKey        = env('SUPABASE_ANON_KEY', '');
-        $this->serviceRoleKey = env('SUPABASE_SERVICE_ROLE_KEY', '');
+        $this->url            = rtrim((string) env('SUPABASE_URL', ''), '/');
+        $this->anonKey        = (string) env('SUPABASE_ANON_KEY', '');
+        $this->serviceRoleKey = (string) env('SUPABASE_SERVICE_ROLE_KEY', '');
     }
 
     /**
@@ -122,9 +122,10 @@ class SupabaseService
             // 2. Extrai IDs dos produtos
             $produtoIds = [];
             foreach ($itens as $item) {
-                if (!empty($item['produto_id'])) {
-                    $produtoIds[] = (string)$item['produto_id'];
+                if (empty($item['produto_id'])) {
+                    return null;
                 }
+                $produtoIds[] = (string) $item['produto_id'];
             }
 
             if (empty($produtoIds)) {
@@ -149,12 +150,16 @@ class SupabaseService
             $httpCodeProds = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
+            if ($httpCodeProds < 200 || $httpCodeProds >= 300) {
+                return null;
+            }
+
             $precosOficiais = [];
-            if ($httpCodeProds >= 200 && $httpCodeProds < 300) {
-                $produtos = json_decode($resProds, true);
-                if (is_array($produtos)) {
-                    foreach ($produtos as $p) {
-                        $precosOficiais[(string)$p['id']] = (float)$p['preco'];
+            $produtos = json_decode($resProds, true);
+            if (is_array($produtos)) {
+                foreach ($produtos as $p) {
+                    if (isset($p['id'], $p['preco'])) {
+                        $precosOficiais[(string) $p['id']] = (float) $p['preco'];
                     }
                 }
             }
@@ -164,7 +169,10 @@ class SupabaseService
             foreach ($itens as $item) {
                 $qtd = max(1, (int)($item['quantidade'] ?? 1));
                 $pId = (string)($item['produto_id'] ?? '');
-                $precoUnit = isset($precosOficiais[$pId]) ? $precosOficiais[$pId] : (float)($item['preco'] ?? 0);
+                if (!isset($precosOficiais[$pId])) {
+                    return null;
+                }
+                $precoUnit = $precosOficiais[$pId];
                 $totalAutoritativo += ($qtd * $precoUnit);
             }
 

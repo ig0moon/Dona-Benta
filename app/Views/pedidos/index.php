@@ -118,7 +118,6 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-  <script src="https://sdk.mercadopago.com/js/v2"></script>
-  <script src="<?= base_url('js/pagamentos.js?v=3.0') ?>"></script>
-  <script src="<?= base_url('js/pedidos.js?v=3.0') ?>"></script>
+  <script src="<?= base_url('js/pagamentos.js?v=4.0') ?>"></script>
+  <script src="<?= base_url('js/pedidos.js?v=4.0') ?>"></script>
 <?= $this->endSection() ?>

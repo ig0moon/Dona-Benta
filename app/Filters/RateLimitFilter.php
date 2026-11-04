@@ -28,6 +28,12 @@ class RateLimitFilter implements FilterInterface
             // Anti-Carding estrito: máximo de 6 tentativas por minuto por IP
             $maxRequests = 6;
             $bucket = 'api_card';
+        } elseif (str_contains($path, 'auth/login')) {
+            $maxRequests = 10;
+            $bucket = 'api_auth_login';
+        } elseif (str_contains($path, 'auth/signup') || str_contains($path, 'auth/recovery')) {
+            $maxRequests = 5;
+            $bucket = 'api_auth_signup';
         } elseif (str_contains($path, 'pagamento/pix')) {
             // Máximo de 12 gerações de Pix por minuto por IP
             $maxRequests = 12;

@@ -3,17 +3,11 @@
 // Integração de Pagamentos Mercado Pago (Pix Dinâmico + Cartão)
 // ============================================
 
-const API_PAGAMENTOS_URL = window.API_PAGAMENTOS_URL || (
-  window.location.origin ? (window.location.origin + '/api') : '/api'
-);
-
-let MP_PUBLIC_KEY = window.MP_PUBLIC_KEY || '';
+const API_PAGAMENTOS_URL = new URL('api/', window.BASE_URL || `${window.location.origin}/`).href.replace(/\/$/, '');
 let configuracaoGateway = null;
 
 let pollingInterval = null;
 let timerContadorInterval = null;
-let mpInstance = null;
-let cardBrickController = null;
 let metodoPagamentoSelecionado = 'pix'; // 'pix', 'cartao', 'entrega'
 
 // Validação matemática de CPF
@@ -42,38 +36,15 @@ function validarCPF(cpf) {
   return true;
 }
 
-// Busca a chave pública e ambiente ativos no servidor
+// Busca apenas o modo de operação; chaves de pagamento nunca são enviadas ao navegador.
 async function obterConfiguracaoGateway() {
   if (configuracaoGateway) return configuracaoGateway;
-  try {
-    const resp = await fetch(`${API_PAGAMENTOS_URL}/config`);
-    if (resp.ok) {
-      configuracaoGateway = await resp.json();
-      if (configuracaoGateway.publicKey) {
-        MP_PUBLIC_KEY = configuracaoGateway.publicKey;
-      }
-      return configuracaoGateway;
-    }
-  } catch (e) {
-    console.warn('[Pagamentos] Não foi possível obter /api/config dinâmico:', e.message);
+  const response = await fetch(`${API_PAGAMENTOS_URL}/config`, { credentials: 'same-origin' });
+  if (!response.ok) {
+    throw new Error('Não foi possível consultar a configuração de pagamentos.');
   }
-  return {
-    ambiente: MP_PUBLIC_KEY.startsWith('APP_USR-') ? 'producao' : 'sandbox',
-    publicKey: MP_PUBLIC_KEY
-  };
-}
-
-// Inicializa Mercado Pago SDK v2 se disponível
-async function obterInstanciaMercadoPago() {
-  if (!mpInstance && window.MercadoPago) {
-    try {
-      await obterConfiguracaoGateway();
-      mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
-    } catch (e) {
-      console.warn('Não foi possível inicializar SDK do Mercado Pago:', e);
-    }
-  }
-  return mpInstance;
+  configuracaoGateway = await response.json();
+  return configuracaoGateway;
 }
 
 // ============================================
@@ -82,7 +53,7 @@ async function obterInstanciaMercadoPago() {
 async function verificarExibicaoSandbox() {
   try {
     const config = await obterConfiguracaoGateway();
-    const isProducao = config?.ambiente === 'producao' || (MP_PUBLIC_KEY && MP_PUBLIC_KEY.startsWith('APP_USR-'));
+    const isProducao = config?.ambiente === 'producao';
 
     if (isProducao) {
       document.querySelectorAll('.cartao-sandbox-dica, .pix-sandbox-dica').forEach(el => el.remove());
@@ -121,14 +92,10 @@ async function verificarExibicaoSandbox() {
           btnSimular.disabled = true;
           btnSimular.innerHTML = '<span class="spinner" style="width:14px;height:14px;margin-right:6px;"></span> Aprovando...';
           try {
-            const sessionData = window.db?.auth ? await window.db.auth.getSession() : null;
-            const sessionToken = sessionData?.data?.session?.access_token;
-            const headers = { 'Content-Type': 'application/json' };
-            if (sessionToken) headers['Authorization'] = `Bearer ${sessionToken}`;
-
             const resp = await fetch(`${API_PAGAMENTOS_URL}/pagamento/simular-aprovacao`, {
               method: 'POST',
-              headers,
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ pedido_id: window._pedidoAtualPix.id })
             });
             if (resp.ok) {
@@ -181,9 +148,8 @@ function renderizarSeletorPagamento(containerId) {
       </div>
     </div>
 
-    <!-- Container dinâmico para Cartão Mercado Pago Brick -->
     <div id="cartaoBrickContainer" style="display:none;" class="cartao-credito-area">
-      <div id="cardPaymentBrick_container"></div>
+      <p>Ao continuar, você será redirecionado ao ambiente seguro do Mercado Pago para concluir o pagamento.</p>
     </div>
   `;
 
@@ -211,15 +177,9 @@ function selecionarMetodoPagamento(metodo) {
 
   if (metodo === 'cartao') {
     if (cartaoContainer) cartaoContainer.style.display = 'block';
-    inicializarCartaoBrick();
-    if (btnConfirmar) btnConfirmar.style.display = 'none'; // O Brick tem o próprio botão de pagar
-    
-    // Alerta o cliente se ainda não tiver escolhido data e horário
-    if (typeof window.validarDadosAgendamento === 'function') {
-      const cal = document.querySelector('.calendario-grade-datas .selecionada');
-      if (!cal && typeof mostrarToast === 'function') {
-        mostrarToast('Dica: Selecione a data e o horário no calendário antes de preencher o cartão.', 'info');
-      }
+    if (btnConfirmar) {
+      btnConfirmar.style.display = 'flex';
+      btnConfirmar.innerHTML = '<span class="material-symbols-outlined">credit_card</span> Continuar para o pagamento';
     }
   } else {
     if (cartaoContainer) cartaoContainer.style.display = 'none';
@@ -234,178 +194,59 @@ function selecionarMetodoPagamento(metodo) {
 }
 
 // ============================================
-// Inicializar Mercado Pago Card Brick
-// ============================================
-async function inicializarCartaoBrick() {
-  const mp = await obterInstanciaMercadoPago();
-  if (!mp) {
-    console.warn('Mercado Pago SDK não carregado');
+async function iniciarFluxoCartao() {
+  if (typeof window.validarDadosAgendamento === 'function' && !window.validarDadosAgendamento()) return;
+  if (!lerCarrinho().length) {
+    mostrarToast('Seu carrinho está vazio.', 'alerta');
     return;
   }
 
-  const container = document.getElementById('cardPaymentBrick_container');
-  if (!container || cardBrickController) return;
-
-  const total = typeof totalCarrinho === 'function' ? totalCarrinho() : 10;
-  const usuario = typeof usuarioAtual === 'function' ? await usuarioAtual() : null;
-
-  try {
-    const bricksBuilder = mp.bricks();
-    const isEscuro = typeof obterTemaAtual === 'function' && obterTemaAtual() === 'escuro';
-
-    cardBrickController = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', {
-      initialization: {
-        amount: Number(total.toFixed(2)),
-        payer: {
-          email: usuario?.email || 'cliente.donabenta@gmail.com'
-        }
-      },
-      customization: {
-        visual: {
-          style: {
-            theme: isEscuro ? 'dark' : 'default',
-            customVariables: isEscuro ? {
-              formBackgroundColor: '#2b221b',
-              textPrimaryColor: '#f6efe8',
-              textSecondaryColor: '#d2c1b1',
-              inputBackgroundColor: '#221a14',
-              inputBorderWidth: '1px',
-              inputFocusedBorderWidth: '2px',
-              borderRadiusMedium: '8px',
-              baseColor: '#f2a65a',
-              baseColorFirstVariant: '#e08e3c',
-              baseColorSecondVariant: '#d07d2b',
-              buttonTextColor: '#ffffff',
-              outlinePrimaryColor: '#f2a65a',
-              errorColor: '#e05252'
-            } : {
-              formBackgroundColor: '#ffffff',
-              textPrimaryColor: '#3d3d3d',
-              textSecondaryColor: '#8a5a3b',
-              inputBackgroundColor: '#ffffff',
-              inputBorderWidth: '1px',
-              borderRadiusMedium: '8px',
-              baseColor: '#6b4226',
-              baseColorFirstVariant: '#8a5a3b',
-              buttonTextColor: '#ffffff',
-              outlinePrimaryColor: '#6b4226'
-            }
-          }
-        },
-        paymentMethods: {
-          maxInstallments: 3
-        }
-      },
-      callbacks: {
-        onReady: () => {
-          console.log('[Mercado Pago Brick] Formulário de cartão pronto');
-        },
-        onSubmit: async (cardFormData) => {
-          try {
-            await processarPagamentoCartao(cardFormData);
-          } catch (err) {
-            console.error('[Mercado Pago Brick] Erro de pagamento:', err);
-            // Lança o erro para o Brick saber que o pagamento falhou e NÃO mostrar aprovado
-            throw err;
-          }
-        },
-        onError: (err) => {
-          console.error('[Mercado Pago Brick] Erro:', err);
-          if (typeof mostrarToast === 'function') mostrarToast('Erro ao validar cartão', 'erro');
-        }
-      }
-    });
-  } catch (err) {
-    console.warn('Aviso ao inicializar Brick de cartão:', err);
-  }
-}
-
-// ============================================
-// Processamento do Cartão de Crédito (Atômico)
-// ============================================
-async function processarPagamentoCartao(cardFormData) {
-  // 1. Validação obrigatória de data e horário antes de processar cobrança
-  if (typeof window.validarDadosAgendamento === 'function') {
-    const valido = window.validarDadosAgendamento();
-    if (!valido) {
-      throw new Error('Por favor, selecione a data e o horário no calendário antes de pagar.');
-    }
-  }
-
-  const carrinho = typeof lerCarrinho === 'function' ? lerCarrinho() : [];
-  if (carrinho.length === 0) {
-    if (typeof mostrarToast === 'function') mostrarToast('Seu carrinho está vazio.', 'alerta');
-    throw new Error('Carrinho vazio');
-  }
-
-  const usuario = typeof usuarioAtual === 'function' ? await usuarioAtual() : null;
-  const perfil = typeof perfilAtual === 'function' ? await perfilAtual() : null;
-
+  const usuario = await usuarioAtual();
   if (!usuario) {
-    if (typeof mostrarToast === 'function') mostrarToast('Você precisa estar logado para continuar.', 'alerta');
-    throw new Error('Usuário não logado');
+    mostrarToast('Você precisa estar logado para continuar.', 'alerta');
+    return;
   }
 
-  // 2. Dispara a cobrança no Mercado Pago PRIMEIRO (NUNCA grava no banco antes de aprovar!)
-  const payload = {
-    token: cardFormData.token,
-    issuer_id: cardFormData.issuer_id,
-    payment_method_id: cardFormData.payment_method_id,
-    transaction_amount: cardFormData.transaction_amount,
-    installments: cardFormData.installments,
-    payer: cardFormData.payer,
-    descricao: `Pedido Dona Benta`
-  };
+  const button = document.getElementById('btnConfirmarPedido');
+  if (button) {
+    button.disabled = true;
+    button.innerHTML = '<span class="material-symbols-outlined spin">autorenew</span> Preparando pagamento...';
+  }
 
-  let resp, data;
   try {
-    const sessionData = window.db?.auth ? await window.db.auth.getSession() : null;
-    const sessionToken = sessionData?.data?.session?.access_token;
-    const headers = { 'Content-Type': 'application/json' };
-    if (sessionToken) headers['Authorization'] = `Bearer ${sessionToken}`;
-
-    resp = await fetch(`${API_PAGAMENTOS_URL}/pagamento/cartao`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
+    const pedido = await registrarPedidoNoBanco({
+      forma_pagamento: 'Cartão de Crédito',
+      status: 'aguardando_confirmacao',
+      pago: false
     });
-    data = await resp.json();
-  } catch (err) {
-    console.error('Falha na comunicação com a API:', err);
-    if (typeof mostrarToast === 'function') mostrarToast('Falha ao comunicar com o servidor de pagamentos.', 'erro');
-    throw err;
-  }
+    if (!pedido) throw new Error('Não foi possível registrar o pedido.');
 
-  // Se o pagamento NÃO foi aprovado:
-  if (!resp.ok || (!data.sucesso && data.status !== 'approved')) {
-    const msgErro = data.detalhes || data.erro || 'Cartão recusado pelo banco emissor.';
-    if (typeof mostrarToast === 'function') {
-      mostrarToast(msgErro, 'erro');
+    const response = await fetch(`${API_PAGAMENTOS_URL}/pagamento/cartao`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pedido_id: pedido.id, email: usuario.email })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.sucesso || !data.checkout_url) {
+      throw new Error(data.detalhes || data.erro || 'Não foi possível iniciar o pagamento.');
     }
-    // Lança erro para o Brick NÃO aprovar e NADA é gravado no banco
-    throw new Error(msgErro);
+
+    const checkoutUrl = new URL(data.checkout_url);
+    if (checkoutUrl.protocol !== 'https:' || !/(^|\.)mercadopago\.com(\.br)?$/i.test(checkoutUrl.hostname)) {
+      throw new Error('O servidor retornou um endereço de pagamento inválido.');
+    }
+    window.location.assign(checkoutUrl.href);
+  } catch (error) {
+    console.error('Falha ao iniciar checkout do cartão:', error);
+    mostrarToast(error.message || 'Falha ao comunicar com o servidor de pagamentos.', 'erro');
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = '<span class="material-symbols-outlined">credit_card</span> Continuar para o pagamento';
+    }
   }
-
-  // 3. SE E SOMENTE SE O CARTÃO FOI APROVADO: grava o pedido no Supabase já como PAGO
-  const pedido = await registrarPedidoNoBanco({
-    forma_pagamento: 'Cartão de Crédito',
-    pago: true,
-    status: 'confirmado'
-  });
-
-  if (!pedido) {
-    throw new Error('Pagamento aprovado, mas falha ao salvar pedido no banco.');
-  }
-
-  if (typeof mostrarToast === 'function') {
-    mostrarToast('Pagamento com cartão aprovado! 🎉', 'sucesso');
-  }
-
-  exibirSucessoPagamento(pedido, perfil, 'Cartão de Crédito');
-  return true;
 }
-
-// ============================================
+window.iniciarFluxoCartao = iniciarFluxoCartao;
 // Processamento do Pix Dinâmico
 // ============================================
 async function iniciarFluxoPix(pedido, perfil) {
@@ -414,8 +255,15 @@ async function iniciarFluxoPix(pedido, perfil) {
   abrirModalPix();
 
   // Em produção, CPF é obrigatório para emissão de Pix pelo Banco Central e Mercado Pago
-  const config = await obterConfiguracaoGateway();
-  const isProducao = config?.ambiente === 'producao' || MP_PUBLIC_KEY.startsWith('APP_USR-');
+  let config;
+  try {
+    config = await obterConfiguracaoGateway();
+  } catch (error) {
+    mostrarCarregandoPix(false);
+    mostrarToast(error.message || 'Não foi possível iniciar o pagamento.', 'erro');
+    return;
+  }
+  const isProducao = config?.ambiente === 'producao';
   let cpfAtual = (perfil?.cpf || '').replace(/\D/g, '');
 
   if (isProducao && !validarCPF(cpfAtual)) {
@@ -475,8 +323,6 @@ async function iniciarFluxoPix(pedido, perfil) {
 
   try {
     const usuario = typeof usuarioAtual === 'function' ? await usuarioAtual() : null;
-    const sessionData = window.db?.auth ? await window.db.auth.getSession() : null;
-    const sessionToken = sessionData?.data?.session?.access_token;
     const emailPagador = (perfil?.email || usuario?.email || '').trim().toLowerCase();
 
     const payload = {
@@ -490,14 +336,10 @@ async function iniciarFluxoPix(pedido, perfil) {
       }
     };
 
-    const headers = { 'Content-Type': 'application/json' };
-    if (sessionToken) {
-      headers['Authorization'] = `Bearer ${sessionToken}`;
-    }
-
     const resp = await fetch(`${API_PAGAMENTOS_URL}/pagamento/pix`, {
       method: 'POST',
-      headers,
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
@@ -509,7 +351,6 @@ async function iniciarFluxoPix(pedido, perfil) {
 
     renderizarDadosPixNoModal(data, pedido, perfil);
     iniciarPollingPix(data.pagamento_id, pedido, perfil);
-    escutarSupabaseRealtime(pedido.id, perfil);
 
   } catch (err) {
     console.error('Erro ao gerar Pix:', err);
@@ -641,27 +482,6 @@ function pararPollingPix() {
   }
 }
 
-// Escuta em tempo real via Supabase Realtime
-function escutarSupabaseRealtime(pedidoId, perfil) {
-  if (!window.db) return;
-  try {
-    db.channel(`pedido-${pedidoId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'pedidos',
-        filter: `id=eq.${pedidoId}`
-      }, (payload) => {
-        if (payload.new && (payload.new.pago === true || payload.new.status === 'confirmado')) {
-          confirmarPagamentoSucesso(payload.new, perfil);
-        }
-      })
-      .subscribe();
-  } catch (e) {
-    console.warn('Realtime Supabase:', e);
-  }
-}
-
 // Transição visual para tela de sucesso
 function confirmarPagamentoSucesso(pedido, perfil) {
   pararPollingPix();
@@ -697,19 +517,3 @@ function exibirSucessoPagamento(pedido, perfil, metodo) {
     exibirRecibo(pedido, perfil);
   }
 }
-
-// Reinicializa o Brick caso o usuário alterne o tema com ele aberto
-window.addEventListener('temaAlterado', () => {
-  if (cardBrickController) {
-    try {
-      cardBrickController.unmount();
-    } catch (e) {}
-    cardBrickController = null;
-    const cartaoContainer = document.getElementById('cartaoBrickContainer');
-    if (cartaoContainer && cartaoContainer.style.display !== 'none') {
-      const brickContainer = document.getElementById('cardPaymentBrick_container');
-      if (brickContainer) brickContainer.innerHTML = '';
-      inicializarCartaoBrick();
-    }
-  }
-});

@@ -35,6 +35,16 @@ $routes->addRedirect('faq.html', 'faq');
 // ROTAS DA API REST (PAGAMENTOS & GATEWAY)
 // ============================================
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function (RouteCollection $routes) {
+    $routes->get('auth/session', 'FrontendAuthController::session');
+    $routes->post('auth/login', 'FrontendAuthController::login');
+    $routes->post('auth/signup', 'FrontendAuthController::signup');
+    $routes->post('auth/recovery', 'FrontendAuthController::recovery');
+    $routes->post('auth/update', 'FrontendAuthController::update');
+    $routes->post('auth/logout', 'FrontendAuthController::logout');
+    $routes->match(['get', 'post', 'patch', 'delete'], 'data/(:segment)', 'FrontendDataController::handle/$1');
+    $routes->get('storage/public', 'FrontendStorageController::publicObject');
+    $routes->post('storage/upload', 'FrontendStorageController::upload');
+
     // Status e Configurações
     $routes->get('health', 'PagamentoController::health');
     $routes->get('config', 'PagamentoController::config');

@@ -38,7 +38,7 @@ async function carregarProduto() {
 
       if (!error && data) produto = data;
     } catch (e) {
-      console.warn('Busca no Supabase falhou, tentando modelo local:', e);
+      console.warn('Busca do produto falhou, tentando modelo local:', e);
     }
 
     if (!produto && typeof PRODUTOS_MODELO !== 'undefined') {

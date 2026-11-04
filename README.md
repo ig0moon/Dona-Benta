@@ -1,69 +1,43 @@
-# CodeIgniter 4 Application Starter
+# Dona Benta
 
-## What is CodeIgniter?
+Site da confeitaria Dona Benta, construído com CodeIgniter 4, PHP e Supabase. O navegador conversa somente com o backend do próprio site; credenciais do Supabase e do Mercado Pago são lidas pelo PHP no servidor.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## Deploy no Render
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+1. Crie um **Web Service** ligado ao repositório e selecione o runtime **Docker**. O Render usará o `Dockerfile` da raiz.
+2. Cadastre as variáveis abaixo em **Environment** no Render. Não coloque esses valores no JavaScript nem os envie ao Git.
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+| Variável | Uso |
+| --- | --- |
+| `CI_ENVIRONMENT` | Use `production`. |
+| `APP_BASE_URL` | URL pública do serviço, incluindo `https://` e a barra final. |
+| `SUPABASE_URL` | URL do projeto Supabase. |
+| `SUPABASE_ANON_KEY` | Chave pública do Supabase, usada somente no servidor. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Acesso administrativo usado pelo servidor para atualizar pedidos via webhook. Mantenha estritamente privada. |
+| `MP_ACCESS_TOKEN` | Token privado de acesso do Mercado Pago. |
+| `WEBHOOK_URL` | URL pública completa de `https://<dominio>/api/webhook/mercadopago`. |
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+O Render define `PORT` automaticamente. Não configure um `.env` com credenciais no repositório. A chave `MP_PUBLIC_KEY` não é necessária: pagamentos com cartão usam o checkout hospedado do Mercado Pago.
 
-## Installation & updates
+No Supabase, configure a URL pública do site como URL autorizada para autenticação e recuperação de senha. Mantenha ativas as políticas RLS das tabelas e buckets, pois os endpoints do backend encaminham as operações com a sessão do usuário.
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+## Rodar localmente
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+Requisitos: PHP 8.2+, Composer e extensões PHP `curl`, `intl`, `mbstring`, `mysqli` e `pdo_mysql`.
 
-## Setup
+```powershell
+composer install
+Copy-Item env .env
+```
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+Configure no `.env` as mesmas variáveis de integração listadas acima e inicie o servidor:
 
-## Important Change with index.php
+```powershell
+php spark serve
+```
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+## Testes
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
-
-**Please** read the user guide for a better explanation of how CI4 works!
-
-## Repository Management
-
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
-
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
-
-## Server Requirements
-
-PHP version 8.2 or higher is required, with the following extensions installed:
-
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
-
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
-
-Additionally, make sure that the following extensions are enabled in your PHP:
-
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+```powershell
+vendor\bin\phpunit.bat --no-coverage
+```

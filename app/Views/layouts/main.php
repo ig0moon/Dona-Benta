@@ -18,8 +18,7 @@
         }
       } catch(e){}
     })();
-    window.BASE_URL = '<?= base_url('/') ?>';
-    window.API_PAGAMENTOS_URL = '<?= base_url('api') ?>';
+    window.BASE_URL = <?= json_encode(base_url('/'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
   </script>
 </head>
 <body data-pagina="<?= esc($pagina ?? 'inicio') ?>">
@@ -27,8 +26,7 @@
   <?= $this->renderSection('content') ?>
 
   <!-- Scripts Globais MVC -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="<?= base_url('js/supabase-client.js?v=3.0') ?>"></script>
+  <script src="<?= base_url('js/backend-client.js?v=4.0') ?>"></script>
   <script src="<?= base_url('js/carrinho.js?v=3.0') ?>"></script>
   <script src="<?= base_url('js/layout.js?v=3.0') ?>"></script>
   <?= $this->renderSection('scripts') ?>
