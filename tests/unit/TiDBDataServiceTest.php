@@ -76,4 +76,35 @@ final class TiDBDataServiceTest extends CIUnitTestCase
         $updatedProfile = $this->database->table('perfis')->where('id', $userId)->get()->getRowArray();
         $this->assertSame('cliente', $updatedProfile['role']);
     }
+
+    public function testAdminCanCreateProductWithoutProvidingAnId(): void
+    {
+        $adminId = bin2hex(random_bytes(16));
+        $this->database->table('perfis')->insert([
+            'id' => $adminId,
+            'nome' => 'Igor',
+            'email' => 'igor@admin.com',
+            'role' => 'admin',
+        ]);
+        session()->set('tidb_user_id', $adminId);
+
+        $result = (new TiDBDataService())->databaseRequest('POST', 'produtos', [], [
+            'nome' => 'Produto de teste',
+            'categoria' => 'bolos',
+            'preco' => 25.50,
+            'estoque' => 10,
+            'imagem_url' => 'https://example.com/bolo.jpg',
+            'descricao_curta' => 'Descrição curta',
+            'descricao' => 'Descrição completa',
+            'disponivel' => true,
+            'destaque' => false,
+        ]);
+
+        $this->assertSame(201, $result['status']);
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $result['data'][0]['id']);
+        $this->assertSame('Produto de teste', $this->database->table('produtos')
+            ->where('id', $result['data'][0]['id'])
+            ->get()
+            ->getRowArray()['nome']);
+    }
 }

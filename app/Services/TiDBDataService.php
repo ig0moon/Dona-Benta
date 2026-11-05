@@ -185,7 +185,9 @@ class TiDBDataService
                 return $this->failure(400, 'Dados inválidos.');
             }
             $clean = $this->filterWritable($table, $row);
-            if ($table === 'pedidos') {
+            if ($table === 'produtos') {
+                $clean['id'] = $clean['id'] ?? bin2hex(random_bytes(16));
+            } elseif ($table === 'pedidos') {
                 $clean['id'] = $clean['id'] ?? bin2hex(random_bytes(16));
                 $clean['cliente_id'] = $user['id'];
                 $clean['usuario_id'] = $user['id'];
