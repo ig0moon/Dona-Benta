@@ -96,6 +96,14 @@ final class HealthTest extends CIUnitTestCase
     public function testDatabaseConnectionUsesRuntimeEnvironmentConfiguration(): void
     {
         $keys = [
+            'DB_HOST',
+            'DB_USER',
+            'DB_PASS',
+            'DB_NAME',
+            'DB_DRIVER',
+            'DB_PREFIX',
+            'DB_ENCRYPT',
+            'DB_PORT',
             'database.default.hostname',
             'database.default.username',
             'database.default.password',
@@ -120,25 +128,44 @@ final class HealthTest extends CIUnitTestCase
         }
 
         try {
+            $_ENV['DB_HOST'] = 'tidb-render.example.com';
+            $_ENV['DB_USER'] = 'render_user';
+            $_ENV['DB_PASS'] = 'render-password';
+            $_ENV['DB_NAME'] = 'render_database';
+            $_ENV['DB_DRIVER'] = 'MySQLi';
+            $_ENV['DB_PREFIX'] = 'render_';
+            $_ENV['DB_ENCRYPT'] = 'true';
+            $_ENV['DB_PORT'] = '4001';
             $_ENV['database.default.hostname'] = 'tidb.example.com';
             $_ENV['database.default.username'] = 'tidb_user';
             $_ENV['database.default.password'] = 'test-password';
             $_ENV['database.default.database'] = 'dona_benta';
-            $_ENV['database.default.DBDriver'] = 'MySQLi';
+            $_ENV['database.default.DBDriver'] = 'SQLite3';
             $_ENV['database.default.DBPrefix'] = 'shop_';
-            $_ENV['database.default.encrypt'] = 'true';
+            $_ENV['database.default.encrypt'] = 'false';
             $_ENV['database.default.port'] = '4000';
 
             $database = new \Config\Database();
 
-            $this->assertSame('tidb.example.com', $database->default['hostname']);
-            $this->assertSame('tidb_user', $database->default['username']);
-            $this->assertSame('test-password', $database->default['password']);
-            $this->assertSame('dona_benta', $database->default['database']);
+            $this->assertSame('tidb-render.example.com', $database->default['hostname']);
+            $this->assertSame('render_user', $database->default['username']);
+            $this->assertSame('render-password', $database->default['password']);
+            $this->assertSame('render_database', $database->default['database']);
             $this->assertSame('MySQLi', $database->default['DBDriver']);
-            $this->assertSame('shop_', $database->default['DBPrefix']);
+            $this->assertSame('render_', $database->default['DBPrefix']);
             $this->assertTrue($database->default['encrypt']);
-            $this->assertSame(4000, $database->default['port']);
+            $this->assertSame(4001, $database->default['port']);
+
+            foreach (['DB_HOST', 'DB_USER', 'DB_PASS', 'DB_NAME', 'DB_DRIVER', 'DB_PREFIX', 'DB_ENCRYPT', 'DB_PORT'] as $key) {
+                unset($_ENV[$key]);
+            }
+            $legacyConfig = new \Config\Database();
+            $this->assertSame('tidb.example.com', $legacyConfig->default['hostname']);
+            $this->assertSame('tidb_user', $legacyConfig->default['username']);
+            $this->assertSame('test-password', $legacyConfig->default['password']);
+            $this->assertSame('dona_benta', $legacyConfig->default['database']);
+            $this->assertFalse($legacyConfig->default['encrypt']);
+            $this->assertSame(4000, $legacyConfig->default['port']);
         } finally {
             foreach ($original as $key => $values) {
                 if ($values['envExists']) {

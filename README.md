@@ -11,13 +11,14 @@ Site da confeitaria Dona Benta, construído com CodeIgniter 4, PHP e TiDB Cloud.
 | --- | --- |
 | `CI_ENVIRONMENT` | Use `production`. |
 | `APP_BASE_URL` | Opcional. URL pública do serviço, incluindo `https://` e a barra final. O Render usa automaticamente `RENDER_EXTERNAL_URL` quando essa variável não está definida. Configure `APP_BASE_URL` somente se usar um domínio personalizado. |
-| `database.default.hostname` | Host SQL do TiDB Cloud. |
-| `database.default.database` | Nome do banco no TiDB, normalmente `dona_benta`. |
-| `database.default.username` | Usuário SQL do TiDB. |
-| `database.default.password` | Senha SQL do TiDB. |
-| `database.default.port` | Porta indicada pelo TiDB Cloud. |
-| `database.default.DBDriver` | Use `MySQLi`. |
-| `database.default.encrypt` | Use `true` para habilitar TLS, conforme exigido pelo TiDB Cloud. |
+| `DB_HOST` | Host SQL do TiDB Cloud. |
+| `DB_NAME` | Nome do banco no TiDB, normalmente `dona_benta`. |
+| `DB_USER` | Usuário SQL do TiDB. |
+| `DB_PASS` | Senha SQL do TiDB. |
+| `DB_PORT` | Porta indicada pelo TiDB Cloud. |
+| `DB_ENCRYPT` | Use `true` para habilitar TLS, conforme exigido pelo TiDB Cloud. |
+| `DB_DRIVER` | Opcional; use `MySQLi` (padrão). |
+| `DB_PREFIX` | Opcional; deixe vazio se as tabelas não tiverem prefixo. |
 | `MP_ACCESS_TOKEN` | Token privado de acesso do Mercado Pago. |
 | `WEBHOOK_URL` | URL pública completa de `https://<dominio>/api/webhook/mercadopago`. |
 
@@ -25,7 +26,7 @@ O Render define `PORT` automaticamente. Não configure um `.env` com credenciais
 
 ### Diagnóstico do TiDB
 
-A página `/teste-banco` executa `SELECT 1` para verificar a conexão configurada, sem alterar dados. No Render, cadastre as variáveis com os nomes exatos da tabela acima; os dois campos que estavam faltando no diagnóstico eram `database.default.database` e `database.default.username`.
+A página `/teste-banco` executa `SELECT 1` para verificar a conexão configurada, sem alterar dados. Os nomes `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_PORT` e `DB_ENCRYPT` também são aceitos como estão no Render. Os nomes legados `database.default.*` continuam aceitos.
 
 Execute `app/Database/schema_tidb.sql` no banco TiDB para criar as tabelas e inserir os produtos iniciais. Para um banco que já existe, execute uma vez `app/Database/migrate_tidb.sql` para adicionar hash de senha e armazenamento de imagens. Contas/senhas que existiam em outro provedor não são copiadas automaticamente; cada cliente precisa criar uma conta no TiDB.
 

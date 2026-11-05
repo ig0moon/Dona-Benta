@@ -16,9 +16,14 @@ class DatabaseTest extends BaseController
         $database = config('Database')->default;
         $missing = [];
 
-        foreach (['hostname', 'database', 'username'] as $key) {
+        $requiredKeys = [
+            'hostname' => 'DB_HOST',
+            'database' => 'DB_NAME',
+            'username' => 'DB_USER',
+        ];
+        foreach ($requiredKeys as $key => $environmentKey) {
             if (trim((string) ($database[$key] ?? '')) === '') {
-                $missing[] = 'database.default.' . $key;
+                $missing[] = $environmentKey . ' (ou database.default.' . $key . ')';
             }
         }
 

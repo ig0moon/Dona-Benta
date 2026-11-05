@@ -194,10 +194,21 @@ class Database extends Config
     {
         parent::__construct();
 
-        foreach (['hostname', 'username', 'password', 'database', 'DBDriver', 'DBPrefix', 'encrypt'] as $key) {
-            $this->default[$key] = env('database.default.' . $key, $this->default[$key]);
+        $environmentKeys = [
+            'hostname' => ['DB_HOST', 'database.default.hostname'],
+            'username' => ['DB_USER', 'database.default.username'],
+            'password' => ['DB_PASS', 'database.default.password'],
+            'database' => ['DB_NAME', 'database.default.database'],
+            'DBDriver' => ['DB_DRIVER', 'database.default.DBDriver'],
+            'DBPrefix' => ['DB_PREFIX', 'database.default.DBPrefix'],
+            'encrypt'  => ['DB_ENCRYPT', 'database.default.encrypt'],
+            'port'     => ['DB_PORT', 'database.default.port'],
+        ];
+
+        foreach ($environmentKeys as $key => [$renderKey, $codeIgniterKey]) {
+            $value = env($renderKey, env($codeIgniterKey, $this->default[$key] ?? 3306));
+            $this->default[$key] = $key === 'port' ? (int) $value : $value;
         }
-        $this->default['port'] = (int) env('database.default.port', $this->default['port']);
 
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that
