@@ -109,7 +109,10 @@ async function carregarConta() {
       linkAtivo.classList.add('ativo');
     }
 
-    carregarSecao(abaInicial, usuario, perfil);
+    await carregarSecao(abaInicial, usuario, perfil);
+    if (urlParams.get('checkout') === 'retorno') {
+      await verificarRetornoCheckout(urlParams.get('pedido_id'));
+    }
   } catch (err) {
     console.error('Erro ao inicializar página de conta:', err);
     const layout = document.getElementById('contaLayout');
@@ -125,6 +128,46 @@ async function carregarConta() {
         </div>
       `;
     }
+  }
+}
+
+async function verificarRetornoCheckout(pedidoId) {
+  const area = document.getElementById('areaConteudo');
+  if (!area) return;
+
+  const statusBox = document.createElement('div');
+  statusBox.className = 'cartao';
+  statusBox.setAttribute('role', 'status');
+  statusBox.innerHTML = '<div class="spinner"></div><p>Confirmando o pagamento com o Mercado Pago...</p>';
+  area.prepend(statusBox);
+
+  if (!pedidoId) {
+    statusBox.innerHTML = '<h3>Não foi possível localizar o pedido</h3><p>Volte para a lista de pedidos e consulte o status novamente.</p>';
+    return;
+  }
+
+  const apiUrl = new URL('api/', window.BASE_URL || `${window.location.origin}/`).href.replace(/\/$/, '');
+  try {
+    for (let tentativa = 0; tentativa < 10; tentativa++) {
+      const url = new URL(`${apiUrl}/pagamento/checkout/status`);
+      url.searchParams.set('pedido_id', pedidoId);
+      const response = await fetch(url, { credentials: 'same-origin' });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.erro || 'Não foi possível consultar o pagamento.');
+      }
+      if (data.pago === true && data.status === 'approved') {
+        if (typeof limparCarrinho === 'function') limparCarrinho();
+        statusBox.innerHTML = '<h3>Pagamento confirmado</h3><p>Seu pedido foi aprovado pelo Mercado Pago.</p>';
+        mostrarToast('Pagamento confirmado com sucesso!', 'sucesso');
+        return;
+      }
+      if (tentativa < 9) await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+    statusBox.innerHTML = '<h3>Pagamento ainda não confirmado</h3><p>O pedido continua aguardando a confirmação do Mercado Pago. Atualize esta página em instantes para consultar novamente.</p>';
+  } catch (error) {
+    console.error('Falha ao confirmar retorno do checkout:', error);
+    statusBox.innerHTML = `<h3>Não foi possível confirmar o pagamento</h3><p>${escapeHtml(error.message || 'Tente atualizar a página.')}</p>`;
   }
 }
 

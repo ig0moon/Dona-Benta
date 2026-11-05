@@ -120,7 +120,9 @@ class MercadoPagoService
             if ($valorDb > 0 && abs($valorEfetivo - $valorDb) > 0.05) {
                 log_message('warning', "[SEGURANÇA] Ajustando valor conforme catálogo oficial: R$ {$valorDb} (enviado: R$ {$valorEfetivo})");
                 // Sincroniza o valor correto no registro do pedido
-                $this->tidb->atualizarPedido($pedidoId, ['valor_total' => $valorDb], $userAuthHeader);
+                if (!$this->tidb->atualizarPedido($pedidoId, ['valor_total' => $valorDb], $userAuthHeader)) {
+                    return ['status' => 503, 'data' => ['erro' => 'Não foi possível atualizar o valor validado no pedido.']];
+                }
             }
             $valorEfetivo = $valorDb;
         }
@@ -216,12 +218,35 @@ class MercadoPagoService
         $pixCopiaCola = $poi['qr_code'] ?? null;
         $qrCodeBase64 = !empty($poi['qr_code_base64']) ? 'data:image/png;base64,' . $poi['qr_code_base64'] : null;
 
-        if (!empty($pedidoId)) {
-            $this->tidb->atualizarPedido($pedidoId, [
+        if (empty($mpData['id']) || !is_numeric($mpData['id'])) {
+            return ['status' => 502, 'data' => ['erro' => 'O Mercado Pago não retornou um identificador de pagamento válido.']];
+        }
+
+        $statusPagamento = $mpData['status'] ?? '';
+        if ($statusPagamento === 'approved') {
+            if (!$this->confirmarPedidoPorPagamento($pedidoId, $mpData)) {
+                return ['status' => 409, 'data' => ['erro' => 'O pagamento não corresponde ao valor ou ao pedido informado.']];
+            }
+        } elseif (in_array($statusPagamento, ['pending', 'in_process'], true)) {
+            if (!is_string($pixCopiaCola) || $pixCopiaCola === '' || !is_string($qrCodeBase64) || $qrCodeBase64 === '') {
+                return ['status' => 502, 'data' => ['erro' => 'O Mercado Pago não retornou os dados necessários para pagar via Pix.']];
+            }
+            if (!$this->tidb->atualizarPedido($pedidoId, [
                 'forma_pagamento' => 'Pix',
                 'status'          => 'aguardando_confirmacao',
                 'pago'            => false
-            ], $userAuthHeader);
+            ], $userAuthHeader)) {
+                return ['status' => 503, 'data' => ['erro' => 'Não foi possível registrar o pagamento Pix no banco.']];
+            }
+        } else {
+            return [
+                'status' => 402,
+                'data' => [
+                    'erro' => 'O Mercado Pago não autorizou a geração do pagamento Pix.',
+                    'status' => $statusPagamento,
+                    'status_detalhe' => $mpData['status_detail'] ?? null,
+                ],
+            ];
         }
 
         return [
@@ -229,9 +254,10 @@ class MercadoPagoService
             'data'   => [
                 'sucesso'        => true,
                 'pagamento_id'   => $mpData['id'] ?? null,
-                'status'         => $mpData['status'] ?? 'pending',
+                'status'         => $statusPagamento,
                 'status_detalhe' => $mpData['status_detail'] ?? null,
                 'valor'          => $mpData['transaction_amount'] ?? $valorEfetivo,
+                'pago'           => $statusPagamento === 'approved',
                 'pix_copia_cola' => $pixCopiaCola,
                 'qr_code_base64' => $qrCodeBase64,
                 'expiracao'      => $mpData['date_of_expiration'] ?? null
@@ -262,6 +288,10 @@ class MercadoPagoService
             return ['status' => 409, 'data' => ['erro' => 'Não foi possível validar os preços dos itens do pedido.']];
         }
         $valorEfetivo = $valorReal;
+        if (abs(round((float) $pedidoDb['valor_total'], 2) - round($valorEfetivo, 2)) >= 0.01
+            && !$this->tidb->atualizarPedido($pedidoId, ['valor_total' => $valorEfetivo], $userAuthHeader)) {
+            return ['status' => 503, 'data' => ['erro' => 'Não foi possível atualizar o valor validado no pedido.']];
+        }
         if ($valorEfetivo < 0.50 || $valorEfetivo > 50000) {
             return ['status' => 400, 'data' => ['erro' => 'Valor do pedido inválido para cartão de crédito']];
         }
@@ -278,7 +308,7 @@ class MercadoPagoService
         if ($baseUrl === '') {
             return ['status' => 503, 'data' => ['erro' => 'APP_BASE_URL precisa estar configurada para pagamentos com cartão.']];
         }
-        $returnUrl = $baseUrl . '/conta?aba=pedidos&checkout=retorno';
+        $returnUrl = $baseUrl . '/conta?aba=pedidos&checkout=retorno&pedido_id=' . rawurlencode($pedidoId);
         $mpPayload = [
             'items' => [[
                 'title'       => 'Pedido Dona Benta ' . ($pedidoDb['id'] ?? $pedidoId),
@@ -324,11 +354,13 @@ class MercadoPagoService
             return ['status' => 502, 'data' => ['erro' => 'O Mercado Pago não retornou um endereço de checkout válido.']];
         }
 
-        $this->tidb->atualizarPedido($pedidoId, [
+        if (!$this->tidb->atualizarPedido($pedidoId, [
             'forma_pagamento' => 'Cartão de Crédito',
             'status'          => 'aguardando_confirmacao',
             'pago'            => false,
-        ], $userAuthHeader);
+        ], $userAuthHeader)) {
+            return ['status' => 503, 'data' => ['erro' => 'Não foi possível registrar o checkout no banco.']];
+        }
 
         return [
             'status' => 200,
@@ -361,10 +393,9 @@ class MercadoPagoService
         $aprovado = ($mpData['status'] ?? '') === 'approved';
 
         if ($aprovado && !empty($pedidoId)) {
-            $this->tidb->atualizarPedido($pedidoId, [
-                'status' => 'confirmado',
-                'pago'   => true
-            ], $userAuthHeader);
+            if (!$this->confirmarPedidoPorPagamento($pedidoId, $mpData)) {
+                return ['status' => 409, 'data' => ['erro' => 'O pagamento não corresponde ao valor ou ao pedido informado.']];
+            }
         }
 
         return [
@@ -375,6 +406,63 @@ class MercadoPagoService
                 'status_detalhe' => $mpData['status_detail'] ?? null,
                 'pago'           => $aprovado
             ]
+        ];
+    }
+
+    public function consultarStatusCheckout(string $pedidoId, ?string $userId): array
+    {
+        if (!$this->tidb->isValidPedidoId($pedidoId)) {
+            return ['status' => 400, 'data' => ['erro' => 'Identificador de pedido inválido']];
+        }
+
+        $pedido = $this->tidb->consultarPedido($pedidoId);
+        if (!$this->pedidoPertenceAoUsuario($pedido, $userId)) {
+            return ['status' => 404, 'data' => ['erro' => 'Pedido não encontrado']];
+        }
+        if (!empty($pedido['pago'])) {
+            return ['status' => 200, 'data' => ['status' => 'approved', 'pago' => true]];
+        }
+
+        $res = $this->callMercadoPago(
+            'GET',
+            'https://api.mercadopago.com/v1/payments/search?external_reference=' . rawurlencode($pedidoId),
+        );
+        if ($res['http_code'] < 200 || $res['http_code'] >= 300) {
+            return ['status' => 502, 'data' => ['erro' => 'Falha ao consultar o pagamento no Mercado Pago.']];
+        }
+
+        $payments = $res['data']['results'] ?? [];
+        if (!is_array($payments)) {
+            return ['status' => 502, 'data' => ['erro' => 'Resposta inválida do Mercado Pago.']];
+        }
+        $payment = null;
+        foreach ($payments as $candidate) {
+            if (is_array($candidate) && ($candidate['external_reference'] ?? '') === $pedidoId) {
+                if ($payment === null || ($candidate['status'] ?? '') === 'approved') {
+                    $payment = $candidate;
+                }
+                if (($candidate['status'] ?? '') === 'approved') {
+                    break;
+                }
+            }
+        }
+
+        if ($payment === null) {
+            return ['status' => 200, 'data' => ['status' => 'pending', 'pago' => false]];
+        }
+        $approved = ($payment['status'] ?? '') === 'approved';
+        if ($approved && !$this->confirmarPedidoPorPagamento($pedidoId, $payment)) {
+            return ['status' => 409, 'data' => ['erro' => 'O pagamento não corresponde ao valor ou ao pedido informado.']];
+        }
+
+        return [
+            'status' => 200,
+            'data' => [
+                'pagamento_id' => $payment['id'] ?? null,
+                'status' => $payment['status'] ?? 'pending',
+                'status_detalhe' => $payment['status_detail'] ?? null,
+                'pago' => $approved,
+            ],
         ];
     }
 
@@ -404,10 +492,12 @@ class MercadoPagoService
             return ['status' => 400, 'data' => ['erro' => 'Este pedido já se encontra pago']];
         }
 
-        $this->tidb->atualizarPedido($pedidoId, [
+        if (!$this->tidb->atualizarPedido($pedidoId, [
             'status' => 'confirmado',
             'pago'   => true
-        ], $userAuthHeader);
+        ], $userAuthHeader)) {
+            return ['status' => 503, 'data' => ['erro' => 'Não foi possível registrar a aprovação no banco.']];
+        }
 
         return [
             'status' => 200,
@@ -441,17 +531,41 @@ class MercadoPagoService
                 if (($pagamento['status'] ?? '') === 'approved' && !empty($pagamento['external_reference'])) {
                     $pedidoId = $pagamento['external_reference'];
                     if ($this->tidb->isValidPedidoId($pedidoId)) {
-                        $this->tidb->atualizarPedido($pedidoId, [
-                            'status' => 'confirmado',
-                            'pago'   => true
-                        ]);
-                        log_message('info', "[Webhook] Pedido {$pedidoId} aprovado via Mercado Pago.");
+                        if ($this->confirmarPedidoPorPagamento($pedidoId, $pagamento)) {
+                            log_message('info', "[Webhook] Pedido {$pedidoId} aprovado via Mercado Pago.");
+                        } else {
+                            log_message('error', "[Webhook] Pagamento não corresponde ao pedido {$pedidoId}.");
+                        }
                     }
                 }
             }
         } catch (\Throwable $e) {
             log_message('error', '[Webhook] Erro ao validar pagamento: ' . $e->getMessage());
         }
+    }
+
+    private function confirmarPedidoPorPagamento(string $pedidoId, array $payment): bool
+    {
+        if (($payment['external_reference'] ?? '') !== $pedidoId
+            || ($payment['status'] ?? '') !== 'approved'
+            || ($payment['currency_id'] ?? '') !== 'BRL'
+            || !isset($payment['transaction_amount'])
+            || !is_numeric($payment['transaction_amount'])) {
+            return false;
+        }
+
+        $pedido = $this->tidb->consultarPedido($pedidoId);
+        if ($pedido === null
+            || ($pedido['status'] ?? '') === 'cancelado'
+            || (int) round((float) $payment['transaction_amount'] * 100)
+                !== (int) round((float) $pedido['valor_total'] * 100)) {
+            return false;
+        }
+
+        return $this->tidb->atualizarPedido($pedidoId, [
+            'status' => 'confirmado',
+            'pago' => true,
+        ]);
     }
 
     /**

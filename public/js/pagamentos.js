@@ -213,8 +213,9 @@ async function iniciarFluxoCartao() {
     button.innerHTML = '<span class="material-symbols-outlined spin">autorenew</span> Preparando pagamento...';
   }
 
+  let pedido = null;
   try {
-    const pedido = await registrarPedidoNoBanco({
+    pedido = await registrarPedidoNoBanco({
       forma_pagamento: 'Cartão de Crédito',
       status: 'aguardando_confirmacao',
       pago: false
@@ -239,6 +240,16 @@ async function iniciarFluxoCartao() {
     window.location.assign(checkoutUrl.href);
   } catch (error) {
     console.error('Falha ao iniciar checkout do cartão:', error);
+    if (pedido?.id && window.db) {
+      try {
+        const { error: erroItens } = await window.db.from('itens_pedido').delete().eq('pedido_id', pedido.id);
+        if (erroItens) console.error('Não foi possível remover itens do checkout não iniciado:', erroItens);
+        const { error: erroPedido } = await window.db.from('pedidos').delete().eq('id', pedido.id);
+        if (erroPedido) console.error('Não foi possível remover o pedido do checkout não iniciado:', erroPedido);
+      } catch (cleanupError) {
+        console.error('Falha ao remover pedido do checkout não iniciado:', cleanupError);
+      }
+    }
     mostrarToast(error.message || 'Falha ao comunicar com o servidor de pagamentos.', 'erro');
     if (button) {
       button.disabled = false;
@@ -349,21 +360,17 @@ async function iniciarFluxoPix(pedido, perfil) {
       throw new Error(data.detalhes || data.erro || 'Falha ao gerar Pix');
     }
 
+    if (data.pago === true && data.status === 'approved') {
+      confirmarPagamentoSucesso(pedido, perfil);
+      return;
+    }
+
     renderizarDadosPixNoModal(data, pedido, perfil);
     iniciarPollingPix(data.pagamento_id, pedido, perfil);
 
   } catch (err) {
     console.error('Erro ao gerar Pix:', err);
 
-    // Se houve falha ao gerar o Pix na API, remove o pedido pendente do banco para não ficar órfão
-    if (pedido?.id && window.db) {
-      try {
-        await window.db.from('itens_pedido').delete().eq('pedido_id', pedido.id);
-        await window.db.from('pedidos').delete().eq('id', pedido.id);
-      } catch (e) {
-        console.warn('Erro ao limpar pedido não concluído:', e);
-      }
-    }
     mostrarCarregandoPix(false);
     const corpoConteudo = document.getElementById('pixCorpoConteudo');
     if (corpoConteudo) {
@@ -458,10 +465,12 @@ function iniciarPollingPix(pagamentoId, pedido, perfil) {
   pararPollingPix();
   pollingInterval = setInterval(async () => {
     try {
-      const resp = await fetch(`${API_PAGAMENTOS_URL}/pagamento/status?id=${pagamentoId}&pedido_id=${pedido.id}`);
+      const resp = await fetch(`${API_PAGAMENTOS_URL}/pagamento/status?id=${encodeURIComponent(pagamentoId)}&pedido_id=${encodeURIComponent(pedido.id)}`, {
+        credentials: 'same-origin'
+      });
       if (resp.ok) {
         const data = await resp.json();
-        if (data.pago || data.status === 'approved') {
+        if (data.pago === true && data.status === 'approved') {
           confirmarPagamentoSucesso(pedido, perfil);
         }
       }

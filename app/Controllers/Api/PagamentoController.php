@@ -118,6 +118,21 @@ class PagamentoController extends BaseController
     }
 
     /**
+     * GET /api/pagamento/checkout/status
+     */
+    public function consultarStatusCheckout(): ResponseInterface
+    {
+        $pedidoId = trim((string) $this->request->getGet('pedido_id'));
+        $user = $this->authService->currentUser();
+        if ($user === null) {
+            return $this->response->setStatusCode(401)->setJSON(['erro' => 'Autenticação necessária.']);
+        }
+
+        $resultado = $this->mpService->consultarStatusCheckout($pedidoId, (string) $user['id']);
+        return $this->response->setStatusCode($resultado['status'])->setJSON($resultado['data']);
+    }
+
+    /**
      * POST /api/pagamento/simular-aprovacao
      */
     public function simularAprovacao(): ResponseInterface

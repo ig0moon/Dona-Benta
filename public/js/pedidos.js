@@ -349,46 +349,50 @@ async function confirmarPedido() {
   }
 
   const btn = document.getElementById('btnConfirmarPedido');
+  const metodo = typeof metodoPagamentoSelecionado !== 'undefined' ? metodoPagamentoSelecionado : 'pix';
   if (btn) {
     btn.disabled = true;
     btn.innerHTML = '<span class="material-symbols-outlined spin">autorenew</span> Processando...';
   }
 
-  const perfil = await perfilAtual();
-  const metodo = typeof metodoPagamentoSelecionado !== 'undefined' ? metodoPagamentoSelecionado : 'pix';
+  try {
+    const perfil = await perfilAtual();
 
-  if (metodo === 'cartao') {
+    if (metodo === 'cartao') {
+      await window.iniciarFluxoCartao();
+      return;
+    }
+
+    if (metodo === 'pix') {
+      const pedidoCriado = await registrarPedidoNoBanco({
+        forma_pagamento: 'Pix',
+        status: 'aguardando_confirmacao',
+        pago: false
+      });
+      if (pedidoCriado && typeof iniciarFluxoPix === 'function') {
+        await iniciarFluxoPix(pedidoCriado, perfil);
+      }
+    } else {
+      const pedidoCriado = await registrarPedidoNoBanco({
+        forma_pagamento: 'Pagar na Entrega / Retirada',
+        status: 'aguardando_confirmacao',
+        pago: false
+      });
+      if (pedidoCriado) {
+        exibirRecibo(pedidoCriado, perfil);
+      }
+    }
+  } catch (error) {
+    console.error('Falha ao confirmar o pedido:', error);
+    mostrarToast(error.message || 'Não foi possível registrar o pedido. Tente novamente.', 'erro');
+  } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<span class="material-symbols-outlined">credit_card</span> Continuar para o pagamento';
-    }
-    await window.iniciarFluxoCartao();
-    return;
-  }
-
-  if (metodo === 'pix') {
-    const pedidoCriado = await registrarPedidoNoBanco({
-      forma_pagamento: 'Pix',
-      status: 'aguardando_confirmacao',
-      pago: false
-    });
-    btn.disabled = false;
-    btn.innerHTML = `${window.ICONE_PIX_SVG || ''} Pagar com Pix`;
-
-    if (pedidoCriado && typeof iniciarFluxoPix === 'function') {
-      iniciarFluxoPix(pedidoCriado, perfil);
-    }
-  } else {
-    const pedidoCriado = await registrarPedidoNoBanco({
-      forma_pagamento: 'Pagar na Entrega / Retirada',
-      status: 'aguardando_confirmacao',
-      pago: false
-    });
-    btn.disabled = false;
-    btn.innerHTML = '<span class="material-symbols-outlined">task_alt</span> Confirmar pedido';
-
-    if (pedidoCriado) {
-      exibirRecibo(pedidoCriado, perfil);
+      btn.innerHTML = metodo === 'cartao'
+        ? '<span class="material-symbols-outlined">credit_card</span> Continuar para o pagamento'
+        : metodo === 'pix'
+          ? `${window.ICONE_PIX_SVG || ''} Pagar com Pix`
+          : '<span class="material-symbols-outlined">task_alt</span> Confirmar pedido';
     }
   }
 }
@@ -398,27 +402,40 @@ async function confirmarPedido() {
 // ============================================
 async function registrarPedidoNoBanco(dadosExtras = {}) {
   const carrinho = typeof lerCarrinho === 'function' ? lerCarrinho() : [];
+  if (!carrinho.length) {
+    mostrarToast('Seu carrinho está vazio.', 'alerta');
+    return null;
+  }
 
   // Validação segura contra adulteração de preços locais (sincroniza com o catálogo oficial)
-  try {
-    const ids = carrinho.map(i => i.id).filter(Boolean);
-    if (ids.length > 0 && window.db) {
-      const { data: prodsDb } = await db.from('produtos').select('id, preco').in('id', ids);
-      if (Array.isArray(prodsDb) && prodsDb.length > 0) {
-        const mapa = new Map(prodsDb.map(p => [String(p.id), Number(p.preco)]));
-        carrinho.forEach(item => {
-          if (mapa.has(String(item.id))) {
-            item.preco = mapa.get(String(item.id));
-          }
-        });
-        if (typeof salvarCarrinho === 'function') {
-          salvarCarrinho(carrinho);
-        }
-      }
-    }
-  } catch (e) {
-    console.warn('Verificação de preços pré-checkout:', e);
+  const ids = [...new Set(carrinho.map(item => String(item.id || '')).filter(Boolean))];
+  if (ids.length === 0 || !window.db) {
+    mostrarToast('Os itens do carrinho não são válidos. Atualize o catálogo e tente novamente.', 'erro');
+    return null;
   }
+  const { data: prodsDb, error: erroProdutos } = await db
+    .from('produtos')
+    .select('id, preco, ativo, disponivel')
+    .in('id', ids);
+  if (erroProdutos || !Array.isArray(prodsDb)) {
+    console.error('Não foi possível validar os produtos do pedido:', erroProdutos);
+    mostrarToast('Não foi possível validar os produtos no TiDB. Tente novamente.', 'erro');
+    return null;
+  }
+  const mapa = new Map(prodsDb.map(product => [String(product.id), product]));
+  if (ids.some(id => !mapa.has(id))) {
+    mostrarToast('Um ou mais produtos não estão mais disponíveis no catálogo.', 'erro');
+    return null;
+  }
+  for (const item of carrinho) {
+    const product = mapa.get(String(item.id));
+    if (!product || !Number(product.ativo) || !Number(product.disponivel)) {
+      mostrarToast('Um ou mais produtos não estão mais disponíveis no catálogo.', 'erro');
+      return null;
+    }
+    item.preco = Number(product.preco);
+  }
+  if (typeof salvarCarrinho === 'function') salvarCarrinho(carrinho);
 
   const total = carrinho.reduce((acc, item) => acc + (Number(item.preco) || 0) * (Number(item.quantidade) || 1), 0);
   const observacoes = document.getElementById('observacoesPedido')?.value?.trim() || '';
@@ -493,14 +510,45 @@ async function registrarPedidoNoBanco(dadosExtras = {}) {
     quantidade: Number(i.quantidade) || 1
   }));
 
-  const { error: erroItens } = await db.from('itens_pedido').insert(itensParaInserir);
+  let erroItens = null;
+  try {
+    ({ error: erroItens } = await db.from('itens_pedido').insert(itensParaInserir));
+  } catch (error) {
+    erroItens = error;
+  }
   if (erroItens) {
     console.error('Erro ao salvar itens do pedido:', erroItens);
-    if (typeof mostrarToast === 'function') mostrarToast('Pedido salvo com observações, mas houve falha nos itens.', 'alerta');
+    const removido = await descartarPedidoPendente(pedidoCriado.id);
+    mostrarToast(
+      removido
+        ? 'Não foi possível salvar todos os itens. O pedido não foi enviado para pagamento.'
+        : 'Não foi possível salvar todos os itens nem remover o pedido pendente. Ele permanece não pago; contate a loja.',
+      'erro'
+    );
+    return null;
   }
 
   pedidoCriado.itens = carrinho;
   return pedidoCriado;
+}
+
+async function descartarPedidoPendente(pedidoId) {
+  try {
+    const { error: erroItens } = await db.from('itens_pedido').delete().eq('pedido_id', pedidoId);
+    if (erroItens) {
+      console.error('Não foi possível remover itens do pedido pendente:', erroItens);
+      return false;
+    }
+    const { error: erroPedido } = await db.from('pedidos').delete().eq('id', pedidoId);
+    if (erroPedido) {
+      console.error('Não foi possível remover o pedido pendente:', erroPedido);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Falha ao remover pedido pendente:', error);
+    return false;
+  }
 }
 
 function exibirRecibo(pedido, perfil) {

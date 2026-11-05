@@ -24,6 +24,10 @@ Site da confeitaria Dona Benta, construído com CodeIgniter 4, PHP e TiDB Cloud.
 
 O Render define `PORT` automaticamente. Não configure um `.env` com credenciais no repositório. A chave `MP_PUBLIC_KEY` não é necessária: pagamentos com cartão usam o checkout hospedado do Mercado Pago.
 
+### Pagamentos
+
+Pedidos de Pix e cartão só são marcados como pagos depois que o servidor confirma no Mercado Pago a aprovação, a referência do pedido, o valor e a moeda BRL. Configure `WEBHOOK_URL` para `https://<dominio>/api/webhook/mercadopago`; o retorno do checkout também consulta o Mercado Pago, então o webhook não é a única forma de atualizar o status. “Pagar na Entrega / Retirada” permanece não pago até a confirmação manual, por projeto.
+
 ### Diagnóstico do TiDB
 
 A página `/teste-banco` executa `SELECT 1` para verificar a conexão configurada, sem alterar dados. Os nomes `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_PORT` e `DB_ENCRYPT` também são aceitos como estão no Render. `DB_ENCRYPT=true` habilita a opção SSL do MySQLi usada pelo TiDB Cloud. Os nomes legados `database.default.*` continuam aceitos.

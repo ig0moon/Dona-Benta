@@ -118,6 +118,6 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-  <script src="<?= base_url('js/pagamentos.js?v=4.0') ?>"></script>
-  <script src="<?= base_url('js/pedidos.js?v=4.0') ?>"></script>
+  <script src="<?= base_url('js/pagamentos.js?v=5.0') ?>"></script>
+  <script src="<?= base_url('js/pedidos.js?v=5.0') ?>"></script>
 <?= $this->endSection() ?>

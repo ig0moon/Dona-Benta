@@ -56,6 +56,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function (R
     $routes->post('pagamento/pix', 'PagamentoController::gerarPix');
     $routes->post('pagamento/cartao', 'PagamentoController::processarCartao');
     $routes->get('pagamento/status', 'PagamentoController::consultarStatus');
+    $routes->get('pagamento/checkout/status', 'PagamentoController::consultarStatusCheckout');
     $routes->post('pagamento/simular-aprovacao', 'PagamentoController::simularAprovacao');
 
     // Webhooks
