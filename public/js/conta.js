@@ -941,13 +941,28 @@ async function renderizarPainelAdmin(area, perfil) {
     return;
   }
 
-  try {
-    await Promise.all([
-      db.from('produtos').select('*').order('criado_em', { ascending: false }).then(r => PRODUTOS_ADMIN = r.data || []),
-      db.from('pedidos').select('*, perfis(nome, telefone), itens_pedido(*)').order('criado_em', { ascending: false }).then(r => PEDIDOS_ADMIN = r.data || [])
-    ]);
-  } catch (err) {
-    console.error('Erro ao carregar dados do admin:', err);
+  const [produtosResult, pedidosResult] = await Promise.all([
+    db.from('produtos').select('*').order('criado_em', { ascending: false }),
+    db.from('pedidos').select('*, perfis(nome, telefone), itens_pedido(*)').order('criado_em', { ascending: false })
+  ]);
+  if (produtosResult.error) {
+    console.error('Erro ao carregar produtos do TiDB:', produtosResult.error);
+    area.innerHTML = `
+      <div class="cartao">
+        <h3>Não foi possível carregar os produtos</h3>
+        <p>${escapeHtml(produtosResult.error.message || 'Verifique a conexão e o esquema do TiDB.')}</p>
+        <button type="button" class="btn btn-primario" id="tentarCarregarAdmin">Tentar novamente</button>
+      </div>
+    `;
+    document.getElementById('tentarCarregarAdmin')?.addEventListener('click', () => renderizarPainelAdmin(area, perfil));
+    return;
+  }
+  PRODUTOS_ADMIN = Array.isArray(produtosResult.data) ? produtosResult.data : [];
+  if (pedidosResult.error) {
+    console.error('Erro ao carregar pedidos do TiDB:', pedidosResult.error);
+    PEDIDOS_ADMIN = [];
+  } else {
+    PEDIDOS_ADMIN = Array.isArray(pedidosResult.data) ? pedidosResult.data : [];
   }
 
   area.innerHTML = `
@@ -1097,7 +1112,25 @@ function renderizarProdutosAdmin(area) {
   `;
 
   document.getElementById('btnNovoProduto').addEventListener('click', () => abrirModalProduto());
-  area.querySelectorAll('[data-editar]').forEach(btn => btn.addEventListener('click', () => abrirModalProduto(btn.dataset.editar)));
+  area.querySelectorAll('[data-editar]').forEach(btn => btn.addEventListener('click', async () => {
+    const id = btn.dataset.editar;
+    btn.disabled = true;
+    try {
+      const { data: produto, error } = await db
+        .from('produtos')
+        .select('*')
+        .eq('id', String(id))
+        .maybeSingle();
+      if (error) throw new Error(error.message || 'Falha ao consultar o produto no TiDB.');
+      if (!produto) throw new Error('O produto não foi encontrado no TiDB. Atualize a lista e tente novamente.');
+      abrirModalProduto(produto);
+    } catch (error) {
+      console.error('Erro ao carregar produto para edição:', error);
+      mostrarToast(error.message || 'Não foi possível carregar os dados do produto.', 'erro');
+    } finally {
+      btn.disabled = false;
+    }
+  }));
   area.querySelectorAll('[data-excluir]').forEach(btn => btn.addEventListener('click', () => excluirProduto(btn.dataset.excluir)));
 }
 
@@ -2256,7 +2289,18 @@ function injetarModalAdminGlobal() {
   });
 }
 
-function abrirModalProduto(id = null) {
+function valorBooleanoBanco(valor, padrao = false) {
+  if (typeof valor === 'boolean') return valor;
+  if (typeof valor === 'number') return valor !== 0;
+  if (typeof valor === 'string') {
+    const normalizado = valor.trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(normalizado)) return true;
+    if (['0', 'false', 'no', 'off', ''].includes(normalizado)) return false;
+  }
+  return padrao;
+}
+
+function abrirModalProduto(produto = null) {
   const modal = document.getElementById('modalProduto');
   const form = document.getElementById('formProduto');
   form.reset();
@@ -2266,14 +2310,12 @@ function abrirModalProduto(id = null) {
   const previewContainer = document.getElementById('previewImagemContainer');
   const previewImg = document.getElementById('previewImagem');
 
-  if (id) {
-    const produto = PRODUTOS_ADMIN.find(p => p.id === id);
-    if (!produto) return;
+  if (produto) {
     document.getElementById('modalTitulo').textContent = 'Editar produto';
     document.getElementById('produtoId').value = produto.id;
-    document.getElementById('produtoNome').value = produto.nome;
-    document.getElementById('produtoCategoria').value = produto.categoria;
-    document.getElementById('produtoPreco').value = produto.preco;
+    document.getElementById('produtoNome').value = produto.nome ?? '';
+    document.getElementById('produtoCategoria').value = produto.categoria ?? 'bolos';
+    document.getElementById('produtoPreco').value = produto.preco ?? '';
     document.getElementById('produtoEstoque').value = produto.estoque ?? 0;
 
     document.getElementById('produtoImagemAtual').value = produto.imagem_url || '';
@@ -2286,8 +2328,8 @@ function abrirModalProduto(id = null) {
 
     document.getElementById('produtoDescricaoCurta').value = produto.descricao_curta || '';
     document.getElementById('produtoDescricao').value = produto.descricao || '';
-    document.getElementById('produtoDisponivel').checked = produto.disponivel !== false;
-    document.getElementById('produtoDestaque').checked = Boolean(produto.destaque);
+    document.getElementById('produtoDisponivel').checked = valorBooleanoBanco(produto.disponivel, true);
+    document.getElementById('produtoDestaque').checked = valorBooleanoBanco(produto.destaque);
   } else {
     document.getElementById('modalTitulo').textContent = 'Novo produto';
     document.getElementById('produtoId').value = '';

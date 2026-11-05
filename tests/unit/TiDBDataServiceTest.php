@@ -106,5 +106,31 @@ final class TiDBDataServiceTest extends CIUnitTestCase
             ->where('id', $result['data'][0]['id'])
             ->get()
             ->getRowArray()['nome']);
+
+        $productId = $result['data'][0]['id'];
+        $service = new TiDBDataService();
+        $read = $service->databaseRequest('GET', 'produtos', [
+            'select' => '*',
+            'id' => 'eq.' . $productId,
+        ]);
+        $this->assertSame(200, $read['status']);
+        $this->assertSame('Produto de teste', $read['data'][0]['nome']);
+        $this->assertSame('Descrição curta', $read['data'][0]['descricao_curta']);
+        $this->assertSame(25.50, (float) $read['data'][0]['preco']);
+
+        $update = $service->databaseRequest('PATCH', 'produtos', [
+            'id' => 'eq.' . $productId,
+        ], [
+            'descricao_curta' => 'Descrição editada',
+            'disponivel' => false,
+        ]);
+        $this->assertSame(200, $update['status']);
+
+        $updated = $service->databaseRequest('GET', 'produtos', [
+            'select' => '*',
+            'id' => 'eq.' . $productId,
+        ]);
+        $this->assertSame('Descrição editada', $updated['data'][0]['descricao_curta']);
+        $this->assertSame(0, (int) $updated['data'][0]['disponivel']);
     }
 }

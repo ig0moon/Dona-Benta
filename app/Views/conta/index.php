@@ -9,5 +9,5 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-  <script src="<?= base_url('js/conta.js?v=3.0') ?>"></script>
+  <script src="<?= base_url('js/conta.js?v=4.0') ?>"></script>
 <?= $this->endSection() ?>
