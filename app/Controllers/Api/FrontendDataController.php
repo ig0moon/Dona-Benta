@@ -80,7 +80,8 @@ class FrontendDataController extends FrontendController
             }
 
             if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_.]*$/', $key)
-                || !preg_match('/^(eq|neq|in|is|gt|gte|lt|lte)\.[a-zA-Z0-9_.,@ ()-]+$/', $value)) {
+                || !preg_match('/^(eq|neq|in|is|gt|gte|lt|lte)\./', $value)
+                || preg_match('/[\x00-\x1F\x7F]/', $value)) {
                 return null;
             }
             $query[$key] = $value;
