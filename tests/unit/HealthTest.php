@@ -153,7 +153,7 @@ final class HealthTest extends CIUnitTestCase
             $this->assertSame('render_database', $database->default['database']);
             $this->assertSame('MySQLi', $database->default['DBDriver']);
             $this->assertSame('render_', $database->default['DBPrefix']);
-            $this->assertTrue($database->default['encrypt']);
+            $this->assertSame([], $database->default['encrypt']);
             $this->assertSame(4001, $database->default['port']);
 
             foreach (['DB_HOST', 'DB_USER', 'DB_PASS', 'DB_NAME', 'DB_DRIVER', 'DB_PREFIX', 'DB_ENCRYPT', 'DB_PORT'] as $key) {

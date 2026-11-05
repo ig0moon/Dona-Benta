@@ -207,7 +207,18 @@ class Database extends Config
 
         foreach ($environmentKeys as $key => [$renderKey, $codeIgniterKey]) {
             $value = env($renderKey, env($codeIgniterKey, $this->default[$key] ?? 3306));
-            $this->default[$key] = $key === 'port' ? (int) $value : $value;
+            if ($key === 'port') {
+                $this->default[$key] = (int) $value;
+                continue;
+            }
+
+            if ($key === 'encrypt') {
+                $enabled = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                $this->default[$key] = $enabled === null ? $value : ($enabled ? [] : false);
+                continue;
+            }
+
+            $this->default[$key] = $value;
         }
 
         // Ensure that we always set the database group to 'tests' if
