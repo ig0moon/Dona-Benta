@@ -5,7 +5,7 @@
     <div class="container">
       <div class="cartao auth-cartao" id="authContent">
         <div class="auth-topo">
-          <span class="material-symbols-outlined">bakery_dining</span>
+          <span class="auth-icone"><img src="img/IconeDonaBenta.png" alt="Dona Benta"></span>
           <h1>Bem-vindo(a)</h1>
           <p>Entre ou crie sua conta para encomendar</p>
         </div>

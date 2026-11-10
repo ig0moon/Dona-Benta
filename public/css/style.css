@@ -1619,9 +1619,13 @@ input:disabled {
   margin-bottom: 24px;
 }
 
-.auth-topo .material-symbols-outlined {
-  font-size: 42px;
-  color: var(--dourado-escuro);
+.auth-topo .auth-icone img {
+  height: 80%;
+  width: auto;
+  display: block;
+}
+
+.auth-topo .auth-icone {
   background: var(--azul-bebe);
   width: 72px;
   height: 72px;
