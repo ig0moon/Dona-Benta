@@ -13,7 +13,10 @@ RUN apt-get update \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-RUN printf 'upload_max_filesize=9M\npost_max_size=10M\n' > /usr/local/etc/php/conf.d/uploads.ini
+RUN printf 'upload_max_filesize=9M\npost_max_size=10M\n' > /usr/local/etc/php/conf.d/uploads.ini \
+    && printf 'expose_php=Off\n' > /usr/local/etc/php/conf.d/hardening.ini \
+    && printf 'ServerTokens Prod\nServerSignature Off\n' > /etc/apache2/conf-available/zz-hardening.conf \
+    && a2enconf zz-hardening
 
 WORKDIR /var/www/html
 

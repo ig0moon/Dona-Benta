@@ -338,6 +338,7 @@ function montarFooter() {
           <li><a href="catalogo">Catálogo</a></li>
           <li><a href="sobre">Sobre nós</a></li>
           <li><a href="faq">Dúvidas frequentes</a></li>
+          <li><a href="privacidade">Política de privacidade</a></li>
         </ul>
       </div>
       <div class="footer-col" id="footerColConta">

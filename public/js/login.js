@@ -93,8 +93,8 @@ formCadastrar?.addEventListener('submit', async (e) => {
     return;
   }
 
-  if (senha.length < 6) {
-    mostrarToast('A senha deve ter pelo menos 6 caracteres.', 'alerta');
+  if (senha.length < 8) {
+    mostrarToast('A senha deve ter pelo menos 8 caracteres.', 'alerta');
     return;
   }
 

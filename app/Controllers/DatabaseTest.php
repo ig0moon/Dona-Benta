@@ -6,13 +6,33 @@ use Throwable;
 
 class DatabaseTest extends BaseController
 {
+    /**
+     * Em produção a página de diagnóstico só pode ser aberta por administradores.
+     * Para os demais visitantes ela responde como se não existisse (404).
+     */
+    private function liberarAcesso(): void
+    {
+        if (ENVIRONMENT !== 'production') {
+            return;
+        }
+
+        $user = (new \App\Services\TiDBAuthService())->currentUser();
+        if (($user['user_metadata']['role'] ?? '') !== 'admin') {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+    }
+
     public function index(): string
     {
+        $this->liberarAcesso();
+
         return $this->renderPage();
     }
 
     public function test(): string
     {
+        $this->liberarAcesso();
+
         $database = config('Database')->default;
         $missing = [];
 
