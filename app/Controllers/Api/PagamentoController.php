@@ -2,12 +2,11 @@
 
 namespace App\Controllers\Api;
 
-use App\Controllers\BaseController;
 use App\Services\MercadoPagoService;
 use App\Services\TiDBAuthService;
 use CodeIgniter\HTTP\ResponseInterface;
 
-class PagamentoController extends BaseController
+class PagamentoController extends FrontendController
 {
     protected MercadoPagoService $mpService;
     protected TiDBAuthService $authService;
@@ -23,16 +22,8 @@ class PagamentoController extends BaseController
      */
     public function health(): ResponseInterface
     {
-        $isProd = $this->mpService->isProduction();
-
-        return $this->response->setJSON([
-            'status'              => 'online',
-            'servico'             => 'Dona Benta - API de Pagamentos CI4 MVC',
-            'gateway'             => 'Mercado Pago',
-            'ambiente'            => $isProd ? 'Produção' : 'Sandbox',
-            'seguranca'           => 'Ativa (OWASP, Rate Limiting, CSP, Anti-Carding)',
-            'webhook_configurado' => $this->mpService->hasWebhook()
-        ]);
+        // Resposta mínima: usada só para checagem de saúde do serviço.
+        return $this->response->setJSON(['status' => 'online']);
     }
 
     /**
@@ -54,6 +45,10 @@ class PagamentoController extends BaseController
      */
     public function gerarPix(): ResponseInterface
     {
+        if ($blocked = $this->rejectCrossOrigin()) {
+            return $blocked;
+        }
+
         $payload = $this->request->getJSON(true) ?: $this->request->getPost();
         if (!is_array($payload) || empty($payload)) {
             return $this->response->setStatusCode(400)->setJSON(['erro' => 'Corpo da requisição JSON inválido ou vazio']);
@@ -77,6 +72,10 @@ class PagamentoController extends BaseController
      */
     public function processarCartao(): ResponseInterface
     {
+        if ($blocked = $this->rejectCrossOrigin()) {
+            return $blocked;
+        }
+
         $payload = $this->request->getJSON(true) ?: $this->request->getPost();
         if (!is_array($payload) || empty($payload)) {
             return $this->response->setStatusCode(400)->setJSON(['erro' => 'Corpo da requisição JSON inválido ou vazio']);
@@ -137,6 +136,10 @@ class PagamentoController extends BaseController
      */
     public function simularAprovacao(): ResponseInterface
     {
+        if ($blocked = $this->rejectCrossOrigin()) {
+            return $blocked;
+        }
+
         $payload = $this->request->getJSON(true) ?: $this->request->getPost();
         if (!is_array($payload)) {
             return $this->response->setStatusCode(400)->setJSON(['erro' => 'Corpo da requisição JSON inválido']);
@@ -160,6 +163,42 @@ class PagamentoController extends BaseController
     }
 
     /**
+     * Valida a assinatura (x-signature) do webhook do Mercado Pago quando
+     * MP_WEBHOOK_SECRET está configurado. Sem a variável, a checagem é ignorada
+     * (o servidor continua reconsultando o pagamento direto no Mercado Pago).
+     */
+    private function assinaturaWebhookValida(string $dataId): bool
+    {
+        $secret = trim((string) env('MP_WEBHOOK_SECRET', ''));
+        if ($secret === '') {
+            return true;
+        }
+
+        $ts = '';
+        $v1 = '';
+        foreach (explode(',', $this->request->getHeaderLine('X-Signature')) as $parte) {
+            [$chave, $valor] = array_pad(explode('=', trim($parte), 2), 2, '');
+            if ($chave === 'ts') {
+                $ts = $valor;
+            } elseif ($chave === 'v1') {
+                $v1 = strtolower($valor);
+            }
+        }
+        if ($ts === '' || $v1 === '') {
+            return false;
+        }
+
+        $manifesto = 'id:' . (ctype_alnum($dataId) ? strtolower($dataId) : $dataId) . ';';
+        $requestId = $this->request->getHeaderLine('X-Request-Id');
+        if ($requestId !== '') {
+            $manifesto .= 'request-id:' . $requestId . ';';
+        }
+        $manifesto .= 'ts:' . $ts . ';';
+
+        return hash_equals(hash_hmac('sha256', $manifesto, $secret), $v1);
+    }
+
+    /**
      * POST /api/webhook/mercadopago
      */
     public function webhook(): ResponseInterface
@@ -168,6 +207,9 @@ class PagamentoController extends BaseController
         $pagamentoId = $payload['data']['id'] ?? ($this->request->getGet('data.id') ?: $this->request->getGet('id'));
 
         if (!empty($pagamentoId)) {
+            if (!$this->assinaturaWebhookValida((string) $pagamentoId)) {
+                return $this->response->setStatusCode(401)->setJSON(['erro' => 'Assinatura inválida.']);
+            }
             $this->mpService->processarWebhook((string) $pagamentoId);
         }
 

@@ -16,7 +16,7 @@ class RateLimitFilter implements FilterInterface
     public function before(RequestInterface $request, $arguments = null)
     {
         $throttler = Services::throttler();
-        $ip = $request->getIPAddress();
+        $ip = $this->clientIp($request);
         $path = $request->getUri()->getPath();
 
         // Limites estritos baseados na criticidade da rota
@@ -64,6 +64,24 @@ class RateLimitFilter implements FilterInterface
         }
 
         return null;
+    }
+
+    /**
+     * Atrás do proxy do Render, getIPAddress() devolve o IP do proxy, e todos os
+     * visitantes dividiriam o mesmo limite. Com TRUST_TRUE_CLIENT_IP=true usamos o
+     * cabeçalho True-Client-IP (definido pela borda e não forjável pelo visitante).
+     * Fora do Render deixe a variável desligada.
+     */
+    private function clientIp(RequestInterface $request): string
+    {
+        if (filter_var(env('TRUST_TRUE_CLIENT_IP', false), FILTER_VALIDATE_BOOLEAN)) {
+            $candidate = trim($request->getHeaderLine('True-Client-IP'));
+            if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_IP)) {
+                return $candidate;
+            }
+        }
+
+        return $request->getIPAddress();
     }
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)

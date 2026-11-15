@@ -16,6 +16,11 @@ Options -Indexes
 	# http://httpd.apache.org/docs/current/mod/mod_rewrite.html#rewritebase
 	# RewriteBase /
 
+	# Atrás do proxy do Render: se a requisição original veio por HTTP, manda para HTTPS.
+	# (Sem o cabeçalho, como no ambiente local, a regra não faz nada.)
+	RewriteCond %{HTTP:X-Forwarded-Proto} =http [NC]
+	RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
 	# Redirect Trailing Slashes...
 	RewriteCond %{REQUEST_FILENAME} !-d
 	RewriteCond %{REQUEST_URI} (.+)/$
@@ -39,6 +44,20 @@ Options -Indexes
 	# If we don't have mod_rewrite installed, all 404's
 	# can be sent to index.php, and everything works as normal.
 	ErrorDocument 404 index.php
+</IfModule>
+
+# Cabeçalhos de segurança (valem para páginas e arquivos estáticos)
+<IfModule mod_headers.c>
+	Header always set X-Content-Type-Options "nosniff"
+	Header always set X-Frame-Options "SAMEORIGIN"
+	Header always set Referrer-Policy "strict-origin-when-cross-origin"
+	Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	Header unset X-Powered-By
+	# HSTS: só quando a requisição original foi HTTPS
+	Header always set Strict-Transport-Security "max-age=31536000" env=ORIGEM_HTTPS
+</IfModule>
+<IfModule mod_setenvif.c>
+	SetEnvIf X-Forwarded-Proto "^https$" ORIGEM_HTTPS
 </IfModule>
 
 # Disable server signature start

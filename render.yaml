@@ -1,0 +1,34 @@
+# Blueprint do Render para o Dona Benta.
+# Os valores marcados com "sync: false" são segredos: o Render pede para você
+# digitá-los no painel (nunca coloque senhas ou tokens neste arquivo).
+services:
+  - type: web
+    name: dona-benta
+    runtime: docker
+    plan: free # troque por "starter" para o site não "dormir" por inatividade
+    healthCheckPath: /api/health
+    envVars:
+      - key: CI_ENVIRONMENT
+        value: production
+      - key: TRUST_TRUE_CLIENT_IP
+        value: "true"
+      - key: DB_ENCRYPT
+        value: "true"
+      - key: APP_BASE_URL # ex.: https://www.seudominio.com.br/ (domínio final)
+        sync: false
+      - key: WEBHOOK_URL # ex.: https://www.seudominio.com.br/api/webhook/mercadopago
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: MP_ACCESS_TOKEN
+        sync: false
+      - key: MP_WEBHOOK_SECRET # "assinatura secreta" do webhook, no painel do Mercado Pago
+        sync: false

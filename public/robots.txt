@@ -1,2 +1,7 @@
 User-agent: *
-Disallow: 
+Disallow: /api/
+Disallow: /teste-banco
+Disallow: /conta
+Disallow: /carrinho
+Disallow: /pedidos
+Disallow: /login

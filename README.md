@@ -21,6 +21,8 @@ Site da confeitaria Dona Benta, construído com CodeIgniter 4, PHP e TiDB Cloud.
 | `DB_PREFIX` | Opcional; deixe vazio se as tabelas não tiverem prefixo. |
 | `MP_ACCESS_TOKEN` | Token privado de acesso do Mercado Pago. |
 | `WEBHOOK_URL` | URL pública completa de `https://<dominio>/api/webhook/mercadopago`. |
+| `MP_WEBHOOK_SECRET` | Recomendado. Assinatura secreta do webhook (painel do Mercado Pago → Webhooks). Quando definida, notificações sem assinatura válida são recusadas. |
+| `TRUST_TRUE_CLIENT_IP` | Use `true` no Render. Faz o limite de requisições usar o IP real do visitante (cabeçalho `True-Client-IP`) em vez do IP do proxy. |
 
 O Render define `PORT` automaticamente. Não configure um `.env` com credenciais no repositório. A chave `MP_PUBLIC_KEY` não é necessária: pagamentos com cartão usam o checkout hospedado do Mercado Pago.
 
@@ -30,7 +32,7 @@ Pedidos de Pix e cartão só são marcados como pagos depois que o servidor conf
 
 ### Diagnóstico do TiDB
 
-A página `/teste-banco` executa `SELECT 1` para verificar a conexão configurada, sem alterar dados. Os nomes `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_PORT` e `DB_ENCRYPT` também são aceitos como estão no Render. `DB_ENCRYPT=true` habilita a opção SSL do MySQLi usada pelo TiDB Cloud. Os nomes legados `database.default.*` continuam aceitos.
+Em produção, a página `/teste-banco` só abre para administradores logados (os demais recebem 404). Ela executa `SELECT 1` para verificar a conexão configurada, sem alterar dados. Os nomes `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_PORT` e `DB_ENCRYPT` também são aceitos como estão no Render. `DB_ENCRYPT=true` habilita a opção SSL do MySQLi usada pelo TiDB Cloud. Os nomes legados `database.default.*` continuam aceitos.
 
 Execute `app/Database/schema_tidb.sql` no banco TiDB para criar as tabelas e inserir os produtos iniciais. Para um banco que já existe, execute uma vez `app/Database/migrate_tidb.sql` para adicionar hash de senha e armazenamento de imagens. Contas/senhas que existiam em outro provedor não são copiadas automaticamente; cada cliente precisa criar uma conta no TiDB.
 
@@ -56,3 +58,10 @@ php spark serve
 ```powershell
 vendor\bin\phpunit.bat --no-coverage
 ```
+
+## Domínio próprio
+
+1. No Render, abra o serviço → **Settings → Custom Domains** e adicione o domínio (e o `www`). Aponte o DNS como o Render indicar; o certificado HTTPS é emitido automaticamente.
+2. Troque `APP_BASE_URL` para o domínio final com `https://` e barra no fim, e `WEBHOOK_URL` para `https://<dominio>/api/webhook/mercadopago`. Sem isso o login e o carrinho respondem 403.
+3. No painel do Mercado Pago, atualize a URL do webhook e copie a assinatura secreta para `MP_WEBHOOK_SECRET`.
+4. O redirecionamento para HTTPS e o cabeçalho HSTS ficam em `public/.htaccess` (usam o `X-Forwarded-Proto` do Render).

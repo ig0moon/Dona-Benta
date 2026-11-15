@@ -46,9 +46,10 @@
             <input type="email" id="emailCadastro" placeholder="seuemail@exemplo.com" required autocomplete="email">
           </div>
           <div class="campo">
-            <label for="senhaCadastro">Senha (mínimo 6 caracteres)</label>
-            <input type="password" id="senhaCadastro" placeholder="••••••••" minlength="6" required autocomplete="new-password">
+            <label for="senhaCadastro">Senha (mínimo 8 caracteres)</label>
+            <input type="password" id="senhaCadastro" placeholder="••••••••" minlength="8" required autocomplete="new-password">
           </div>
+          <p style="font-size: 0.85rem; color: var(--marrom-claro); margin-bottom: 12px;">Ao criar a conta você concorda com a nossa <a href="privacidade">Política de Privacidade</a>.</p>
           <button type="submit" class="btn btn-primario btn-bloco" id="btnCadastrar">
             Criar conta
           </button>

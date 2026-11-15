@@ -92,8 +92,8 @@ class TiDBAuthService
         $name = trim((string) ($metadata['nome'] ?? ''));
         $phone = trim((string) ($metadata['telefone'] ?? ''));
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 6 || $name === '') {
-            return $this->failure(400, 'Informe nome, e-mail válido e senha com pelo menos 6 caracteres.');
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8 || strlen($password) > 128 || $name === '') {
+            return $this->failure(400, 'Informe nome, e-mail válido e senha entre 8 e 128 caracteres.');
         }
 
         try {
