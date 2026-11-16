@@ -593,9 +593,9 @@ function configurarUploadFotoPerfil(usuario, perfil) {
       return;
     }
 
-    const TAMANHO_MAX_BYTES = 12 * 1024 * 1024; // Até 12MB antes do recorte
+    const TAMANHO_MAX_BYTES = 15 * 1024 * 1024; // Até 15MB antes do recorte
     if (arquivoOriginal.size > TAMANHO_MAX_BYTES) {
-      mostrarToast('A foto selecionada deve ter no máximo 12MB.', 'erro');
+      mostrarToast('A foto selecionada deve ter no máximo 15MB.', 'erro');
       input.value = '';
       return;
     }
