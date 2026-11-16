@@ -204,6 +204,10 @@ const db = {
     from(bucket) {
       return {
         async upload(path, file, options = {}) {
+          file = await comprimirImagem(file, { ladoMax: bucket === 'fotos-perfil' ? 512 : 1280 });
+          if (file && file.size > 4 * 1024 * 1024) {
+            return { data: null, error: { message: 'A imagem continua maior que 4MB mesmo depois de comprimida.' } };
+          }
           const form = new FormData();
           form.set('bucket', bucket);
           form.set('path', path);
@@ -224,6 +228,40 @@ const db = {
 };
 
 window.db = db;
+
+// Reduz e comprime a imagem no navegador antes de enviar (menos espaço e menos leitura no banco).
+// Mantém o arquivo original se algo falhar ou se a versão comprimida não for menor.
+async function comprimirImagem(arquivo, { ladoMax = 1280, qualidade = 0.82 } = {}) {
+  try {
+    if (!arquivo || !/^image\/(jpeg|png|webp)$/.test(arquivo.type || '')) return arquivo;
+
+    const bitmap = await createImageBitmap(arquivo);
+    const escala = Math.min(1, ladoMax / Math.max(bitmap.width, bitmap.height));
+    const largura = Math.max(1, Math.round(bitmap.width * escala));
+    const altura = Math.max(1, Math.round(bitmap.height * escala));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = largura;
+    canvas.height = altura;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, largura, altura);
+    if (bitmap.close) bitmap.close();
+
+    const gerar = (tipo) => new Promise((resolve) => canvas.toBlob(resolve, tipo, qualidade));
+    let blob = await gerar('image/webp');
+    if (!blob || blob.type !== 'image/webp') blob = await gerar('image/jpeg');
+    if (!blob) return arquivo;
+
+    // Não troca por um arquivo maior quando a imagem já era pequena.
+    if (escala === 1 && blob.size >= arquivo.size) return arquivo;
+
+    const base = (arquivo.name || 'foto').replace(/\.[^.]+$/, '');
+    const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
+    return new File([blob], `${base}.${ext}`, { type: blob.type });
+  } catch (erro) {
+    console.warn('Não foi possível comprimir a imagem; enviando o original.', erro);
+    return arquivo;
+  }
+}
 
 function escapeHtml(texto) {
   if (texto === null || texto === undefined) return '';
