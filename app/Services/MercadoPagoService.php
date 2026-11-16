@@ -385,6 +385,9 @@ class MercadoPagoService
 
         $res = $this->callMercadoPago('GET', "https://api.mercadopago.com/v1/payments/{$pagamentoId}");
 
+        if ($this->semToken($res)) {
+            return ['status' => 503, 'data' => ['erro' => $res['data']['message']]];
+        }
         if ($res['http_code'] < 200 || $res['http_code'] >= 300) {
             return ['status' => $res['http_code'] ?: 400, 'data' => ['erro' => 'Falha ao consultar Mercado Pago']];
         }
@@ -427,6 +430,9 @@ class MercadoPagoService
             'GET',
             'https://api.mercadopago.com/v1/payments/search?external_reference=' . rawurlencode($pedidoId),
         );
+        if ($this->semToken($res)) {
+            return ['status' => 503, 'data' => ['erro' => $res['data']['message']]];
+        }
         if ($res['http_code'] < 200 || $res['http_code'] >= 300) {
             return ['status' => 502, 'data' => ['erro' => 'Falha ao consultar o pagamento no Mercado Pago.']];
         }
@@ -518,14 +524,23 @@ class MercadoPagoService
     /**
      * Processa notificação webhook do Mercado Pago com validação segura
      */
-    public function processarWebhook(?string $pagamentoId): void
+    /**
+     * Retorna false quando o processamento não pôde ser feito por falta de
+     * configuração (token ausente); o controller então responde 503 para que o
+     * Mercado Pago reenvie a notificação depois.
+     */
+    public function processarWebhook(?string $pagamentoId): bool
     {
         if (empty($pagamentoId) || !preg_match('/^\d+$/', $pagamentoId)) {
-            return;
+            return true;
         }
 
         try {
             $res = $this->callMercadoPago('GET', "https://api.mercadopago.com/v1/payments/{$pagamentoId}");
+            if ($this->semToken($res)) {
+                log_message('error', '[Webhook] MP_ACCESS_TOKEN ausente: notificação não processada.');
+                return false;
+            }
             if ($res['http_code'] === 200 && is_array($res['data'])) {
                 $pagamento = $res['data'];
                 if (($pagamento['status'] ?? '') === 'approved' && !empty($pagamento['external_reference'])) {
@@ -542,6 +557,13 @@ class MercadoPagoService
         } catch (\Throwable $e) {
             log_message('error', '[Webhook] Erro ao validar pagamento: ' . $e->getMessage());
         }
+
+        return true;
+    }
+
+    private function semToken(array $res): bool
+    {
+        return ($res['error'] ?? '') === 'MP_ACCESS_TOKEN ausente';
     }
 
     private function confirmarPedidoPorPagamento(string $pedidoId, array $payment): bool

@@ -210,7 +210,9 @@ class PagamentoController extends FrontendController
             if (!$this->assinaturaWebhookValida((string) $pagamentoId)) {
                 return $this->response->setStatusCode(401)->setJSON(['erro' => 'Assinatura inválida.']);
             }
-            $this->mpService->processarWebhook((string) $pagamentoId);
+            if (!$this->mpService->processarWebhook((string) $pagamentoId)) {
+                return $this->response->setStatusCode(503)->setJSON(['erro' => 'Pagamento indisponível no momento.']);
+            }
         }
 
         return $this->response->setStatusCode(200)->setJSON(['recebido' => true]);
