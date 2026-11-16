@@ -2908,12 +2908,13 @@ td {
 }
 
 .horarios-grade {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 8px;
 }
 
 .horario-btn {
+  width: 100%;
   padding: 10px 16px;
   border-radius: 8px;
   border: 1px solid rgba(107, 66, 38, 0.16);

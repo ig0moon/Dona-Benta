@@ -11,7 +11,7 @@ class MercadoPagoService
 
     public function __construct()
     {
-        $this->accessToken  = (string) env('MP_ACCESS_TOKEN', '');
+        $this->accessToken  = trim((string) env('MP_ACCESS_TOKEN', ''), " \t\n\r\0\x0B\"'");
         $this->webhookUrl   = env('WEBHOOK_URL', null);
         $this->isProduction = str_starts_with($this->accessToken, 'APP_USR-') || env('CI_ENVIRONMENT') === 'production';
         $this->tidb         = new TiDBStoreService();
@@ -573,6 +573,14 @@ class MercadoPagoService
      */
     protected function callMercadoPago(string $method, string $url, ?array $payload = null, ?string $idempotencyKey = null): array
     {
+        if ($this->accessToken === '') {
+            return [
+                'http_code' => 500,
+                'data'      => ['message' => 'Pagamento indisponível: MP_ACCESS_TOKEN não está configurado no servidor.'],
+                'error'     => 'MP_ACCESS_TOKEN ausente',
+            ];
+        }
+
         $ch = curl_init($url);
         $headers = [
             "Authorization: Bearer {$this->accessToken}",

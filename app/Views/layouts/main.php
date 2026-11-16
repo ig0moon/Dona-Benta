@@ -8,7 +8,7 @@
   <base href="<?= base_url('/') ?>">
   <link rel="shortcut icon" href="<?= base_url('img/favicon.png') ?>" type="image/x-icon">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
-  <link rel="stylesheet" href="<?= base_url('css/style.css?v=3.0') ?>">
+  <link rel="stylesheet" href="<?= base_url('css/style.css?v=3.1') ?>">
   <?= $this->renderSection('styles') ?>
   <script>
     (function(){
