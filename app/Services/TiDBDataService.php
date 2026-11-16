@@ -353,6 +353,11 @@ class TiDBDataService
             if ($sqlOperator === null) {
                 return false;
             }
+            // Colunas booleanas são TINYINT: no MySQL/TiDB, comparar com o texto 'true' vira 0 e nunca bate.
+            $lower = strtolower($value);
+            if ($lower === 'true' || $lower === 'false') {
+                $value = $lower === 'true' ? 1 : 0;
+            }
             $builder->where($key . ' ' . $sqlOperator, $value);
         }
         return true;
