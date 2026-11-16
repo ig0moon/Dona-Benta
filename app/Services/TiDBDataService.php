@@ -66,7 +66,7 @@ class TiDBDataService
     {
         if (!in_array($bucket, ['produtos', 'fotos-perfil'], true)
             || !$file->isValid()
-            || $file->getSize() > 8 * 1024 * 1024
+            || $file->getSize() > 4 * 1024 * 1024
             || $path === ''
             || strlen($path) > 500
             || preg_match('#(^|/)\.\.?(/|$)|[^a-zA-Z0-9._/-]#', $path)) {

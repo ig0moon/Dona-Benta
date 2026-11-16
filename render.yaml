@@ -5,7 +5,7 @@ services:
   - type: web
     name: dona-benta
     runtime: docker
-    plan: free # troque por "starter" para o site não "dormir" por inatividade
+    plan: starter # sempre ligado (o plano free "dorme" após 15 min sem acesso)
     healthCheckPath: /api/health
     envVars:
       - key: CI_ENVIRONMENT

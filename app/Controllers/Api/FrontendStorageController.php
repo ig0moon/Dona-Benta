@@ -23,7 +23,7 @@ class FrontendStorageController extends FrontendController
         $file = $this->request->getFile('file');
         $bucket = (string) $this->request->getPost('bucket');
         $path = (string) $this->request->getPost('path');
-        if ($file === null || $file->getSize() > 8 * 1024 * 1024) {
+        if ($file === null || $file->getSize() > 4 * 1024 * 1024) {
             return $this->response->setStatusCode(400)->setJSON(['data' => null, 'error' => ['message' => 'Arquivo obrigatório.']]);
         }
 
