@@ -1043,7 +1043,7 @@ function carregarTabAdmin(tab) {
 
 function renderizarVisaoGeralAdmin(area) {
   const pendentes = PEDIDOS_ADMIN.filter(p => p.status === 'aguardando_confirmacao').length;
-  const faturamento = PEDIDOS_ADMIN.filter(p => p.pago === true).reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
+  const faturamento = PEDIDOS_ADMIN.filter(p => pedidoPago(p)).reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
 
   area.innerHTML = `
     <div class="stats-grade" style="margin-bottom: 24px;">
@@ -1431,7 +1431,7 @@ function renderizarPagamentosAdmin(area) {
   const whatsSvg = window.ICONE_WHATSAPP_SVG || '<span class="material-symbols-outlined">chat</span>';
 
   // Cálculo de KPIs
-  const pagos = PEDIDOS_ADMIN.filter(p => p.pago === true);
+  const pagos = PEDIDOS_ADMIN.filter(p => pedidoPago(p));
   const totalFaturado = pagos.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
 
   const pagosPix = pagos.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
@@ -1483,7 +1483,7 @@ function renderizarPagamentosAdmin(area) {
 
       <!-- Barra de Filtros Interativa -->
       <div class="admin-filtros-barra">
-        <input type="text" id="filtroTextoFinanceiro" class="campo-busca-admin" placeholder="Buscar por cliente, telefone ou nº do pedido (DB-XX)...">
+        <input type="text" id="filtroTextoFinanceiro" class="campo-busca-admin" placeholder="Buscar por cliente, telefone ou nº do pedido (DB-17-A7K2)...">
         <select id="filtroStatusPagamento" class="admin-select-filtro">
           <option value="todos">Todos os pagamentos</option>
           <option value="pago">Somente Pagos</option>
@@ -1516,7 +1516,7 @@ function renderizarPagamentosAdmin(area) {
   `;
 
   function atualizarKPIsFinanceiro() {
-    const pagosAtual = PEDIDOS_ADMIN.filter(p => p.pago === true);
+    const pagosAtual = PEDIDOS_ADMIN.filter(p => pedidoPago(p));
     const totalFaturadoAtual = pagosAtual.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
     const pagosPixAtual = pagosAtual.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
     const totalPixAtual = pagosPixAtual.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
@@ -1555,7 +1555,7 @@ function renderizarPagamentosAdmin(area) {
 
     let lista = PEDIDOS_ADMIN;
 
-    if (filtroStatus === 'pago') lista = lista.filter(p => p.pago === true);
+    if (filtroStatus === 'pago') lista = lista.filter(p => pedidoPago(p));
     else if (filtroStatus === 'pendente') lista = lista.filter(p => !p.pago);
 
     if (filtroMetodo === 'pix') lista = lista.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
@@ -1734,7 +1734,7 @@ function abrirRelatorioFinanceiroElaborado(filtros = {}) {
 
   let lista = Array.isArray(PEDIDOS_ADMIN) ? [...PEDIDOS_ADMIN] : [];
 
-  if (filtros.filtroStatus === 'pago') lista = lista.filter(p => p.pago === true);
+  if (filtros.filtroStatus === 'pago') lista = lista.filter(p => pedidoPago(p));
   else if (filtros.filtroStatus === 'pendente') lista = lista.filter(p => !p.pago);
 
   if (filtros.filtroMetodo === 'pix') lista = lista.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
@@ -1749,7 +1749,7 @@ function abrirRelatorioFinanceiroElaborado(filtros = {}) {
     });
   }
 
-  const pagos = lista.filter(p => p.pago === true);
+  const pagos = lista.filter(p => pedidoPago(p));
   const totalFaturado = pagos.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
   const pagosPix = pagos.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
   const totalPix = pagosPix.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
@@ -2330,6 +2330,10 @@ function injetarModalAdminGlobal() {
     await db.from('produtos').select('*').order('criado_em', { ascending: false }).then(r => PRODUTOS_ADMIN = r.data || []);
     renderizarProdutosAdmin(document.getElementById('adminConteudoSecao'));
   });
+}
+
+function pedidoPago(p) {
+  return p?.pago === true || Number(p?.pago) === 1;
 }
 
 function valorBooleanoBanco(valor, padrao = false) {

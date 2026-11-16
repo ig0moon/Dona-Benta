@@ -74,6 +74,9 @@
         </div>
       </div>
 
+      <!-- Avisos do Pix (pedido de CPF e erros): fica separado para não apagar o QR Code -->
+      <div class="pix-corpo" id="pixCorpoAviso" style="display:none;"></div>
+
       <!-- Estado de Sucesso Instantâneo -->
       <div class="pix-corpo" id="pixCorpoSucesso" style="display:none; text-align:center; padding: 24px 16px;">
         <div class="sucesso-animacao-icone">
@@ -118,6 +121,6 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-  <script src="<?= base_url('js/pagamentos.js?v=5.3') ?>"></script>
-  <script src="<?= base_url('js/pedidos.js?v=5.1') ?>"></script>
+  <script src="<?= base_url('js/pagamentos.js?v=5.4') ?>"></script>
+  <script src="<?= base_url('js/pedidos.js?v=5.2') ?>"></script>
 <?= $this->endSection() ?>

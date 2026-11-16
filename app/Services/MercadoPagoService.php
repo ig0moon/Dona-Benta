@@ -213,8 +213,8 @@ class MercadoPagoService
             $mpPayload['notification_url'] = $this->webhookUrl;
         }
 
-        // Chave estável por pedido: repetir o pedido (outra aba, recarregar) devolve a mesma cobrança.
-        $idempotencyKey = 'pix-' . ($pedidoId ?: time());
+        // Chave única por tentativa: uma nova tentativa nunca reaproveita (nem conflita com) uma cobrança antiga.
+        $idempotencyKey = 'pix-' . ($pedidoId ?: time()) . '-' . bin2hex(random_bytes(6));
 
         $this->cobrancaPossivel = true;
         $res = $this->callMercadoPago('POST', 'https://api.mercadopago.com/v1/payments', $mpPayload, $idempotencyKey);

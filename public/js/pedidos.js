@@ -449,12 +449,19 @@ async function registrarPedidoNoBanco(dadosExtras = {}) {
     return null;
   }
 
-  // Número do pedido por data + sufixo aleatório: não depende da contagem de linhas,
-  // então apagar um pedido pendente nunca gera número repetido.
-  const agora = new Date();
-  const dataCurta = `${String(agora.getFullYear()).slice(2)}${String(agora.getMonth() + 1).padStart(2, '0')}${String(agora.getDate()).padStart(2, '0')}`;
+  // Número do pedido em sequência (DB-17) + sufixo curto aleatório (DB-17-A7K2). O sufixo mantém
+  // o número único mesmo se a contagem repetir (ex.: depois de apagar um pedido pendente).
+  let sequencia = 1;
+  try {
+    const { count, error: errCount } = await db
+      .from('pedidos')
+      .select('id', { count: 'exact', head: true });
+    if (!errCount && typeof count === 'number') sequencia = count + 1;
+  } catch (e) {
+    console.warn('Não foi possível obter contagem de pedidos:', e);
+  }
   const sufixo = Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, 'X');
-  const proximoNumeroPedido = `DB-${dataCurta}-${sufixo}`;
+  const proximoNumeroPedido = `DB-${String(sequencia).padStart(2, '0')}-${sufixo}`;
 
   const novoPedido = {
     cliente_id: usuario.id,

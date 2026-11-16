@@ -224,8 +224,9 @@ async function limparPedidoSemCobranca(pedidoId) {
 
 // Pedidos com geração de Pix em andamento (evita duas cobranças para o mesmo pedido).
 const pixEmAndamento = new Set();
-// Fluxo Pix ativo: permite cancelar (e limpar) se a tela for fechada antes da cobrança começar.
-let pixFluxoAtual = null;
+// Fluxos Pix por pedido (reaproveitados quando o CPF é reenviado): permitem cancelar e limpar
+// se a tela for fechada antes de a cobrança começar.
+const pixFluxos = new Map();
 
 async function iniciarFluxoCartao() {
   if (typeof window.validarDadosAgendamento === 'function' && !window.validarDadosAgendamento()) return;
@@ -287,8 +288,11 @@ window.iniciarFluxoCartao = iniciarFluxoCartao;
 async function iniciarFluxoPix(pedido, perfil) {
   window._pedidoAtualPix = pedido;
   window._perfilAtualPix = perfil;
-  const fluxo = { id: pedido?.id || null, cancelado: false, cobrancaIniciada: false };
-  pixFluxoAtual = fluxo;
+  let fluxo = pixFluxos.get(pedido?.id);
+  if (!fluxo || fluxo.cancelado) {
+    fluxo = { id: pedido?.id || null, cancelado: false, cobrancaIniciada: false };
+    pixFluxos.set(fluxo.id, fluxo);
+  }
   abrirModalPix();
 
   // Em produção, CPF é obrigatório para emissão de Pix pelo Banco Central e Mercado Pago
@@ -299,7 +303,10 @@ async function iniciarFluxoPix(pedido, perfil) {
     mostrarCarregandoPix(false);
     mostrarToast(error.message || 'Não foi possível iniciar o pagamento.', 'erro');
     // Nenhuma cobrança foi criada: não deixa o pedido pendente (se a tela fechada já limpou, não repete).
-    if (!fluxo.cancelado) await limparPedidoSemCobranca(pedido?.id);
+    if (!fluxo.cancelado) {
+      fluxo.cancelado = true;
+      await limparPedidoSemCobranca(pedido?.id);
+    }
     return;
   }
   // A tela foi fechada enquanto a configuração carregava: o fechamento já limpou o pedido.
@@ -308,11 +315,7 @@ async function iniciarFluxoPix(pedido, perfil) {
   let cpfAtual = (perfil?.cpf || '').replace(/\D/g, '');
 
   if (isProducao && !validarCPF(cpfAtual)) {
-    mostrarCarregandoPix(false);
-    const corpoConteudo = document.getElementById('pixCorpoConteudo');
-    if (corpoConteudo) {
-      corpoConteudo.style.display = 'block';
-      corpoConteudo.innerHTML = `
+    const corpoConteudo = mostrarAvisoPix(`
         <div style="padding: 18px 12px; text-align: center;">
           <span class="material-symbols-outlined" style="font-size:38px; color:var(--marrom);">badge</span>
           <h4 style="margin: 8px 0 6px; font-size:1.15rem; color:var(--marrom);">Informe seu CPF</h4>
@@ -325,7 +328,8 @@ async function iniciarFluxoPix(pedido, perfil) {
           </div>
           <button id="btnConfirmarCpfPixModal" class="btn btn-primario" style="min-width: 190px;">Continuar com Pix</button>
         </div>
-      `;
+      `);
+    if (corpoConteudo) {
 
       const inputCpf = document.getElementById('inputCpfPixModal');
       const btnCpf = document.getElementById('btnConfirmarCpfPixModal');
@@ -362,7 +366,6 @@ async function iniciarFluxoPix(pedido, perfil) {
 
   if (pixEmAndamento.has(pedido.id)) return;
   pixEmAndamento.add(pedido.id);
-  fluxo.cobrancaIniciada = true; // a partir daqui uma cobrança pode existir
 
   mostrarCarregandoPix(true);
 
@@ -381,6 +384,13 @@ async function iniciarFluxoPix(pedido, perfil) {
         cpf: perfil?.cpf || ''
       }
     };
+
+    // Tela fechada durante a consulta do usuário: não envia a cobrança.
+    if (fluxo.cancelado) {
+      pixEmAndamento.delete(pedido.id);
+      return;
+    }
+    fluxo.cobrancaIniciada = true; // a partir daqui uma cobrança pode existir
 
     const resp = await fetch(`${API_PAGAMENTOS_URL}/pagamento/pix`, {
       method: 'POST',
@@ -412,11 +422,7 @@ async function iniciarFluxoPix(pedido, perfil) {
     pixEmAndamento.delete(pedido.id); // permite nova tentativa (a chave de idempotência evita cobrança duplicada)
     if (semCobranca && pedido?.id) await limparPedidoSemCobranca(pedido.id);
 
-    mostrarCarregandoPix(false);
-    const corpoConteudo = document.getElementById('pixCorpoConteudo');
-    if (corpoConteudo) {
-      corpoConteudo.style.display = 'block';
-      corpoConteudo.innerHTML = `
+    mostrarAvisoPix(`
         <div style="text-align:center; padding:16px;">
           <span class="material-symbols-outlined" style="font-size:40px; color:var(--erro);">error</span>
           <p style="margin-top:8px; color:var(--erro); font-size:0.9rem;">
@@ -425,8 +431,7 @@ async function iniciarFluxoPix(pedido, perfil) {
           </p>
           <button class="btn btn-primario" onclick="fecharModalPix()" style="margin-top:14px;">Entendido</button>
         </div>
-      `;
-    }
+      `);
   }
 }
 
@@ -441,21 +446,39 @@ function fecharModalPix() {
   pararPollingPix();
   // Fechou a tela antes de qualquer cobrança começar (config carregando ou prompt de CPF):
   // nenhuma cobrança existe, então o pedido não precisa ficar.
-  const fluxo = pixFluxoAtual;
-  if (fluxo && !fluxo.cobrancaIniciada && !fluxo.cancelado) {
-    fluxo.cancelado = true;
-    limparPedidoSemCobranca(fluxo.id);
-  }
+  pixFluxos.forEach((fluxo) => {
+    if (!fluxo.cobrancaIniciada && !fluxo.cancelado) {
+      fluxo.cancelado = true;
+      limparPedidoSemCobranca(fluxo.id);
+    }
+  });
 }
 
 function mostrarCarregandoPix(mostrar) {
   const loading = document.getElementById('pixCorpoCarregando');
   const conteudo = document.getElementById('pixCorpoConteudo');
   const sucesso = document.getElementById('pixCorpoSucesso');
+  const aviso = document.getElementById('pixCorpoAviso');
 
   if (loading) loading.style.display = mostrar ? 'block' : 'none';
   if (conteudo) conteudo.style.display = mostrar ? 'none' : 'block';
   if (sucesso) sucesso.style.display = 'none';
+  if (aviso) aviso.style.display = 'none';
+}
+
+// Mostra o CPF/erro num contêiner próprio, sem tocar no markup do QR Code.
+function mostrarAvisoPix(html) {
+  const loading = document.getElementById('pixCorpoCarregando');
+  const conteudo = document.getElementById('pixCorpoConteudo');
+  const sucesso = document.getElementById('pixCorpoSucesso');
+  const aviso = document.getElementById('pixCorpoAviso');
+  if (loading) loading.style.display = 'none';
+  if (conteudo) conteudo.style.display = 'none';
+  if (sucesso) sucesso.style.display = 'none';
+  if (!aviso) return null;
+  aviso.innerHTML = html;
+  aviso.style.display = 'block';
+  return aviso;
 }
 
 function renderizarDadosPixNoModal(data, pedido, perfil) {
