@@ -8,6 +8,8 @@ class MercadoPagoService
     protected ?string $webhookUrl;
     protected bool $isProduction;
     protected TiDBStoreService $tidb;
+    /** true a partir do momento em que a criação do pagamento foi enviada ao Mercado Pago. */
+    protected bool $cobrancaPossivel = false;
 
     public function __construct()
     {
@@ -85,6 +87,18 @@ class MercadoPagoService
      * Gera Cobrança Pix Dinâmica no Mercado Pago com proteção anti-tampering
      */
     public function gerarPix(array $payload, ?string $userAuthHeader = null, ?string $userId = null): array
+    {
+        $this->cobrancaPossivel = false;
+        $resultado = $this->gerarPixInterno($payload, $userAuthHeader, $userId);
+        // sem_cobranca = o servidor tem certeza de que nenhum pagamento foi criado.
+        // Só nesse caso o navegador pode apagar o pedido; em qualquer dúvida ele é mantido.
+        if (($resultado['status'] ?? 0) !== 200 && !$this->cobrancaPossivel) {
+            $resultado['data']['sem_cobranca'] = true;
+        }
+        return $resultado;
+    }
+
+    private function gerarPixInterno(array $payload, ?string $userAuthHeader = null, ?string $userId = null): array
     {
         $pedidoId  = $payload['pedido_id'] ?? null;
         $valorRaw  = (float) ($payload['valor'] ?? 0);
@@ -201,7 +215,12 @@ class MercadoPagoService
 
         $idempotencyKey = 'pix-' . ($pedidoId ?: time()) . '-' . bin2hex(random_bytes(6));
 
+        $this->cobrancaPossivel = true;
         $res = $this->callMercadoPago('POST', 'https://api.mercadopago.com/v1/payments', $mpPayload, $idempotencyKey);
+        if ($res['error'] === 'MP_ACCESS_TOKEN ausente' || ($res['http_code'] >= 400 && $res['http_code'] < 500)) {
+            // O Mercado Pago recusou (ou nem recebeu) o pedido de cobrança: nada foi criado.
+            $this->cobrancaPossivel = false;
+        }
 
         if ($res['http_code'] < 200 || $res['http_code'] >= 300) {
             return [
