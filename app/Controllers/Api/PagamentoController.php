@@ -163,15 +163,16 @@ class PagamentoController extends FrontendController
     }
 
     /**
-     * Valida a assinatura (x-signature) do webhook do Mercado Pago quando
-     * MP_WEBHOOK_SECRET está configurado. Sem a variável, a checagem é ignorada
-     * (o servidor continua reconsultando o pagamento direto no Mercado Pago).
+     * Valida a assinatura (x-signature) do webhook do Mercado Pago.
+     * MP_WEBHOOK_SECRET é obrigatório: sem ele, toda notificação é recusada
+     * (o retorno do checkout continua consultando o pagamento no Mercado Pago).
      */
     private function assinaturaWebhookValida(string $dataId): bool
     {
         $secret = trim((string) env('MP_WEBHOOK_SECRET', ''));
         if ($secret === '') {
-            return true;
+            log_message('error', '[Webhook] MP_WEBHOOK_SECRET não configurado: notificação recusada.');
+            return false;
         }
 
         $ts = '';

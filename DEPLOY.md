@@ -22,7 +22,7 @@ Só depois de tudo funcionar no endereço do Render vale apontar o domínio.
 | `APP_BASE_URL` | Por enquanto `https://dona-benta.onrender.com/` (use o endereço que o Render mostrar). No passo 4 troque pelo domínio. |
 | `WEBHOOK_URL` | `<APP_BASE_URL>api/webhook/mercadopago` |
 | `MP_ACCESS_TOKEN` | Pode começar com o token de **teste** (`TEST-...`) |
-| `MP_WEBHOOK_SECRET` | Assinatura secreta do webhook (passo 5). Pode ficar para depois. |
+| `MP_WEBHOOK_SECRET` | Assinatura secreta do webhook (passo 5). Obrigatória para o webhook funcionar. |
 
 4. Aguarde o primeiro deploy terminar (a URL abre a home).
 
