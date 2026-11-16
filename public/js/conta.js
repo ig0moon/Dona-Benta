@@ -2264,8 +2264,8 @@ function injetarModalAdminGlobal() {
         btn.textContent = 'Salvar produto';
         return;
       }
-      if (arquivo.size > 25 * 1024 * 1024) {
-        mostrarToast('A foto do produto deve ter no máximo 25MB (ela é reduzida automaticamente antes do envio).', 'erro');
+      if (arquivo.size > 15 * 1024 * 1024) {
+        mostrarToast('A foto do produto deve ter no máximo 15MB (ela é reduzida automaticamente antes do envio).', 'erro');
         btn.disabled = false;
         btn.textContent = 'Salvar produto';
         return;
