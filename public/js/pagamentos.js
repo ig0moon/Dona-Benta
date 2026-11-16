@@ -196,17 +196,34 @@ function selecionarMetodoPagamento(metodo) {
 // ============================================
 // Remove um pedido que foi criado só para iniciar o pagamento e não chegou a gerar cobrança.
 // Nunca use depois que o QR Code/checkout foi gerado: o cliente ainda pode pagar.
+// Apaga só o pedido: os itens saem junto (ON DELETE CASCADE) e o servidor só aceita apagar
+// pedidos ainda não pagos. Retorna true/false para quem chamou poder avisar da falha.
 async function removerPedidoNaoIniciado(pedidoId) {
-  if (!pedidoId || !window.db) return;
+  if (!pedidoId || !window.db) return false;
   try {
-    const { error: erroItens } = await window.db.from('itens_pedido').delete().eq('pedido_id', pedidoId);
-    if (erroItens) console.error('Não foi possível remover itens do pedido não iniciado:', erroItens);
-    const { error: erroPedido } = await window.db.from('pedidos').delete().eq('id', pedidoId);
-    if (erroPedido) console.error('Não foi possível remover o pedido não iniciado:', erroPedido);
+    const { error } = await window.db.from('pedidos').delete().eq('id', pedidoId);
+    if (error) {
+      console.error('Não foi possível remover o pedido não iniciado:', error);
+      return false;
+    }
+    return true;
   } catch (cleanupError) {
     console.error('Falha ao remover pedido não iniciado:', cleanupError);
+    return false;
   }
 }
+
+async function limparPedidoSemCobranca(pedidoId) {
+  const ok = await removerPedidoNaoIniciado(pedidoId);
+  if (!ok) {
+    mostrarToast('Não foi possível cancelar o pedido iniciado. Ele ficará como "Aguardando" em Meus pedidos.', 'alerta');
+  }
+  return ok;
+}
+
+// Pedidos com geração de Pix em andamento (evita duas cobranças para o mesmo pedido).
+const pixEmAndamento = new Set();
+let pedidoAguardandoCpf = null;
 
 async function iniciarFluxoCartao() {
   if (typeof window.validarDadosAgendamento === 'function' && !window.validarDadosAgendamento()) return;
@@ -254,7 +271,7 @@ async function iniciarFluxoCartao() {
     window.location.assign(checkoutUrl.href);
   } catch (error) {
     console.error('Falha ao iniciar checkout do cartão:', error);
-    if (pedido?.id) await removerPedidoNaoIniciado(pedido.id);
+    if (pedido?.id) await limparPedidoSemCobranca(pedido.id);
     mostrarToast(error.message || 'Falha ao comunicar com o servidor de pagamentos.', 'erro');
     if (button) {
       button.disabled = false;
@@ -277,12 +294,15 @@ async function iniciarFluxoPix(pedido, perfil) {
   } catch (error) {
     mostrarCarregandoPix(false);
     mostrarToast(error.message || 'Não foi possível iniciar o pagamento.', 'erro');
+    // Nenhuma cobrança foi criada: não deixa o pedido pendente.
+    await limparPedidoSemCobranca(pedido?.id);
     return;
   }
   const isProducao = config?.ambiente === 'producao';
   let cpfAtual = (perfil?.cpf || '').replace(/\D/g, '');
 
   if (isProducao && !validarCPF(cpfAtual)) {
+    pedidoAguardandoCpf = pedido?.id || null;
     mostrarCarregandoPix(false);
     const corpoConteudo = document.getElementById('pixCorpoConteudo');
     if (corpoConteudo) {
@@ -328,6 +348,7 @@ async function iniciarFluxoPix(pedido, perfil) {
           if (erroCpf) erroCpf.style.display = 'none';
           if (!perfil) perfil = {};
           perfil.cpf = valLimpo;
+          pedidoAguardandoCpf = null;
           iniciarFluxoPix(pedido, perfil);
         });
       }
@@ -335,9 +356,12 @@ async function iniciarFluxoPix(pedido, perfil) {
     }
   }
 
+  if (pixEmAndamento.has(pedido.id)) return;
+  pixEmAndamento.add(pedido.id);
+
   mostrarCarregandoPix(true);
 
-  let pixGerado = false;
+  let semCobranca = false;
   try {
     const usuario = typeof usuarioAtual === 'function' ? await usuarioAtual() : null;
     const emailPagador = (perfil?.email || usuario?.email || '').trim().toLowerCase();
@@ -363,9 +387,10 @@ async function iniciarFluxoPix(pedido, perfil) {
     const data = await resp.json();
 
     if (!resp.ok || !data.sucesso) {
+      // Só o servidor sabe se alguma cobrança chegou a existir.
+      semCobranca = data.sem_cobranca === true;
       throw new Error(data.detalhes || data.erro || 'Falha ao gerar Pix');
     }
-    pixGerado = true;
 
     if (data.pago === true && data.status === 'approved') {
       confirmarPagamentoSucesso(pedido, perfil);
@@ -377,8 +402,12 @@ async function iniciarFluxoPix(pedido, perfil) {
 
   } catch (err) {
     console.error('Erro ao gerar Pix:', err);
-    // Sem cobrança gerada não há o que pagar: não deixa um pedido "Aguardando" órfão no banco.
-    if (!pixGerado && pedido?.id) await removerPedidoNaoIniciado(pedido.id);
+    // Só apaga o pedido quando o servidor confirmou que nenhuma cobrança foi criada.
+    // Resposta perdida ou ilegível = situação ambígua: o pedido é mantido para o webhook conciliar.
+    if (semCobranca && pedido?.id) {
+      pixEmAndamento.delete(pedido.id);
+      await limparPedidoSemCobranca(pedido.id);
+    }
 
     mostrarCarregandoPix(false);
     const corpoConteudo = document.getElementById('pixCorpoConteudo');
@@ -407,6 +436,12 @@ function fecharModalPix() {
   const overlay = document.getElementById('pixOverlay');
   if (overlay) overlay.style.display = 'none';
   pararPollingPix();
+  // Fechou a tela do CPF sem continuar: nenhuma cobrança existe, então o pedido não precisa ficar.
+  if (pedidoAguardandoCpf) {
+    const id = pedidoAguardandoCpf;
+    pedidoAguardandoCpf = null;
+    limparPedidoSemCobranca(id);
+  }
 }
 
 function mostrarCarregandoPix(mostrar) {
