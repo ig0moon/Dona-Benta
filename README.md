@@ -49,8 +49,8 @@ DEPLOY.md            Passo a passo para colocar o site no ar
 
 - Senhas guardadas com hash; não existe senha administrativa padrão.
 - Limite de requisições por IP e bloqueio de chamadas de outras origens nas rotas sensíveis.
-- Webhook do Mercado Pago validado por assinatura (`MP_WEBHOOK_SECRET`).
-- Pedidos só são marcados como pagos depois da confirmação no Mercado Pago.
+- Webhook do Mercado Pago validado por assinatura; sem `MP_WEBHOOK_SECRET` configurado, as notificações são recusadas.
+- Em produção, pedidos só são marcados como pagos depois da confirmação no Mercado Pago. A simulação de aprovação existe apenas para administradores em ambiente de teste (token `TEST-`).
 - HTTPS forçado, HSTS e cabeçalhos de segurança configurados em `public/.htaccess`.
 - A página de diagnóstico `/teste-banco` só abre para administradores em produção.
 - Nenhuma credencial vai para o Git: tudo fica nas variáveis de ambiente do Render.
@@ -74,7 +74,7 @@ DEPLOY.md            Passo a passo para colocar o site no ar
 | `DB_PREFIX` | Opcional; deixe vazio se as tabelas não tiverem prefixo. |
 | `MP_ACCESS_TOKEN` | Token privado de acesso do Mercado Pago. |
 | `WEBHOOK_URL` | URL pública completa de `https://<dominio>/api/webhook/mercadopago`. |
-| `MP_WEBHOOK_SECRET` | Recomendado. Assinatura secreta do webhook (painel do Mercado Pago → Webhooks). Quando definida, notificações sem assinatura válida são recusadas. |
+| `MP_WEBHOOK_SECRET` | Obrigatória. Assinatura secreta do webhook (painel do Mercado Pago → Webhooks). Sem ela, todas as notificações do webhook são recusadas. |
 | `TRUST_TRUE_CLIENT_IP` | Use `true` no Render. Faz o limite de requisições usar o IP real do visitante (cabeçalho `True-Client-IP`) em vez do IP do proxy. |
 
 O Render define `PORT` automaticamente. Não configure um `.env` com credenciais no repositório. A chave `MP_PUBLIC_KEY` não é necessária: pagamentos com cartão usam o checkout hospedado do Mercado Pago.
