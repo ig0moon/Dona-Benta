@@ -51,12 +51,12 @@ class PagamentoController extends FrontendController
 
         $payload = $this->request->getJSON(true) ?: $this->request->getPost();
         if (!is_array($payload) || empty($payload)) {
-            return $this->response->setStatusCode(400)->setJSON(['erro' => 'Corpo da requisição JSON inválido ou vazio']);
+            return $this->response->setStatusCode(400)->setJSON(['erro' => 'Corpo da requisição JSON inválido ou vazio', 'sem_cobranca' => true]);
         }
 
         $user = $this->authService->currentUser();
         if ($user === null) {
-            return $this->response->setStatusCode(401)->setJSON(['erro' => 'Entre na sua conta para pagar.']);
+            return $this->response->setStatusCode(401)->setJSON(['erro' => 'Entre na sua conta para pagar.', 'sem_cobranca' => true]);
         }
         if (!isset($payload['cliente']) || !is_array($payload['cliente'])) {
             $payload['cliente'] = [];

@@ -201,12 +201,13 @@ function selecionarMetodoPagamento(metodo) {
 async function removerPedidoNaoIniciado(pedidoId) {
   if (!pedidoId || !window.db) return false;
   try {
-    const { error } = await window.db.from('pedidos').delete().eq('id', pedidoId);
+    const { data, error } = await window.db.from('pedidos').delete().eq('id', pedidoId);
     if (error) {
       console.error('Não foi possível remover o pedido não iniciado:', error);
       return false;
     }
-    return true;
+    // 0 linhas removidas = o servidor recusou (ex.: pedido já pago): não é sucesso.
+    return !(data && data.removidos === 0);
   } catch (cleanupError) {
     console.error('Falha ao remover pedido não iniciado:', cleanupError);
     return false;
@@ -223,7 +224,8 @@ async function limparPedidoSemCobranca(pedidoId) {
 
 // Pedidos com geração de Pix em andamento (evita duas cobranças para o mesmo pedido).
 const pixEmAndamento = new Set();
-let pedidoAguardandoCpf = null;
+// Fluxo Pix ativo: permite cancelar (e limpar) se a tela for fechada antes da cobrança começar.
+let pixFluxoAtual = null;
 
 async function iniciarFluxoCartao() {
   if (typeof window.validarDadosAgendamento === 'function' && !window.validarDadosAgendamento()) return;
@@ -285,6 +287,8 @@ window.iniciarFluxoCartao = iniciarFluxoCartao;
 async function iniciarFluxoPix(pedido, perfil) {
   window._pedidoAtualPix = pedido;
   window._perfilAtualPix = perfil;
+  const fluxo = { id: pedido?.id || null, cancelado: false, cobrancaIniciada: false };
+  pixFluxoAtual = fluxo;
   abrirModalPix();
 
   // Em produção, CPF é obrigatório para emissão de Pix pelo Banco Central e Mercado Pago
@@ -294,15 +298,16 @@ async function iniciarFluxoPix(pedido, perfil) {
   } catch (error) {
     mostrarCarregandoPix(false);
     mostrarToast(error.message || 'Não foi possível iniciar o pagamento.', 'erro');
-    // Nenhuma cobrança foi criada: não deixa o pedido pendente.
-    await limparPedidoSemCobranca(pedido?.id);
+    // Nenhuma cobrança foi criada: não deixa o pedido pendente (se a tela fechada já limpou, não repete).
+    if (!fluxo.cancelado) await limparPedidoSemCobranca(pedido?.id);
     return;
   }
+  // A tela foi fechada enquanto a configuração carregava: o fechamento já limpou o pedido.
+  if (fluxo.cancelado) return;
   const isProducao = config?.ambiente === 'producao';
   let cpfAtual = (perfil?.cpf || '').replace(/\D/g, '');
 
   if (isProducao && !validarCPF(cpfAtual)) {
-    pedidoAguardandoCpf = pedido?.id || null;
     mostrarCarregandoPix(false);
     const corpoConteudo = document.getElementById('pixCorpoConteudo');
     if (corpoConteudo) {
@@ -348,7 +353,6 @@ async function iniciarFluxoPix(pedido, perfil) {
           if (erroCpf) erroCpf.style.display = 'none';
           if (!perfil) perfil = {};
           perfil.cpf = valLimpo;
-          pedidoAguardandoCpf = null;
           iniciarFluxoPix(pedido, perfil);
         });
       }
@@ -358,6 +362,7 @@ async function iniciarFluxoPix(pedido, perfil) {
 
   if (pixEmAndamento.has(pedido.id)) return;
   pixEmAndamento.add(pedido.id);
+  fluxo.cobrancaIniciada = true; // a partir daqui uma cobrança pode existir
 
   mostrarCarregandoPix(true);
 
@@ -404,10 +409,8 @@ async function iniciarFluxoPix(pedido, perfil) {
     console.error('Erro ao gerar Pix:', err);
     // Só apaga o pedido quando o servidor confirmou que nenhuma cobrança foi criada.
     // Resposta perdida ou ilegível = situação ambígua: o pedido é mantido para o webhook conciliar.
-    if (semCobranca && pedido?.id) {
-      pixEmAndamento.delete(pedido.id);
-      await limparPedidoSemCobranca(pedido.id);
-    }
+    pixEmAndamento.delete(pedido.id); // permite nova tentativa (a chave de idempotência evita cobrança duplicada)
+    if (semCobranca && pedido?.id) await limparPedidoSemCobranca(pedido.id);
 
     mostrarCarregandoPix(false);
     const corpoConteudo = document.getElementById('pixCorpoConteudo');
@@ -436,11 +439,12 @@ function fecharModalPix() {
   const overlay = document.getElementById('pixOverlay');
   if (overlay) overlay.style.display = 'none';
   pararPollingPix();
-  // Fechou a tela do CPF sem continuar: nenhuma cobrança existe, então o pedido não precisa ficar.
-  if (pedidoAguardandoCpf) {
-    const id = pedidoAguardandoCpf;
-    pedidoAguardandoCpf = null;
-    limparPedidoSemCobranca(id);
+  // Fechou a tela antes de qualquer cobrança começar (config carregando ou prompt de CPF):
+  // nenhuma cobrança existe, então o pedido não precisa ficar.
+  const fluxo = pixFluxoAtual;
+  if (fluxo && !fluxo.cobrancaIniciada && !fluxo.cancelado) {
+    fluxo.cancelado = true;
+    limparPedidoSemCobranca(fluxo.id);
   }
 }
 

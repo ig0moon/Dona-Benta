@@ -213,7 +213,8 @@ class MercadoPagoService
             $mpPayload['notification_url'] = $this->webhookUrl;
         }
 
-        $idempotencyKey = 'pix-' . ($pedidoId ?: time()) . '-' . bin2hex(random_bytes(6));
+        // Chave estável por pedido: repetir o pedido (outra aba, recarregar) devolve a mesma cobrança.
+        $idempotencyKey = 'pix-' . ($pedidoId ?: time());
 
         $this->cobrancaPossivel = true;
         $res = $this->callMercadoPago('POST', 'https://api.mercadopago.com/v1/payments', $mpPayload, $idempotencyKey);
@@ -258,6 +259,9 @@ class MercadoPagoService
                 return ['status' => 503, 'data' => ['erro' => 'Não foi possível registrar o pagamento Pix no banco.']];
             }
         } else {
+            if (in_array($statusPagamento, ['rejected', 'cancelled'], true)) {
+                $this->cobrancaPossivel = false; // estado terminal: esse Pix não pode ser pago
+            }
             return [
                 'status' => 402,
                 'data' => [
