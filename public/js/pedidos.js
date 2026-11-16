@@ -449,19 +449,12 @@ async function registrarPedidoNoBanco(dadosExtras = {}) {
     return null;
   }
 
-  // Calcula o próximo número de pedido sequencial (DB-01, DB-02...)
-  let proximoNumeroPedido = 'DB-01';
-  try {
-    const { count, error: errCount } = await db
-      .from('pedidos')
-      .select('id', { count: 'exact', head: true });
-    if (!errCount && typeof count === 'number') {
-      const proximo = count + 1;
-      proximoNumeroPedido = `DB-${String(proximo).padStart(2, '0')}`;
-    }
-  } catch (e) {
-    console.warn('Não foi possível obter contagem de pedidos:', e);
-  }
+  // Número do pedido por data + sufixo aleatório: não depende da contagem de linhas,
+  // então apagar um pedido pendente nunca gera número repetido.
+  const agora = new Date();
+  const dataCurta = `${String(agora.getFullYear()).slice(2)}${String(agora.getMonth() + 1).padStart(2, '0')}${String(agora.getDate()).padStart(2, '0')}`;
+  const sufixo = Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, 'X');
+  const proximoNumeroPedido = `DB-${dataCurta}-${sufixo}`;
 
   const novoPedido = {
     cliente_id: usuario.id,

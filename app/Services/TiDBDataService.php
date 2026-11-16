@@ -296,7 +296,8 @@ class TiDBDataService
             return $this->failure(400, 'Filtro de consulta inválido.');
         }
         $builder->delete();
-        return ['status' => 200, 'data' => [], 'count' => null, 'error' => null];
+        $removidos = db_connect()->affectedRows();
+        return ['status' => 200, 'data' => ['removidos' => $removidos], 'count' => $removidos, 'error' => null];
     }
 
     private function applyAccessScope($builder, string $table, ?array $user, bool $isAdmin, array $select): void
