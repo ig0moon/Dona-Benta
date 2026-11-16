@@ -1,6 +1,59 @@
 # Dona Benta
 
-Site da confeitaria Dona Benta, construído com CodeIgniter 4, PHP e TiDB Cloud. Catálogo, contas, pedidos, arquivos e status de pagamento são lidos e gravados somente no TiDB.
+Site da confeitaria e padaria **Dona Benta**: vitrine de produtos, conta de cliente, carrinho, pedidos e pagamento por Pix ou cartão. Feito com CodeIgniter 4 (PHP), TiDB Cloud e Mercado Pago. Catálogo, contas, pedidos, fotos e status de pagamento são lidos e gravados somente no TiDB.
+
+## Recursos
+
+- **Catálogo e vitrine:** home com carrossel e produtos em destaque, catálogo por categoria e página de cada produto.
+- **Contas:** cadastro e login com senha (mínimo de 8 caracteres), perfil com foto e histórico de pedidos.
+- **Carrinho e pedidos:** agendamento de data e horário, acompanhamento do status.
+- **Pagamentos:** Pix e cartão pelo Mercado Pago, com confirmação feita no servidor.
+- **Painel administrativo (`/conta`, perfil admin):** cadastro de produtos com foto, estoque, disponibilidade e destaque.
+- **Fotos otimizadas:** o navegador reduz e comprime a imagem (WebP/JPEG, até 1280 px) antes de enviar. A foto original pode ter até 15 MB; o arquivo enviado ao banco fica limitado a 4 MB.
+- **Privacidade:** página de política de privacidade (`/privacidade`), em formato de modelo, que deve ser revisada por um profissional antes de ir ao ar.
+
+## Tecnologias
+
+| Camada | Tecnologia |
+| --- | --- |
+| Back-end | PHP 8.3 e CodeIgniter 4 |
+| Banco de dados | TiDB Cloud (compatível com MySQL) |
+| Pagamentos | Mercado Pago (Pix, cartão e webhook) |
+| Front-end | HTML, CSS e JavaScript puro, consumindo a API em `/api/*` |
+| Hospedagem | Docker no Render, com Apache |
+
+## Estrutura do projeto
+
+```text
+app/
+  Controllers/       Páginas (Home, Catalogo, Carrinho, Conta, Pedidos...)
+    Api/             API usada pelo front-end (dados, login, upload, pagamentos)
+  Services/          Acesso ao TiDB, autenticação e regras de acesso por tabela
+  Database/          schema_tidb.sql e migrate_tidb.sql
+  Views/             Templates das páginas
+public/
+  js/                Scripts do front-end (catálogo, conta, carrinho, pagamentos...)
+  css/  img/         Estilos e imagens
+  .htaccess          HTTPS, HSTS e cabeçalhos de segurança
+Dockerfile           Imagem usada no Render
+render.yaml          Blueprint do serviço no Render
+DEPLOY.md            Passo a passo para colocar o site no ar
+```
+
+## Começando
+
+- **Colocar no ar (TiDB Cloud, Render, domínio e Mercado Pago):** siga o [DEPLOY.md](DEPLOY.md).
+- **Rodar no seu computador:** veja [Rodar localmente](#rodar-localmente).
+
+## Segurança
+
+- Senhas guardadas com hash; não existe senha administrativa padrão.
+- Limite de requisições por IP e bloqueio de chamadas de outras origens nas rotas sensíveis.
+- Webhook do Mercado Pago validado por assinatura (`MP_WEBHOOK_SECRET`).
+- Pedidos só são marcados como pagos depois da confirmação no Mercado Pago.
+- HTTPS forçado, HSTS e cabeçalhos de segurança configurados em `public/.htaccess`.
+- A página de diagnóstico `/teste-banco` só abre para administradores em produção.
+- Nenhuma credencial vai para o Git: tudo fica nas variáveis de ambiente do Render.
 
 ## Deploy no Render
 
@@ -47,17 +100,30 @@ composer install
 Copy-Item env .env
 ```
 
-Configure no `.env` as variáveis do TiDB e do Mercado Pago listadas acima e inicie o servidor:
+Configure no `.env` as variáveis do TiDB e do Mercado Pago listadas na tabela acima e inicie o servidor:
 
 ```powershell
 php spark serve
 ```
+
+Depois abra `http://localhost:8080`.
 
 ## Testes
 
 ```powershell
 vendor\bin\phpunit.bat --no-coverage
 ```
+
+## Problemas comuns
+
+| Sintoma | O que verificar |
+| --- | --- |
+| Produtos em destaque não aparecem | Confirme que o produto está marcado como destaque, disponível e ativo no painel. |
+| Login ou carrinho respondem 403 | `APP_BASE_URL` precisa ser o domínio final, com `https://` e barra no fim. |
+| Erro de conexão com o banco | Abra `/teste-banco` logado como admin e confira `DB_*` e `DB_ENCRYPT=true`. |
+| Pagamento aprovado não atualiza o pedido | Confira `WEBHOOK_URL` e `MP_WEBHOOK_SECRET` no Render e no painel do Mercado Pago. |
+| Foto não sobe | Use JPG, PNG ou WEBP de até 15 MB; ela é reduzida automaticamente antes do envio. |
+| Sessões caem a cada deploy | Comportamento esperado: as sessões ficam no disco do serviço, que é recriado a cada deploy. |
 
 ## Domínio próprio
 
