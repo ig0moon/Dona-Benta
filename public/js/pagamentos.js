@@ -194,6 +194,20 @@ function selecionarMetodoPagamento(metodo) {
 }
 
 // ============================================
+// Remove um pedido que foi criado só para iniciar o pagamento e não chegou a gerar cobrança.
+// Nunca use depois que o QR Code/checkout foi gerado: o cliente ainda pode pagar.
+async function removerPedidoNaoIniciado(pedidoId) {
+  if (!pedidoId || !window.db) return;
+  try {
+    const { error: erroItens } = await window.db.from('itens_pedido').delete().eq('pedido_id', pedidoId);
+    if (erroItens) console.error('Não foi possível remover itens do pedido não iniciado:', erroItens);
+    const { error: erroPedido } = await window.db.from('pedidos').delete().eq('id', pedidoId);
+    if (erroPedido) console.error('Não foi possível remover o pedido não iniciado:', erroPedido);
+  } catch (cleanupError) {
+    console.error('Falha ao remover pedido não iniciado:', cleanupError);
+  }
+}
+
 async function iniciarFluxoCartao() {
   if (typeof window.validarDadosAgendamento === 'function' && !window.validarDadosAgendamento()) return;
   if (!lerCarrinho().length) {
@@ -240,16 +254,7 @@ async function iniciarFluxoCartao() {
     window.location.assign(checkoutUrl.href);
   } catch (error) {
     console.error('Falha ao iniciar checkout do cartão:', error);
-    if (pedido?.id && window.db) {
-      try {
-        const { error: erroItens } = await window.db.from('itens_pedido').delete().eq('pedido_id', pedido.id);
-        if (erroItens) console.error('Não foi possível remover itens do checkout não iniciado:', erroItens);
-        const { error: erroPedido } = await window.db.from('pedidos').delete().eq('id', pedido.id);
-        if (erroPedido) console.error('Não foi possível remover o pedido do checkout não iniciado:', erroPedido);
-      } catch (cleanupError) {
-        console.error('Falha ao remover pedido do checkout não iniciado:', cleanupError);
-      }
-    }
+    if (pedido?.id) await removerPedidoNaoIniciado(pedido.id);
     mostrarToast(error.message || 'Falha ao comunicar com o servidor de pagamentos.', 'erro');
     if (button) {
       button.disabled = false;
@@ -332,6 +337,7 @@ async function iniciarFluxoPix(pedido, perfil) {
 
   mostrarCarregandoPix(true);
 
+  let pixGerado = false;
   try {
     const usuario = typeof usuarioAtual === 'function' ? await usuarioAtual() : null;
     const emailPagador = (perfil?.email || usuario?.email || '').trim().toLowerCase();
@@ -359,6 +365,7 @@ async function iniciarFluxoPix(pedido, perfil) {
     if (!resp.ok || !data.sucesso) {
       throw new Error(data.detalhes || data.erro || 'Falha ao gerar Pix');
     }
+    pixGerado = true;
 
     if (data.pago === true && data.status === 'approved') {
       confirmarPagamentoSucesso(pedido, perfil);
@@ -370,6 +377,8 @@ async function iniciarFluxoPix(pedido, perfil) {
 
   } catch (err) {
     console.error('Erro ao gerar Pix:', err);
+    // Sem cobrança gerada não há o que pagar: não deixa um pedido "Aguardando" órfão no banco.
+    if (!pixGerado && pedido?.id) await removerPedidoNaoIniciado(pedido.id);
 
     mostrarCarregandoPix(false);
     const corpoConteudo = document.getElementById('pixCorpoConteudo');
