@@ -54,6 +54,7 @@ class PagamentoController extends FrontendController
             return $this->response->setStatusCode(400)->setJSON(['erro' => 'Corpo da requisição JSON inválido ou vazio', 'sem_cobranca' => true]);
         }
 
+        $this->liberarSessao();
         $user = $this->authService->currentUser();
         if ($user === null) {
             return $this->response->setStatusCode(401)->setJSON(['erro' => 'Entre na sua conta para pagar.', 'sem_cobranca' => true]);
@@ -81,6 +82,7 @@ class PagamentoController extends FrontendController
             return $this->response->setStatusCode(400)->setJSON(['erro' => 'Corpo da requisição JSON inválido ou vazio']);
         }
 
+        $this->liberarSessao();
         $user = $this->authService->currentUser();
         if ($user === null) {
             return $this->response->setStatusCode(401)->setJSON(['erro' => 'Entre na sua conta para pagar.']);
@@ -103,6 +105,7 @@ class PagamentoController extends FrontendController
             return $this->response->setStatusCode(400)->setJSON(['erro' => 'ID de pagamento inválido ou ausente']);
         }
 
+        $this->liberarSessao();
         $user = $this->authService->currentUser();
         if ($user === null) {
             return $this->response->setStatusCode(401)->setJSON(['erro' => 'Autenticação necessária.']);
@@ -122,6 +125,7 @@ class PagamentoController extends FrontendController
     public function consultarStatusCheckout(): ResponseInterface
     {
         $pedidoId = trim((string) $this->request->getGet('pedido_id'));
+        $this->liberarSessao();
         $user = $this->authService->currentUser();
         if ($user === null) {
             return $this->response->setStatusCode(401)->setJSON(['erro' => 'Autenticação necessária.']);
@@ -150,6 +154,7 @@ class PagamentoController extends FrontendController
             return $this->response->setStatusCode(400)->setJSON(['erro' => 'pedido_id é obrigatório']);
         }
 
+        $this->liberarSessao();
         $user = $this->authService->currentUser();
         if ($user === null) {
             return $this->response->setStatusCode(401)->setJSON(['erro' => 'Autenticação necessária.']);

@@ -19,6 +19,7 @@ class FrontendDataController extends FrontendController
         if ($blocked = $this->rejectCrossOrigin()) {
             return $blocked;
         }
+        $this->liberarSessao();
 
         $method = strtoupper($this->request->getMethod());
         if (!in_array($method, ['GET', 'POST', 'PATCH', 'DELETE'], true)) {
