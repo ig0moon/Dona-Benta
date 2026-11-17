@@ -1133,7 +1133,7 @@ function renderizarProdutosAdmin(area) {
                   </div>
                 </td>
                 <td><strong>${formatarPreco(p.preco)}</strong></td>
-                <td>${p.estoque ?? '—'}</td>
+                <td>${escapeHtml(p.estoque ?? '—')}</td>
                 <td><span class="badge ${produtoDisponivel(p) ? 'badge-sucesso' : 'badge-erro'}">${produtoDisponivel(p) ? 'Disponível' : 'Indisponível'}</span></td>
                 <td>
                   <div class="acoes-tabela">
@@ -1965,7 +1965,7 @@ function abrirModalDetalhesPedido(pedidoId) {
         </div>
         <div>
           <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Data & Horário</span>
-          <strong>${formatarData(pedido.data_agendada)} às ${escapeHtml(pedido.horario_agendado || 'A combinar')}</strong>
+          <strong>${escapeHtml(formatarData(pedido.data_agendada))} às ${escapeHtml(pedido.horario_agendado || 'A combinar')}</strong>
         </div>
         ${pedido.tipo_entrega === 'entrega' && pedido.endereco_entrega ? `
           <div style="grid-column: 1 / -1;">
@@ -1998,7 +1998,7 @@ function abrirModalDetalhesPedido(pedidoId) {
         ${pedido.criado_em ? `
           <div>
             <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Data do Pedido</span>
-            <span>${formatarDataHora(pedido.criado_em)}</span>
+            <span>${escapeHtml(formatarDataHora(pedido.criado_em))}</span>
           </div>
         ` : ''}
       </div>
