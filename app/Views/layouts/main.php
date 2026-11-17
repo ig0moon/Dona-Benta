@@ -26,7 +26,7 @@
   <?= $this->renderSection('content') ?>
 
   <!-- Scripts Globais MVC -->
-  <script src="<?= base_url('js/backend-client.js?v=4.2') ?>"></script>
+  <script src="<?= base_url('js/backend-client.js?v=4.3') ?>"></script>
   <script src="<?= base_url('js/carrinho.js?v=3.0') ?>"></script>
   <script src="<?= base_url('js/layout.js?v=3.0') ?>"></script>
   <?= $this->renderSection('scripts') ?>

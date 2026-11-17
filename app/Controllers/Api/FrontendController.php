@@ -29,6 +29,18 @@ abstract class FrontendController extends BaseController
         return null;
     }
 
+    /**
+     * Lê a sessão e libera o arquivo dela na hora.
+     * O CodeIgniter trava o arquivo da sessão durante a requisição inteira; sem isso, as várias
+     * chamadas que a mesma aba faz em paralelo (sessão, perfil, produtos, pedidos...) esperam
+     * umas pelas outras. Os dados continuam legíveis em $_SESSION depois de liberar.
+     * Use só em endpoints que NÃO gravam na sessão (login, cadastro e logout gravam).
+     */
+    protected function liberarSessao(): void
+    {
+        session()->close();
+    }
+
     protected function result(array $result): ResponseInterface
     {
         $response = $this->response->setStatusCode($result['status']);
