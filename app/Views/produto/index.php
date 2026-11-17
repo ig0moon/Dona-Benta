@@ -17,5 +17,5 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-  <script src="<?= base_url('js/produto.js?v=3.0') ?>"></script>
+  <script src="<?= base_url('js/produto.js?v=3.2') ?>"></script>
 <?= $this->endSection() ?>
