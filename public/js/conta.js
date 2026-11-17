@@ -1470,34 +1470,35 @@ function renderizarPagamentosAdmin(area) {
 
     <!-- Tabela do Histórico Financeiro -->
     <div class="cartao">
-      <div class="tabela-topo" style="margin-bottom: 16px;">
-        <div>
-          <h3>Histórico de Compras e Pagamentos (${PEDIDOS_ADMIN.length})</h3>
-          <p style="color:var(--marrom-claro); font-size:0.88rem; margin:4px 0 0;">Relatório consolidado de transações, faturamento e conferência financeira.</p>
-        </div>
-        <button class="btn btn-outline btn-sm" id="btnImprimirFinanceiro" style="display:inline-flex; align-items:center; gap:6px;">
-          <span class="material-symbols-outlined" style="font-size:18px;">receipt_long</span>
-          Gerar Relatório Completo
+      <div class="fin-topo">
+        <h3>Histórico de pagamentos</h3>
+        <span class="fin-contagem" id="finContagem">${PEDIDOS_ADMIN.length} ${PEDIDOS_ADMIN.length === 1 ? 'pedido' : 'pedidos'}</span>
+      </div>
+
+      <!-- Filtros e relatório: no celular a busca ocupa a linha, os filtros ficam lado a lado e o botão embaixo -->
+      <div class="fin-filtros">
+        <label class="fin-busca">
+          <span class="material-symbols-outlined" aria-hidden="true">search</span>
+          <input type="search" id="filtroTextoFinanceiro" placeholder="Buscar cliente, telefone ou pedido" aria-label="Buscar por cliente, telefone ou número do pedido">
+        </label>
+        <select id="filtroStatusPagamento" class="admin-select-filtro" aria-label="Filtrar por pagamento">
+          <option value="todos">Pago e pendente</option>
+          <option value="pago">Só pagos</option>
+          <option value="pendente">Só pendentes</option>
+        </select>
+        <select id="filtroMetodoPagamento" class="admin-select-filtro" aria-label="Filtrar por forma de pagamento">
+          <option value="todos">Pix e cartão</option>
+          <option value="pix">Só Pix</option>
+          <option value="cartao">Só cartão</option>
+        </select>
+        <button type="button" class="btn btn-primario fin-relatorio" id="btnImprimirFinanceiro">
+          <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+          Gerar relatório
         </button>
       </div>
 
-      <!-- Barra de Filtros Interativa -->
-      <div class="admin-filtros-barra">
-        <input type="text" id="filtroTextoFinanceiro" class="campo-busca-admin" placeholder="Buscar por cliente, telefone ou nº do pedido (DB-17-A7K2)...">
-        <select id="filtroStatusPagamento" class="admin-select-filtro">
-          <option value="todos">Todos os pagamentos</option>
-          <option value="pago">Somente Pagos</option>
-          <option value="pendente">Somente Pendentes</option>
-        </select>
-        <select id="filtroMetodoPagamento" class="admin-select-filtro">
-          <option value="todos">Todos os métodos</option>
-          <option value="pix">Pix</option>
-          <option value="cartao">Cartão de Crédito</option>
-        </select>
-      </div>
-
       <div class="tabela-scroll">
-        <table>
+        <table class="fin-tabela">
           <thead>
             <tr>
               <th>Pedido & Data</th>
@@ -1570,6 +1571,14 @@ function renderizarPagamentosAdmin(area) {
       });
     }
 
+    const contagem = document.getElementById('finContagem');
+    if (contagem) {
+      const total = PEDIDOS_ADMIN.length;
+      contagem.textContent = lista.length === total
+        ? `${total} ${total === 1 ? 'pedido' : 'pedidos'}`
+        : `${lista.length} de ${total} pedidos`;
+    }
+
     if (lista.length === 0) {
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 24px; color:var(--marrom-claro);">Nenhum pagamento ou compra encontrada para os filtros selecionados.</td></tr>';
       return;
@@ -1584,18 +1593,18 @@ function renderizarPagamentosAdmin(area) {
 
       return `
         <tr id="linhaFinanceiro-${escapeHtml(p.id)}">
-          <td>
+          <td data-rotulo="Pedido">
             <span class="badge" style="background:var(--creme-escuro); color:var(--marrom); font-weight:700; font-size:0.75rem;">${escapeHtml(numSeq)}</span><br>
             <span style="font-size:0.78rem; color:var(--marrom-claro);">${escapeHtml(dataCriacao)}</span>
           </td>
-          <td>
-            <strong>${escapeHtml(p.perfis?.nome || 'Cliente')}</strong><br>
-            <span style="font-size:0.8rem; color:var(--marrom-claro);">${escapeHtml(p.perfis?.telefone || 'Sem telefone')}</span>
+          <td data-rotulo="Cliente">
+            <span><strong>${escapeHtml(p.perfis?.nome || 'Cliente')}</strong><br>
+            <span style="font-size:0.8rem; color:var(--marrom-claro);">${escapeHtml(p.perfis?.telefone || 'Sem telefone')}</span></span>
           </td>
-          <td>
+          <td data-rotulo="Valor">
             <strong style="font-size:0.95rem; color:var(--dourado-escuro); font-family:var(--fonte-display);">${formatarPreco(p.valor_total)}</strong>
           </td>
-          <td>
+          <td data-rotulo="Forma">
             <span class="badge" style="background:rgba(107, 66, 38, 0.08); color:var(--marrom); display:inline-flex; align-items:center; gap:5px; font-size:0.78rem;">
               ${ehPix
                 ? `<span style="display:inline-flex; align-items:center; width:15px; height:15px;">${pixSvg}</span>`
@@ -1604,22 +1613,22 @@ function renderizarPagamentosAdmin(area) {
               ${escapeHtml(p.forma_pagamento || 'Pix')}
             </span>
           </td>
-          <td>
+          <td data-rotulo="Pagamento">
             <button class="badge btn-pagamento-financeiro ${pedidoPago(p) ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${pedidoPago(p)}" title="Clique para alternar status do pagamento">
               ${pedidoPago(p) ? 'Pago' : 'Pendente'}
             </button>
           </td>
-          <td>
+          <td data-rotulo="Encomenda">
             <span class="badge ${statusInfo.classe}">${escapeHtml(statusInfo.rotulo)}</span>
           </td>
-          <td style="text-align:center;">
+          <td class="fin-acoes" style="text-align:center;">
             <div style="display:inline-flex; gap:6px; align-items:center;">
               <button class="btn btn-outline btn-sm btn-ver-detalhes-financeiro" data-pedido="${escapeHtml(p.id)}" title="Ver detalhamento do pedido" style="padding:5px 10px; font-size:0.78rem; display:inline-flex; align-items:center; gap:4px;">
                 <span class="material-symbols-outlined" style="font-size:15px;">receipt_long</span>
                 Detalhes
               </button>
               ${telLimpo ? `
-                <a href="https://api.whatsapp.com/send?phone=55${telLimpo}&text=Ol%C3%A1%20${encodeURIComponent(p.perfis?.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numSeq)}." target="_blank" rel="noopener noreferrer" class="acao-icone-btn" title="Conversar no WhatsApp" style="color:#25D366; display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:50%; background:rgba(37,211,102,0.1);">
+                <a href="https://api.whatsapp.com/send?phone=${telefoneWhatsApp(telLimpo)}&text=Ol%C3%A1%20${encodeURIComponent(p.perfis?.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numSeq)}." target="_blank" rel="noopener noreferrer" class="acao-icone-btn" title="Conversar no WhatsApp" style="color:#25D366; display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:50%; background:rgba(37,211,102,0.1);">
                   <span style="display:inline-flex; align-items:center; width:17px; height:17px;">${whatsSvg}</span>
                 </a>
               ` : ''}
@@ -1807,7 +1816,7 @@ function abrirModalDetalhesPedido(pedidoId) {
           <div>
             <span style="color:var(--marrom-claro); display:block; font-size:0.78rem;">Telefone do Cliente</span>
             ${telClienteLimpo ? `
-              <a href="https://api.whatsapp.com/send?phone=55${telClienteLimpo}&text=Ol%C3%A1%20${encodeURIComponent(pedido.perfis?.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numero)}." target="_blank" rel="noopener noreferrer" style="color:#25d366; display:inline-flex; align-items:center; gap:5px; text-decoration:none; font-weight:700;">
+              <a href="https://api.whatsapp.com/send?phone=${telefoneWhatsApp(telClienteLimpo)}&text=Ol%C3%A1%20${encodeURIComponent(pedido.perfis?.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numero)}." target="_blank" rel="noopener noreferrer" style="color:#25d366; display:inline-flex; align-items:center; gap:5px; text-decoration:none; font-weight:700;">
                 <span style="display:inline-flex; align-items:center; width:16px; height:16px;">${whatsSvg}</span>
                 ${escapeHtml(telClienteFormatado)}
               </a>
@@ -1916,7 +1925,7 @@ function abrirModalDetalhesPedido(pedidoId) {
   let rotuloWhats = '';
 
   if (telClienteLimpo && (ehAdmin || abaAdminAtiva)) {
-    linkWhats = `https://api.whatsapp.com/send?phone=55${telClienteLimpo}&text=Ol%C3%A1%20${encodeURIComponent(pedido.perfis?.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numero)}.`;
+    linkWhats = `https://api.whatsapp.com/send?phone=${telefoneWhatsApp(telClienteLimpo)}&text=Ol%C3%A1%20${encodeURIComponent(pedido.perfis?.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numero)}.`;
     rotuloWhats = `Conversar com Cliente no WhatsApp`;
   } else {
     linkWhats = `https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Gostaria%20de%20falar%20sobre%20o%20meu%20pedido%20${encodeURIComponent(numero)}%20na%20Dona%20Benta.`;
@@ -2149,6 +2158,14 @@ function injetarModalAdminGlobal() {
     await db.from('produtos').select('*').order('criado_em', { ascending: false }).then(r => PRODUTOS_ADMIN = r.data || []);
     renderizarProdutosAdmin(document.getElementById('adminConteudoSecao'));
   });
+}
+
+// Número no formato do WhatsApp (55 + DDD + número). Alguns cadastros já trazem o 55
+// (ex.: 5542998072016) e o link antigo punha outro na frente (555542...), abrindo um número inexistente.
+function telefoneWhatsApp(telefone) {
+  const digitos = String(telefone || '').replace(/\D/g, '').replace(/^0+/, '');
+  if (digitos.startsWith('55') && digitos.length >= 12) return digitos;
+  return `55${digitos}`;
 }
 
 function pedidoPago(p) {

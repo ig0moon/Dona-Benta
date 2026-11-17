@@ -1828,3 +1828,213 @@ h1 em, h2 em {
     padding-inline: 12px;
   }
 }
+
+/* ============================================
+   PAINEL · HISTÓRICO DE PAGAMENTOS (filtros e lista)
+   ============================================ */
+.fin-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.fin-topo h3 {
+  margin: 0;
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+}
+
+.fin-contagem {
+  font-size: 0.85rem;
+  color: var(--tinta-suave);
+  white-space: nowrap;
+}
+
+/* Computador: busca, filtros e botão na mesma linha */
+.fin-filtros {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.fin-busca {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.fin-busca .material-symbols-outlined {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: var(--tinta-suave);
+  pointer-events: none;
+}
+
+.fin-busca input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px 0 42px;
+  border: 1px solid var(--linha-forte);
+  border-radius: 999px;
+  background: var(--cartao-bg);
+  color: var(--tinta);
+  font: inherit;
+  font-size: 0.92rem;
+}
+
+.fin-busca input:focus {
+  outline: none;
+  border-color: var(--dourado-escuro);
+  box-shadow: 0 0 0 3px rgba(224, 142, 60, 0.2);
+}
+
+.fin-filtros .admin-select-filtro,
+[data-tema="escuro"] .fin-filtros .admin-select-filtro {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b4226' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  padding-right: 36px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--linha-forte) !important;
+  background-color: var(--cartao-bg) !important;
+  color: var(--tinta) !important;
+  min-width: 0;
+  width: 100%;
+}
+
+.fin-relatorio {
+  height: 44px;
+  padding: 0 18px;
+  white-space: nowrap;
+}
+
+.fin-relatorio .material-symbols-outlined {
+  font-size: 19px;
+}
+
+/* Área estreita (o painel tem o menu ao lado): busca numa linha, filtros e botão na de baixo */
+@media (max-width: 1180px) {
+  .fin-filtros {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+  .fin-busca {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Celular: busca, filtros lado a lado e o botão na largura toda; cada pedido vira um cartão */
+@media (max-width: 640px) {
+  .fin-filtros {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .fin-relatorio {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .fin-filtros .admin-select-filtro {
+    font-size: 0.82rem;
+    padding-left: 12px;
+    padding-right: 26px;
+    background-position: right 10px center !important;
+  }
+
+  .tabela-scroll:has(.fin-tabela) {
+    overflow: visible;
+  }
+  table.fin-tabela {
+    min-width: 0;
+  }
+  .fin-tabela thead {
+    display: none;
+  }
+  .fin-tabela,
+  .fin-tabela tbody,
+  .fin-tabela tr,
+  .fin-tabela td {
+    display: block;
+    width: 100%;
+  }
+  .fin-tabela tr {
+    border: 1px solid var(--linha-forte);
+    border-radius: 16px;
+    padding: 4px 14px;
+    margin-bottom: 10px;
+  }
+  .fin-tabela td,
+  [data-tema="escuro"] .fin-tabela td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    text-align: right;
+    border-bottom: 1px solid var(--linha);
+    background: transparent;
+  }
+  .fin-tabela td:last-child {
+    border-bottom: 0;
+  }
+  .fin-tabela td::before {
+    content: attr(data-rotulo);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--tinta-suave);
+    text-align: left;
+    flex-shrink: 0;
+  }
+  /* Número do pedido e data na mesma linha */
+  .fin-tabela td[data-rotulo="Pedido"] br {
+    display: none;
+  }
+  .fin-tabela td[data-rotulo="Pedido"] .badge {
+    margin-right: 6px;
+  }
+  .fin-tabela td.fin-acoes {
+    justify-content: stretch;
+  }
+  .fin-tabela td.fin-acoes::before {
+    display: none;
+  }
+  .fin-tabela td.fin-acoes > div {
+    display: flex !important;
+    width: 100%;
+  }
+  .fin-tabela td.fin-acoes .btn-ver-detalhes-financeiro {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 12px !important;
+  }
+  .fin-tabela td.fin-acoes .acao-icone-btn {
+    width: 40px !important;
+    height: 40px !important;
+    flex-shrink: 0;
+  }
+  /* Linha "nenhum resultado" */
+  .fin-tabela td[colspan] {
+    justify-content: center;
+    text-align: center;
+  }
+  .fin-tabela td[colspan]::before {
+    display: none;
+  }
+}
+
+[data-tema="escuro"] .fin-filtros .admin-select-filtro {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23f5af66' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+/* Telas muito estreitas (até 360 px): filtros um embaixo do outro, para o texto caber */
+@media (max-width: 360px) {
+  .fin-filtros {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
