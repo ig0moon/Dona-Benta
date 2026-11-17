@@ -1013,8 +1013,8 @@ async function renderizarPainelAdmin(area, perfil) {
       <div class="admin-tabs" id="adminTabs">
         <button class="btn btn-outline admin-tab-btn ativo" data-tab="visao-geral">Visão geral</button>
         <button class="btn btn-outline admin-tab-btn" data-tab="produtos">Produtos</button>
-        <button class="btn btn-outline admin-tab-btn" data-tab="pedidos-admin">Gerenciar Pedidos</button>
-        <button class="btn btn-outline admin-tab-btn" data-tab="pagamentos-admin">Histórico Financeiro</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="pedidos-admin">Pedidos</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="pagamentos-admin">Financeiro</button>
       </div>
     </div>
     <div id="adminConteudoSecao"></div>
@@ -1180,11 +1180,12 @@ function renderizarProdutosAdmin(area) {
 function renderizarPedidosAdmin(area) {
   area.innerHTML = `
     <div class="cartao">
-      <div class="tabela-topo">
-        <h3>Gerenciar Pedidos (${PEDIDOS_ADMIN.length})</h3>
+      <div class="fin-topo">
+        <h3>Pedidos</h3>
+        <span class="fin-contagem">${PEDIDOS_ADMIN.length} ${PEDIDOS_ADMIN.length === 1 ? 'pedido' : 'pedidos'}</span>
       </div>
       <div class="tabela-scroll">
-        <table>
+        <table class="ped-tabela">
           <thead>
             <tr>
               <th>Cliente</th>
@@ -1199,16 +1200,16 @@ function renderizarPedidosAdmin(area) {
               const numSeq = p.numero_pedido || (p.id ? `DB-${String(PEDIDOS_ADMIN.length - idx).padStart(2, '0')}` : 'DB-01');
               return `
               <tr>
-                <td>
-                  <span class="badge" style="font-size:0.72rem; background:var(--creme-escuro); color:var(--marrom); margin-bottom:4px; display:inline-block; font-weight:700;">${escapeHtml(numSeq)}</span><br>
+                <td class="ped-cliente">
+                  <span class="badge ped-numero" style="font-size:0.72rem; background:var(--creme-escuro); color:var(--marrom); margin-bottom:4px; display:inline-block; font-weight:700;">${escapeHtml(numSeq)}</span><br>
                   <strong>${escapeHtml(p.perfis?.nome || 'Cliente')}</strong><br>
                   <span style="color:var(--marrom-claro); font-size:0.82rem;">${escapeHtml(p.perfis?.telefone || 'Sem telefone')}</span>
                 </td>
-                <td>
-                  ${escapeHtml(formatarData(p.data_agendada))}<br>
-                  <span style="color:var(--marrom-claro); font-size:0.82rem;">${escapeHtml(p.horario_agendado || '')} (${p.tipo_entrega === 'entrega' ? 'Entrega' : 'Retirada'})</span>
+                <td data-rotulo="Agendado">
+                  <span>${escapeHtml(formatarData(p.data_agendada))}<br>
+                  <span style="color:var(--marrom-claro); font-size:0.82rem;">${escapeHtml(p.horario_agendado || '')} (${p.tipo_entrega === 'entrega' ? 'Entrega' : 'Retirada'})</span></span>
                 </td>
-                <td style="position: relative;">
+                <td data-rotulo="Status" style="position: relative;">
                   ${(() => {
                     const statusInfo = STATUS_INFO[p.status] || STATUS_INFO.aguardando_confirmacao;
                     return `
@@ -1236,12 +1237,12 @@ function renderizarPedidosAdmin(area) {
                     `;
                   })()}
                 </td>
-                <td>
+                <td data-rotulo="Pagamento">
                   <button class="badge btn-pagamento ${pedidoPago(p) ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${pedidoPago(p)}" title="Clique para alternar status do pagamento" style="cursor:pointer; border:none;">
                     ${pedidoPago(p) ? 'Pago' : 'Pendente'}
                   </button>
                 </td>
-                <td style="text-align:center;">
+                <td class="ped-acoes" style="text-align:center;">
                   <button type="button" class="btn btn-outline btn-sm btn-ver-detalhes-admin-pedidos" data-pedido="${escapeHtml(p.id)}" title="Ver detalhes completos do pedido" style="padding:5px 10px; font-size:0.78rem; display:inline-flex; align-items:center; gap:4px;">
                     <span class="material-symbols-outlined" style="font-size:15px;">receipt_long</span>
                     Detalhes

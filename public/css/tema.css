@@ -2094,3 +2094,123 @@ h1 em, h2 em {
   width: 100%;
   height: 100%;
 }
+
+/* ============================================
+   PAINEL · ABAS E LISTA DE PEDIDOS (celular)
+   ============================================ */
+/* Abas: no celular viram uma grade 2x2, sem rolagem lateral cortando o texto */
+@media (max-width: 640px) {
+  .admin-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+  .admin-tab-btn {
+    width: 100%;
+    padding: 10px 8px;
+    white-space: nowrap;
+  }
+}
+
+/* Pedidos: cada um vira um cartão. Topo com número, cliente e telefone;
+   embaixo, linhas de rótulo e valor; o status abre o menu alinhado à direita. */
+@media (max-width: 640px) {
+  .tabela-scroll:has(.ped-tabela) {
+    overflow: visible;
+  }
+  table.ped-tabela {
+    min-width: 0;
+  }
+  .ped-tabela thead {
+    display: none;
+  }
+  .ped-tabela,
+  .ped-tabela tbody,
+  .ped-tabela tr,
+  .ped-tabela td {
+    display: block;
+    width: 100%;
+  }
+  .ped-tabela tr {
+    position: relative;
+    border: 1px solid var(--linha-forte);
+    border-radius: 16px;
+    padding: 4px 14px;
+    margin-bottom: 10px;
+  }
+  .ped-tabela td,
+  [data-tema="escuro"] .ped-tabela td {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--linha);
+    background: transparent;
+  }
+  .ped-tabela td[data-rotulo] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    text-align: right;
+  }
+  .ped-tabela td[data-rotulo]::before {
+    content: attr(data-rotulo);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--tinta-suave);
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .ped-tabela td.ped-cliente {
+    padding-top: 12px;
+  }
+  .ped-tabela td.ped-cliente .ped-numero {
+    margin-bottom: 6px;
+  }
+  .ped-tabela td.ped-acoes {
+    border-bottom: 0;
+    padding: 10px 0 12px;
+  }
+  .ped-tabela td.ped-acoes .btn-ver-detalhes-admin-pedidos {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 12px !important;
+    font-size: 0.88rem !important;
+  }
+  .ped-tabela .custom-status-menu {
+    left: auto;
+    right: 0;
+  }
+  /* Linha "nenhum pedido" */
+  .ped-tabela td[colspan] {
+    text-align: center;
+  }
+}
+
+/* Menu da conta (Meus dados / Meus pedidos / Painel Admin / Sair): no celular,
+   grade de 2 colunas em vez da faixa com rolagem que cortava "Painel Admin".
+   Sem o painel (cliente), "Sair" fica sozinho na última linha, na largura toda. */
+@media (max-width: 640px) {
+  .conta-menu {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+  .conta-menu a,
+  .conta-menu a.sair {
+    justify-content: center;
+    margin: 0;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .conta-menu a.sair:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Menu de status dentro do cartão do pedido: opções alinhadas à esquerda */
+.ped-tabela .custom-status-menu {
+  text-align: left;
+}
