@@ -1706,7 +1706,7 @@ function injectarModalDetalhesPedido() {
           <button class="modal-fechar" id="fecharModalDetalhes" aria-label="Fechar"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="modal-detalhes-corpo" id="modalDetalhesCorpo"></div>
-        <div style="padding: 14px 20px; border-top: 1px solid rgba(107, 66, 38, 0.1); display:flex; gap:10px; justify-content:space-between; flex-wrap:wrap; background:var(--branco);" id="modalDetalhesRodape"></div>
+        <div class="detalhe-rodape" id="modalDetalhesRodape"></div>
       </div>
     </div>
   `;
@@ -1926,20 +1926,19 @@ function abrirModalDetalhesPedido(pedidoId) {
 
   if (telClienteLimpo && (ehAdmin || abaAdminAtiva)) {
     linkWhats = `https://api.whatsapp.com/send?phone=${telefoneWhatsApp(telClienteLimpo)}&text=Ol%C3%A1%20${encodeURIComponent(pedido.perfis?.nome || 'Cliente')}!%20Aqui%20%C3%A9%20da%20Dona%20Benta%20sobre%20o%20seu%20pedido%20${encodeURIComponent(numero)}.`;
-    rotuloWhats = `Conversar com Cliente no WhatsApp`;
+    rotuloWhats = 'Chamar cliente';
   } else {
     linkWhats = `https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Gostaria%20de%20falar%20sobre%20o%20meu%20pedido%20${encodeURIComponent(numero)}%20na%20Dona%20Benta.`;
-    rotuloWhats = `Falar com a Dona Benta no WhatsApp`;
+    rotuloWhats = 'Falar conosco';
   }
 
+  // Rodapé: "Fechar" à esquerda e o WhatsApp ocupando o resto, sempre na mesma linha
   rodape.innerHTML = `
-    <a href="${linkWhats}" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp" style="flex:1; min-width:200px; justify-content:center; display:inline-flex; align-items:center; gap:8px;">
-      <span style="display:inline-flex; align-items:center; width:18px; height:18px;">${whatsSvg}</span>
+    <button type="button" class="btn btn-outline" id="btnFecharModalDetalhesBtn">Fechar</button>
+    <a href="${linkWhats}" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp" aria-label="${rotuloWhats} pelo WhatsApp">
+      <span class="detalhe-rodape-icone" aria-hidden="true">${whatsSvg}</span>
       <span>${rotuloWhats}</span>
     </a>
-    <button type="button" class="btn btn-outline" id="btnFecharModalDetalhesBtn" style="min-width:100px;">
-      Fechar
-    </button>
   `;
 
   document.getElementById('btnFecharModalDetalhesBtn')?.addEventListener('click', () => {

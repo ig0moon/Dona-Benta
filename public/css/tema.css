@@ -2038,3 +2038,59 @@ h1 em, h2 em {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ============================================
+   MODAL DE DETALHES DO PEDIDO · rodapé
+   "Fechar" e WhatsApp na mesma linha, com a mesma altura
+   ============================================ */
+.detalhe-rodape {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 14px clamp(16px, 4vw, 24px);
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--linha);
+  background: inherit;
+  flex-shrink: 0;
+}
+
+.detalhe-rodape .btn {
+  height: 48px;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+/* Telas bem estreitas: WhatsApp em cima, "Fechar" embaixo, ambos na largura toda */
+@media (max-width: 360px) {
+  .detalhe-rodape {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .detalhe-rodape .btn-whatsapp {
+    order: -1;
+  }
+}
+
+.detalhe-rodape .btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.detalhe-rodape .btn-whatsapp span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detalhe-rodape-icone {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.detalhe-rodape-icone svg {
+  width: 100%;
+  height: 100%;
+}
