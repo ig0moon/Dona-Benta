@@ -12,8 +12,8 @@ class Catalogo extends BaseController
         $produtoModel = new ProdutoModel();
 
         $data = [
-            'titulo'     => 'Catálogo de Produtos Artesanais — Dona Benta',
-            'descricao'  => 'Explore o catálogo da Dona Benta: bolos, pães artesanais, doces finos, tortas e salgados. Encomende online.',
+            'titulo'     => 'Cardápio — Dona Benta',
+            'descricao'  => 'Explore o cardápio da Dona Benta: bolos, pães artesanais, doces finos, tortas e salgados. Encomende online.',
             'pagina'     => 'catalogo',
             'categoria'  => $categoria,
             'categorias' => $produtoModel->getCategorias()

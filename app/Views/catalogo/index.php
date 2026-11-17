@@ -3,9 +3,9 @@
 <?= $this->section('content') ?>
   <section class="pagina-header">
     <div class="container">
-      <span class="eyebrow">Nosso catálogo</span>
-      <h1>Tudo que sai do nosso forno</h1>
-      <p>Escolha entre bolos, pães, doces e salgados preparados artesanalmente com receitas de família.</p>
+      <span class="eyebrow">Cardápio</span>
+      <h1>Tudo que sai do nosso forno.</h1>
+      <p>Bolos, pães, doces, salgados e tortas preparados à mão, com receitas de família.</p>
     </div>
   </section>
 
@@ -16,13 +16,13 @@
         <input type="text" id="campoBusca" placeholder="Buscar bolos, pães, doces..." aria-label="Buscar produtos">
       </div>
 
-      <div class="filtros" id="filtros">
+      <div class="filtros" id="filtros" role="tablist" aria-label="Categorias">
         <button type="button" class="filtro-btn <?= ($categoria === 'todos' || empty($categoria)) ? 'ativo' : '' ?>" data-categoria="todos">
-          <span class="material-symbols-outlined">apps</span> Todos
+          Todos
         </button>
         <?php foreach ($categorias as $chave => $info): ?>
           <button type="button" class="filtro-btn <?= ($categoria === $chave) ? 'ativo' : '' ?>" data-categoria="<?= esc($chave) ?>">
-            <span class="material-symbols-outlined"><?= esc($info['icone']) ?></span> <?= esc($info['nome']) ?>
+            <?= esc($info['nome']) ?>
           </button>
         <?php endforeach; ?>
       </div>
@@ -35,5 +35,5 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-  <script src="<?= base_url('js/catalogo.js?v=3.2') ?>"></script>
+  <script src="<?= base_url('js/catalogo.js?v=4.2') ?>"></script>
 <?= $this->endSection() ?>

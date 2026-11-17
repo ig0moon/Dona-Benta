@@ -130,45 +130,8 @@ function renderizarCatalogo() {
     return;
   }
 
-  area.innerHTML = `
-    <div class="catalogo-grade">
-      ${lista.map(p => `
-        <a href="produto?id=${encodeURIComponent(p.id)}" class="produto-cartao">
-          <div class="produto-imagem">
-            ${!produtoDisponivel(p) ? '<span class="esgotado-tag">Esgotado</span>' : ''}
-            <img src="${escapeHtml(p.imagem_url || 'img/HeaderDonaBenta.png')}" alt="${escapeHtml(p.nome)}" loading="lazy" onerror="this.src='img/HeaderDonaBenta.png'">
-          </div>
-          <div class="produto-info">
-            <h3>${escapeHtml(p.nome)}</h3>
-            <div class="produto-rodape">
-              <span class="produto-preco">${formatarPreco(p.preco)}</span>
-              <button class="produto-add" data-add="${escapeHtml(p.id)}" aria-label="Adicionar ${escapeHtml(p.nome)} ao carrinho" title="Adicionar ao carrinho">
-                <span class="material-symbols-outlined">add_shopping_cart</span>
-              </button>
-            </div>
-          </div>
-        </a>
-      `).join('')}
-    </div>
-  `;
-
-  // Listener para botões de adicionar ao carrinho
-  area.querySelectorAll('[data-add]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const idAlvo = String(btn.dataset.add);
-      const produto = TODOS_PRODUTOS.find(p => String(p.id) === idAlvo);
-      if (!produto) return;
-
-      if (!produtoDisponivel(produto)) {
-        mostrarToast('Este produto está esgotado no momento.', 'alerta');
-        return;
-      }
-
-      adicionarAoCarrinho(produto, 1);
-    });
-  });
+  area.innerHTML = `<div class="catalogo-grade">${lista.map((p, i) => cartaoProdutoHtml(p, i)).join('')}</div>`;
+  ligarBotoesAdicionar(area, TODOS_PRODUTOS);
 }
 
 // Configuração dos botões de filtro de categoria

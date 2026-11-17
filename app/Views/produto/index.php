@@ -5,7 +5,7 @@
     <div class="container container-produto">
       <div class="produto-topo-navegacao">
         <a href="<?= base_url('catalogo') ?>" class="btn btn-outline btn-voltar">
-          <span class="material-symbols-outlined">arrow_back</span> Voltar ao catálogo
+          <span class="material-symbols-outlined">arrow_back</span> Voltar ao cardápio
         </a>
       </div>
 

@@ -50,7 +50,7 @@ async function iniciarCheckout() {
         <h3>Seu carrinho está vazio</h3>
         <p>Adicione produtos artesanais antes de agendar seu pedido.</p>
         <a href="catalogo" class="btn btn-primario">
-          <span class="material-symbols-outlined">storefront</span> Ver catálogo
+          <span class="material-symbols-outlined">storefront</span> Ver cardápio
         </a>
       </div>
     `;
@@ -410,7 +410,7 @@ async function registrarPedidoNoBanco(dadosExtras = {}) {
   // Validação segura contra adulteração de preços locais (sincroniza com o catálogo oficial)
   const ids = [...new Set(carrinho.map(item => String(item.id || '')).filter(Boolean))];
   if (ids.length === 0 || !window.db) {
-    mostrarToast('Os itens do carrinho não são válidos. Atualize o catálogo e tente novamente.', 'erro');
+    mostrarToast('Os itens do carrinho não são válidos. Atualize o cardápio e tente novamente.', 'erro');
     return null;
   }
   const { data: prodsDb, error: erroProdutos } = await db
@@ -424,13 +424,13 @@ async function registrarPedidoNoBanco(dadosExtras = {}) {
   }
   const mapa = new Map(prodsDb.map(product => [String(product.id), product]));
   if (ids.some(id => !mapa.has(id))) {
-    mostrarToast('Um ou mais produtos não estão mais disponíveis no catálogo.', 'erro');
+    mostrarToast('Um ou mais produtos não estão mais disponíveis no cardápio.', 'erro');
     return null;
   }
   for (const item of carrinho) {
     const product = mapa.get(String(item.id));
     if (!product || !Number(product.ativo) || !Number(product.disponivel)) {
-      mostrarToast('Um ou mais produtos não estão mais disponíveis no catálogo.', 'erro');
+      mostrarToast('Um ou mais produtos não estão mais disponíveis no cardápio.', 'erro');
       return null;
     }
     item.preco = Number(product.preco);

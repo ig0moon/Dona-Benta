@@ -8,7 +8,10 @@
   <base href="<?= base_url('/') ?>">
   <link rel="shortcut icon" href="<?= base_url('img/favicon.png') ?>" type="image/x-icon">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
-  <link rel="stylesheet" href="<?= base_url('css/style.css?v=3.1') ?>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="<?= base_url('css/style.css?v=4.0') ?>">
+  <link rel="stylesheet" href="<?= base_url('css/tema.css?v=1.1') ?>">
   <?= $this->renderSection('styles') ?>
   <script>
     (function(){
@@ -28,7 +31,8 @@
   <!-- Scripts Globais MVC -->
   <script src="<?= base_url('js/backend-client.js?v=4.3') ?>"></script>
   <script src="<?= base_url('js/carrinho.js?v=3.0') ?>"></script>
-  <script src="<?= base_url('js/layout.js?v=3.0') ?>"></script>
+  <script src="<?= base_url('js/layout.js?v=4.0') ?>"></script>
+  <script src="<?= base_url('js/efeitos.js?v=1.2') ?>"></script>
   <?= $this->renderSection('scripts') ?>
 </body>
 </html>
