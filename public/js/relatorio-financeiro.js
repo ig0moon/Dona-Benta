@@ -293,21 +293,24 @@ function htmlDocumentoRelatorio(d, logo = '') {
   .barra button { font: 600 14px Inter, sans-serif; border: 0; border-radius: 99px; padding: 10px 18px; cursor: pointer; }
   .barra .pri { background: #f2a65a; color: #1a0e08; }
   .barra .sec { background: transparent; color: #f8f4ee; border: 1px solid #f8f4ee; }
-  @media screen and (max-width: 820px) {
-    .folha { width: auto; min-height: 0; margin: 64px 8px 16px; padding: 18px 14px; overflow-x: auto; }
-  }
+  /* Tela pequena: a folha A4 inteira é reduzida para caber (como num leitor de PDF),
+     em vez de vazar para os lados. O tamanho real só importa na impressão. */
+  .palco { overflow: hidden; }
+  .folha.reduzida { margin: 0; transform-origin: top left; }
   @media print {
     body { background: #fff; }
     .barra { display: none; }
-    .folha { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+    .palco { height: auto !important; overflow: visible; margin: 0 !important; }
+    .folha, .folha.reduzida { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; transform: none !important; }
   }
 </style>
 </head>
 <body>
   <div class="barra">
-    <button class="pri" onclick="window.print()">Salvar em PDF</button>
-    <button class="sec" onclick="window.close()">Fechar</button>
+    <button class="pri" id="rfSalvar">Salvar em PDF</button>
+    <button class="sec" id="rfFechar">Fechar</button>
   </div>
+  <div class="palco">
   <main class="folha">
     <header class="topo">
       <div>
@@ -349,15 +352,53 @@ function htmlDocumentoRelatorio(d, logo = '') {
     </section>
     <p class="nota">Documento gerado pelo painel da Dona Benta para conferência interna. Valores de pedidos pagos consideram a confirmação registrada no sistema.</p>
   </main>
-  <script>
-    (function () {
-      var imprimir = function () { setTimeout(function () { window.print(); }, 250); };
-      var pronto = function () { (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(imprimir); };
-      if (document.readyState === 'complete') pronto(); else window.addEventListener('load', pronto);
-    })();
-  </script>
+  </div>
 </body>
 </html>`;
+}
+
+// Prepara a aba do relatório a partir do painel (mesma origem): reduz a folha A4 para caber
+// em telas estreitas, liga os botões e abre a impressão. Feito daqui, e não por um script
+// embutido no documento, porque em alguns navegadores esse script não rodava na aba.
+function prepararAbaRelatorio(aba) {
+  const doc = aba.document;
+
+  const ajustar = () => {
+    const palco = doc.querySelector('.palco');
+    const folha = doc.querySelector('.folha');
+    if (!palco || !folha) return;
+    folha.classList.remove('reduzida');
+    folha.style.transform = '';
+    palco.style.height = '';
+    palco.style.margin = '';
+    const largura = folha.offsetWidth;
+    const disponivel = doc.documentElement.clientWidth - 16;
+    if (!largura || largura <= disponivel) return;
+    const escala = disponivel / largura;
+    folha.classList.add('reduzida');
+    folha.style.transform = `scale(${escala})`;
+    palco.style.margin = '72px 8px 24px';
+    palco.style.height = `${Math.ceil(folha.offsetHeight * escala)}px`;
+  };
+
+  doc.getElementById('rfSalvar')?.addEventListener('click', () => aba.print());
+  doc.getElementById('rfFechar')?.addEventListener('click', () => aba.close());
+
+  // A aba recém-aberta só tem a largura final da tela depois de instantes.
+  aba.addEventListener('resize', ajustar);
+  aba.visualViewport?.addEventListener('resize', ajustar);
+  ajustar();
+  [100, 400, 1000].forEach(t => aba.setTimeout(ajustar, t));
+
+  let impresso = false;
+  const imprimir = () => {
+    if (impresso) return;
+    impresso = true;
+    ajustar();
+    aba.setTimeout(() => aba.print(), 300);
+  };
+  (doc.fonts?.ready || Promise.resolve()).then(() => aba.setTimeout(imprimir, 200));
+  aba.setTimeout(imprimir, 2500); // garantia, caso as fontes demorem
 }
 
 async function gerarPdfRelatorio(d) {
@@ -366,6 +407,7 @@ async function gerarPdfRelatorio(d) {
   const aba = window.open('', '_blank');
   if (aba) {
     aba.document.write('<!doctype html><title>Gerando relatório…</title><p style="font:16px system-ui,sans-serif;padding:32px;color:#4b382b">Gerando o relatório…</p>');
+    aba.document.close();
   }
   const html = htmlDocumentoRelatorio(d, await logoRelatorio());
 
@@ -373,6 +415,7 @@ async function gerarPdfRelatorio(d) {
     aba.document.open();
     aba.document.write(html);
     aba.document.close();
+    prepararAbaRelatorio(aba);
     return;
   }
 
@@ -384,7 +427,7 @@ async function gerarPdfRelatorio(d) {
   const doc = iframe.contentWindow.document;
   doc.open();
   // No iframe a impressão é disparada daqui, sem a barra de botões.
-  doc.write(html.replace(/<script>[\s\S]*?<\/script>/, '').replace('<div class="barra">', '<div class="barra" style="display:none">'));
+  doc.write(html.replace('<div class="barra">', '<div class="barra" style="display:none">'));
   doc.close();
   let impresso = false;
   const imprimir = () => {
