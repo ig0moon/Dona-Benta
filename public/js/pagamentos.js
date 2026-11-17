@@ -224,9 +224,13 @@ async function limparPedidoSemCobranca(pedidoId) {
 
 // Pedidos com geração de Pix em andamento (evita duas cobranças para o mesmo pedido).
 const pixEmAndamento = new Set();
-// Fluxos Pix por pedido (reaproveitados quando o CPF é reenviado): permitem cancelar e limpar
-// se a tela for fechada antes de a cobrança começar.
-const pixFluxos = new Map();
+// Cada abertura do Pix é uma tentativa própria, que a tela fechada consegue cancelar.
+// (Antes o estado era por pedido: uma nova tentativa herdava "cobrança iniciada" da anterior
+// e, se o cliente fechasse a tela, a requisição seguia em segundo plano.)
+let pixTentativaAtual = null;
+// Pedidos para os quais alguma tentativa já chegou a pedir a cobrança ao servidor: esses nunca
+// são apagados ao fechar a tela, porque pode existir um Pix pagável para eles.
+const pixPedidosComCobranca = new Set();
 
 async function iniciarFluxoCartao() {
   if (typeof window.validarDadosAgendamento === 'function' && !window.validarDadosAgendamento()) return;
@@ -288,11 +292,10 @@ window.iniciarFluxoCartao = iniciarFluxoCartao;
 async function iniciarFluxoPix(pedido, perfil) {
   window._pedidoAtualPix = pedido;
   window._perfilAtualPix = perfil;
-  let fluxo = pixFluxos.get(pedido?.id);
-  if (!fluxo || fluxo.cancelado) {
-    fluxo = { id: pedido?.id || null, cancelado: false, cobrancaIniciada: false };
-    pixFluxos.set(fluxo.id, fluxo);
-  }
+  // Uma tentativa anterior que ainda não enviou nada é substituída por esta (ex.: CPF reenviado).
+  if (pixTentativaAtual && !pixTentativaAtual.enviada) pixTentativaAtual.cancelada = true;
+  const fluxo = { id: pedido?.id || null, cancelada: false, enviada: false };
+  pixTentativaAtual = fluxo;
   abrirModalPix();
 
   // Em produção, CPF é obrigatório para emissão de Pix pelo Banco Central e Mercado Pago
@@ -302,15 +305,16 @@ async function iniciarFluxoPix(pedido, perfil) {
   } catch (error) {
     mostrarCarregandoPix(false);
     mostrarToast(error.message || 'Não foi possível iniciar o pagamento.', 'erro');
-    // Nenhuma cobrança foi criada: não deixa o pedido pendente (se a tela fechada já limpou, não repete).
-    if (!fluxo.cancelado) {
-      fluxo.cancelado = true;
-      await limparPedidoSemCobranca(pedido?.id);
+    // Nenhuma cobrança foi criada nesta tentativa: se nenhuma anterior pediu cobrança, não deixa o
+    // pedido pendente (se a tela fechada já cancelou e limpou, não repete).
+    if (!fluxo.cancelada) {
+      fluxo.cancelada = true;
+      if (!pixPedidosComCobranca.has(pedido?.id)) await limparPedidoSemCobranca(pedido?.id);
     }
     return;
   }
   // A tela foi fechada enquanto a configuração carregava: o fechamento já limpou o pedido.
-  if (fluxo.cancelado) return;
+  if (fluxo.cancelada) return;
   const isProducao = config?.ambiente === 'producao';
   let cpfAtual = (perfil?.cpf || '').replace(/\D/g, '');
 
@@ -385,12 +389,13 @@ async function iniciarFluxoPix(pedido, perfil) {
       }
     };
 
-    // Tela fechada durante a consulta do usuário: não envia a cobrança.
-    if (fluxo.cancelado) {
+    // Tela fechada (ou tentativa substituída) durante a consulta do usuário: não envia a cobrança.
+    if (fluxo.cancelada) {
       pixEmAndamento.delete(pedido.id);
       return;
     }
-    fluxo.cobrancaIniciada = true; // a partir daqui uma cobrança pode existir
+    fluxo.enviada = true; // a partir daqui uma cobrança pode existir
+    pixPedidosComCobranca.add(pedido.id);
 
     const resp = await fetch(`${API_PAGAMENTOS_URL}/pagamento/pix`, {
       method: 'POST',
@@ -426,7 +431,7 @@ async function iniciarFluxoPix(pedido, perfil) {
         <div style="text-align:center; padding:16px;">
           <span class="material-symbols-outlined" style="font-size:40px; color:var(--erro);">error</span>
           <p style="margin-top:8px; color:var(--erro); font-size:0.9rem;">
-            ${typeof escapeHtml === 'function' ? escapeHtml(err.message) : err.message}<br>
+            ${escapeHtml(err.message || 'Falha ao gerar Pix')}<br>
             <small style="color:var(--marrom-claro); display:block; margin-top:4px;">Se persistir, verifique a conexão do servidor de pagamentos.</small>
           </p>
           <button class="btn btn-primario" onclick="fecharModalPix()" style="margin-top:14px;">Entendido</button>
@@ -444,14 +449,16 @@ function fecharModalPix() {
   const overlay = document.getElementById('pixOverlay');
   if (overlay) overlay.style.display = 'none';
   pararPollingPix();
-  // Fechou a tela antes de qualquer cobrança começar (config carregando ou prompt de CPF):
-  // nenhuma cobrança existe, então o pedido não precisa ficar.
-  pixFluxos.forEach((fluxo) => {
-    if (!fluxo.cobrancaIniciada && !fluxo.cancelado) {
-      fluxo.cancelado = true;
-      limparPedidoSemCobranca(fluxo.id);
+  // Fechou a tela antes de a tentativa atual enviar a cobrança (config carregando, prompt de CPF
+  // ou consulta do usuário): cancela a tentativa, e ela para antes do envio.
+  const tentativa = pixTentativaAtual;
+  if (tentativa && !tentativa.enviada && !tentativa.cancelada) {
+    tentativa.cancelada = true;
+    // Só apaga o pedido se nenhuma tentativa dele chegou a pedir cobrança ao servidor.
+    if (tentativa.id && !pixPedidosComCobranca.has(tentativa.id)) {
+      limparPedidoSemCobranca(tentativa.id);
     }
-  });
+  }
 }
 
 function mostrarCarregandoPix(mostrar) {

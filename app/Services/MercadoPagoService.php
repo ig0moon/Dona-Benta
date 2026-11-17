@@ -213,14 +213,30 @@ class MercadoPagoService
             $mpPayload['notification_url'] = $this->webhookUrl;
         }
 
-        // Chave única por tentativa: uma nova tentativa nunca reaproveita (nem conflita com) uma cobrança antiga.
-        $idempotencyKey = 'pix-' . ($pedidoId ?: time()) . '-' . bin2hex(random_bytes(6));
+        // 1) Se este pedido já tem um Pix pendente válido no Mercado Pago (ex.: a resposta anterior
+        //    se perdeu e o cliente tentou de novo), devolve esse mesmo Pix em vez de criar outro.
+        $existente = $this->buscarPixExistente((string) $pedidoId, $valorEfetivo);
+        if ($existente['reaproveitar'] !== null) {
+            $this->cobrancaPossivel = true;
+            $res = ['http_code' => 200, 'data' => $existente['reaproveitar'], 'error' => null];
+        } else {
+            // 2) Chave de idempotência determinística: mesmo pedido + mesmos dados = mesma chave, então
+            //    um reenvio (rede caiu, outra aba) recebe a mesma cobrança do Mercado Pago.
+            //    - CPF/e-mail/valor corrigidos geram outra chave (o erro anterior não fica "preso");
+            //    - cada Pix antigo que expirou/foi cancelado muda a chave, liberando um Pix novo.
+            $idempotencyKey = 'pix-' . $pedidoId . '-' . substr(hash('sha256', json_encode([
+                round($valorEfetivo, 2),
+                $cpfLimpo,
+                $payerEmail,
+                $existente['encerrados'],
+            ])), 0, 24);
 
-        $this->cobrancaPossivel = true;
-        $res = $this->callMercadoPago('POST', 'https://api.mercadopago.com/v1/payments', $mpPayload, $idempotencyKey);
-        if ($res['error'] === 'MP_ACCESS_TOKEN ausente' || ($res['http_code'] >= 400 && $res['http_code'] < 500)) {
-            // O Mercado Pago recusou (ou nem recebeu) o pedido de cobrança: nada foi criado.
-            $this->cobrancaPossivel = false;
+            $this->cobrancaPossivel = true;
+            $res = $this->callMercadoPago('POST', 'https://api.mercadopago.com/v1/payments', $mpPayload, $idempotencyKey);
+            if ($res['error'] === 'MP_ACCESS_TOKEN ausente' || ($res['http_code'] >= 400 && $res['http_code'] < 500)) {
+                // O Mercado Pago recusou (ou nem recebeu) o pedido de cobrança: nada foi criado.
+                $this->cobrancaPossivel = false;
+            }
         }
 
         if ($res['http_code'] < 200 || $res['http_code'] >= 300) {
@@ -251,11 +267,15 @@ class MercadoPagoService
             if (!is_string($pixCopiaCola) || $pixCopiaCola === '' || !is_string($qrCodeBase64) || $qrCodeBase64 === '') {
                 return ['status' => 502, 'data' => ['erro' => 'O Mercado Pago não retornou os dados necessários para pagar via Pix.']];
             }
-            if (!$this->tidb->atualizarPedido($pedidoId, [
-                'forma_pagamento' => 'Pix',
-                'status'          => 'aguardando_confirmacao',
-                'pago'            => false
-            ], $userAuthHeader)) {
+            $registro = $this->tidb->registrarPagamentoPendente($pedidoId, 'Pix');
+            if ($registro === 'ja_pago') {
+                // Outra tentativa (ou o webhook) já confirmou este pedido: não volta para pendente.
+                return [
+                    'status' => 200,
+                    'data'   => ['sucesso' => true, 'pago' => true, 'status' => 'approved', 'pagamento_id' => $mpData['id']],
+                ];
+            }
+            if ($registro !== 'atualizado') {
                 return ['status' => 503, 'data' => ['erro' => 'Não foi possível registrar o pagamento Pix no banco.']];
             }
         } else {
@@ -377,11 +397,11 @@ class MercadoPagoService
             return ['status' => 502, 'data' => ['erro' => 'O Mercado Pago não retornou um endereço de checkout válido.']];
         }
 
-        if (!$this->tidb->atualizarPedido($pedidoId, [
-            'forma_pagamento' => 'Cartão de Crédito',
-            'status'          => 'aguardando_confirmacao',
-            'pago'            => false,
-        ], $userAuthHeader)) {
+        $registro = $this->tidb->registrarPagamentoPendente($pedidoId, 'Cartão de Crédito');
+        if ($registro === 'ja_pago') {
+            return ['status' => 400, 'data' => ['erro' => 'Este pedido já foi pago e confirmado anteriormente']];
+        }
+        if ($registro !== 'atualizado') {
             return ['status' => 503, 'data' => ['erro' => 'Não foi possível registrar o checkout no banco.']];
         }
 
@@ -433,6 +453,58 @@ class MercadoPagoService
                 'pago'           => $aprovado
             ]
         ];
+    }
+
+    /**
+     * Procura os Pix já criados para o pedido.
+     * - reaproveitar: um Pix pendente, do mesmo valor, ainda dentro da validade e com QR Code;
+     * - encerrados: quantos Pix deste pedido já expiraram/foram cancelados (entra na chave de idempotência).
+     * Se a consulta falhar, devolve "nada a reaproveitar" e a chave determinística segue evitando duplicidade.
+     *
+     * @return array{reaproveitar: ?array, encerrados: int}
+     */
+    private function buscarPixExistente(string $pedidoId, float $valor): array
+    {
+        $resultado = ['reaproveitar' => null, 'encerrados' => 0];
+        if ($pedidoId === '') {
+            return $resultado;
+        }
+
+        $res = $this->callMercadoPago(
+            'GET',
+            'https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&external_reference=' . rawurlencode($pedidoId),
+        );
+        $pagamentos = $res['data']['results'] ?? null;
+        if ($res['http_code'] < 200 || $res['http_code'] >= 300 || !is_array($pagamentos)) {
+            return $resultado;
+        }
+
+        $agora = time();
+        foreach ($pagamentos as $pg) {
+            if (!is_array($pg)
+                || ($pg['external_reference'] ?? '') !== $pedidoId
+                || ($pg['payment_method_id'] ?? '') !== 'pix') {
+                continue;
+            }
+            $status = $pg['status'] ?? '';
+            $expira = isset($pg['date_of_expiration']) ? strtotime((string) $pg['date_of_expiration']) : false;
+            $vencido = $expira !== false && $expira <= $agora + 60;
+
+            if (in_array($status, ['cancelled', 'rejected', 'expired'], true)
+                || (in_array($status, ['pending', 'in_process'], true) && $vencido)) {
+                $resultado['encerrados']++;
+                continue;
+            }
+
+            $mesmoValor = abs((float) ($pg['transaction_amount'] ?? 0) - round($valor, 2)) < 0.01;
+            $temQr = !empty($pg['point_of_interaction']['transaction_data']['qr_code']);
+            if ($resultado['reaproveitar'] === null && $mesmoValor
+                && ($status === 'approved' || (in_array($status, ['pending', 'in_process'], true) && $temQr))) {
+                $resultado['reaproveitar'] = $pg;
+            }
+        }
+
+        return $resultado;
     }
 
     public function consultarStatusCheckout(string $pedidoId, ?string $userId): array

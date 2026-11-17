@@ -912,8 +912,8 @@ async function renderizarMeusPedidos(area, usuario) {
           <div class="meu-pedido-cabecalho">
             <span class="meu-pedido-numero">Pedido ${escapeHtml(numero)}</span>
             <span class="badge ${status.classe}">${escapeHtml(status.rotulo)}</span>
-            <span class="badge ${p.pago ? 'badge-sucesso' : 'badge-alerta'}" style="font-size:0.75rem;">
-              ${p.pago ? '✓ Pago' : '⏳ Pagamento pendente'}
+            <span class="badge ${pedidoPago(p) ? 'badge-sucesso' : 'badge-alerta'}" style="font-size:0.75rem;">
+              ${pedidoPago(p) ? '✓ Pago' : '⏳ Pagamento pendente'}
             </span>
           </div>
           <div class="meu-pedido-meta">
@@ -1089,7 +1089,7 @@ function renderizarVisaoGeralAdmin(area) {
                 <td>${escapeHtml(formatarData(p.data_agendada))}</td>
                 <td><strong>${formatarPreco(p.valor_total)}</strong></td>
                 <td><span class="badge ${STATUS_INFO[p.status]?.classe || 'badge-info'}">${escapeHtml(STATUS_INFO[p.status]?.rotulo || p.status)}</span></td>
-                <td><span class="badge ${p.pago ? 'badge-sucesso' : 'badge-alerta'}">${p.pago ? 'Pago' : 'Pendente'}</span></td>
+                <td><span class="badge ${pedidoPago(p) ? 'badge-sucesso' : 'badge-alerta'}">${pedidoPago(p) ? 'Pago' : 'Pendente'}</span></td>
               </tr>
             `).join('')}
             ${PEDIDOS_ADMIN.length === 0 ? '<tr><td colspan="5" style="text-align:center; padding: 20px;">Nenhum pedido registrado ainda.</td></tr>' : ''}
@@ -1134,7 +1134,7 @@ function renderizarProdutosAdmin(area) {
                 </td>
                 <td><strong>${formatarPreco(p.preco)}</strong></td>
                 <td>${p.estoque ?? '—'}</td>
-                <td><span class="badge ${p.disponivel ? 'badge-sucesso' : 'badge-erro'}">${p.disponivel ? 'Disponível' : 'Indisponível'}</span></td>
+                <td><span class="badge ${produtoDisponivel(p) ? 'badge-sucesso' : 'badge-erro'}">${produtoDisponivel(p) ? 'Disponível' : 'Indisponível'}</span></td>
                 <td>
                   <div class="acoes-tabela">
                     <button class="acao-icone-btn" data-editar="${escapeHtml(p.id)}" title="Editar produto" aria-label="Editar">
@@ -1237,8 +1237,8 @@ function renderizarPedidosAdmin(area) {
                   })()}
                 </td>
                 <td>
-                  <button class="badge btn-pagamento ${p.pago ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${Boolean(p.pago)}" title="Clique para alternar status do pagamento" style="cursor:pointer; border:none;">
-                    ${p.pago ? 'Pago' : 'Pendente'}
+                  <button class="badge btn-pagamento ${pedidoPago(p) ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${pedidoPago(p)}" title="Clique para alternar status do pagamento" style="cursor:pointer; border:none;">
+                    ${pedidoPago(p) ? 'Pago' : 'Pendente'}
                   </button>
                 </td>
                 <td style="text-align:center;">
@@ -1440,7 +1440,7 @@ function renderizarPagamentosAdmin(area) {
   const pagosCartao = pagos.filter(p => (p.forma_pagamento || '').toLowerCase().includes('cart'));
   const totalCartao = pagosCartao.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
 
-  const pendentes = PEDIDOS_ADMIN.filter(p => !p.pago);
+  const pendentes = PEDIDOS_ADMIN.filter(p => !pedidoPago(p));
   const totalPendente = pendentes.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
 
   area.innerHTML = `
@@ -1522,7 +1522,7 @@ function renderizarPagamentosAdmin(area) {
     const totalPixAtual = pagosPixAtual.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
     const pagosCartaoAtual = pagosAtual.filter(p => (p.forma_pagamento || '').toLowerCase().includes('cart'));
     const totalCartaoAtual = pagosCartaoAtual.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
-    const pendentesAtual = PEDIDOS_ADMIN.filter(p => !p.pago);
+    const pendentesAtual = PEDIDOS_ADMIN.filter(p => !pedidoPago(p));
     const totalPendenteAtual = pendentesAtual.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
 
     const elFat = document.getElementById('kpiTotalFaturado');
@@ -1556,7 +1556,7 @@ function renderizarPagamentosAdmin(area) {
     let lista = PEDIDOS_ADMIN;
 
     if (filtroStatus === 'pago') lista = lista.filter(p => pedidoPago(p));
-    else if (filtroStatus === 'pendente') lista = lista.filter(p => !p.pago);
+    else if (filtroStatus === 'pendente') lista = lista.filter(p => !pedidoPago(p));
 
     if (filtroMetodo === 'pix') lista = lista.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
     else if (filtroMetodo === 'cartao') lista = lista.filter(p => (p.forma_pagamento || '').toLowerCase().includes('cart'));
@@ -1605,8 +1605,8 @@ function renderizarPagamentosAdmin(area) {
             </span>
           </td>
           <td>
-            <button class="badge btn-pagamento-financeiro ${p.pago ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${Boolean(p.pago)}" title="Clique para alternar status do pagamento">
-              ${p.pago ? 'Pago' : 'Pendente'}
+            <button class="badge btn-pagamento-financeiro ${pedidoPago(p) ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${pedidoPago(p)}" title="Clique para alternar status do pagamento">
+              ${pedidoPago(p) ? 'Pago' : 'Pendente'}
             </button>
           </td>
           <td>
@@ -1735,7 +1735,7 @@ function abrirRelatorioFinanceiroElaborado(filtros = {}) {
   let lista = Array.isArray(PEDIDOS_ADMIN) ? [...PEDIDOS_ADMIN] : [];
 
   if (filtros.filtroStatus === 'pago') lista = lista.filter(p => pedidoPago(p));
-  else if (filtros.filtroStatus === 'pendente') lista = lista.filter(p => !p.pago);
+  else if (filtros.filtroStatus === 'pendente') lista = lista.filter(p => !pedidoPago(p));
 
   if (filtros.filtroMetodo === 'pix') lista = lista.filter(p => (p.forma_pagamento || '').toLowerCase().includes('pix'));
   else if (filtros.filtroMetodo === 'cartao') lista = lista.filter(p => (p.forma_pagamento || '').toLowerCase().includes('cart'));
@@ -1755,7 +1755,7 @@ function abrirRelatorioFinanceiroElaborado(filtros = {}) {
   const totalPix = pagosPix.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
   const pagosCartao = pagos.filter(p => (p.forma_pagamento || '').toLowerCase().includes('cart'));
   const totalCartao = pagosCartao.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
-  const pendentes = lista.filter(p => !p.pago);
+  const pendentes = lista.filter(p => !pedidoPago(p));
   const totalPendente = pendentes.reduce((s, p) => s + (Number(p.valor_total) || 0), 0);
   const ticketMedio = pagos.length > 0 ? (totalFaturado / pagos.length) : 0;
 
@@ -1832,8 +1832,8 @@ function abrirRelatorioFinanceiroElaborado(filtros = {}) {
                 <td>${p.tipo_entrega === 'entrega' ? 'Entrega em domicílio' : 'Retirada na loja'}</td>
                 <td>${escapeHtml(p.forma_pagamento || 'Pix')}</td>
                 <td>
-                  <strong style="color: ${p.pago ? '#2b7c4d' : '#c54242'}; font-size:0.82rem;">
-                    ${p.pago ? 'PAGO' : 'PENDENTE'}
+                  <strong style="color: ${pedidoPago(p) ? '#2b7c4d' : '#c54242'}; font-size:0.82rem;">
+                    ${pedidoPago(p) ? 'PAGO' : 'PENDENTE'}
                   </strong>
                 </td>
                 <td style="text-align:right; font-weight:700;">${formatarPreco(p.valor_total)}</td>
@@ -1944,7 +1944,7 @@ function abrirModalDetalhesPedido(pedidoId) {
   badgesArea.innerHTML = `
     <span class="badge" style="background:var(--creme-escuro); color:var(--marrom); font-weight:700; font-size:0.82rem;">${escapeHtml(numero)}</span>
     <span class="badge ${statusInfo.classe}">${escapeHtml(statusInfo.rotulo)}</span>
-    <span class="badge ${pedido.pago ? 'badge-sucesso' : 'badge-alerta'}">${pedido.pago ? 'Pagamento Confirmado' : 'Aguardando Pagamento'}</span>
+    <span class="badge ${pedidoPago(pedido) ? 'badge-sucesso' : 'badge-alerta'}">${pedidoPago(pedido) ? 'Pagamento Confirmado' : 'Aguardando Pagamento'}</span>
   `;
 
   document.getElementById('modalDetalhesTitulo').textContent = `Pedido ${numero}`;

@@ -77,6 +77,47 @@ class TiDBStoreService
         }
     }
 
+    /**
+     * Marca o pedido como "aguardando pagamento" sem nunca desfazer um pagamento já confirmado.
+     * A condição pago = 0 fica no próprio UPDATE, então uma resposta "pendente" que chega depois
+     * da aprovação (outra tentativa ou o webhook) não consegue voltar o pedido para não pago.
+     *
+     * @return string 'atualizado' | 'ja_pago' | 'erro'
+     */
+    public function registrarPagamentoPendente(string $pedidoId, string $formaPagamento): string
+    {
+        if (!$this->isValidPedidoId($pedidoId)) {
+            return 'erro';
+        }
+
+        try {
+            $db = db_connect();
+            $ok = $db->table('pedidos')
+                ->where('id', $pedidoId)
+                ->where('pago', 0)
+                ->update([
+                    'forma_pagamento' => $formaPagamento,
+                    'status'          => 'aguardando_confirmacao',
+                    'pago'            => 0,
+                ]);
+            if (!$ok) {
+                return 'erro';
+            }
+            if ($db->affectedRows() > 0) {
+                return 'atualizado';
+            }
+            // Nenhuma linha mudou: ou o pedido já está pago, ou já estava exatamente assim.
+            $pedido = $this->consultarPedido($pedidoId);
+            if ($pedido === null) {
+                return 'erro';
+            }
+            return !empty($pedido['pago']) ? 'ja_pago' : 'atualizado';
+        } catch (Throwable $exception) {
+            log_message('error', 'Falha ao registrar pagamento pendente no TiDB ({exception}).', ['exception' => $exception::class]);
+            return 'erro';
+        }
+    }
+
     public function atualizarPedido(string $pedidoId, array $dados, ?string $userAuthHeader = null): bool
     {
         $allowed = ['valor_total', 'forma_pagamento', 'status', 'pago'];

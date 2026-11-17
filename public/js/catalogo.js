@@ -125,7 +125,7 @@ function renderizarCatalogo() {
       ${lista.map(p => `
         <a href="produto?id=${encodeURIComponent(p.id)}" class="produto-cartao">
           <div class="produto-imagem">
-            ${p.disponivel === false ? '<span class="esgotado-tag">Esgotado</span>' : ''}
+            ${!produtoDisponivel(p) ? '<span class="esgotado-tag">Esgotado</span>' : ''}
             <img src="${escapeHtml(p.imagem_url || 'img/HeaderDonaBenta.png')}" alt="${escapeHtml(p.nome)}" loading="lazy" onerror="this.src='img/HeaderDonaBenta.png'">
           </div>
           <div class="produto-info">
@@ -151,7 +151,7 @@ function renderizarCatalogo() {
       const produto = TODOS_PRODUTOS.find(p => String(p.id) === idAlvo);
       if (!produto) return;
 
-      if (produto.disponivel === false) {
+      if (!produtoDisponivel(produto)) {
         mostrarToast('Este produto está esgotado no momento.', 'alerta');
         return;
       }

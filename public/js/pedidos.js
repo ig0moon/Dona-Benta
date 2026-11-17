@@ -449,20 +449,7 @@ async function registrarPedidoNoBanco(dadosExtras = {}) {
     return null;
   }
 
-  // Número do pedido em sequência (DB-17) + sufixo curto aleatório (DB-17-A7K2). O sufixo mantém
-  // o número único mesmo se a contagem repetir (ex.: depois de apagar um pedido pendente).
-  let sequencia = 1;
-  try {
-    const { count, error: errCount } = await db
-      .from('pedidos')
-      .select('id', { count: 'exact', head: true });
-    if (!errCount && typeof count === 'number') sequencia = count + 1;
-  } catch (e) {
-    console.warn('Não foi possível obter contagem de pedidos:', e);
-  }
-  const sufixo = Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, 'X');
-  const proximoNumeroPedido = `DB-${String(sequencia).padStart(2, '0')}-${sufixo}`;
-
+  // O número do pedido (DB-17-A7K2) é gerado pelo servidor ao gravar: só ele enxerga todos os pedidos.
   const novoPedido = {
     cliente_id: usuario.id,
     valor_total: total,
@@ -473,33 +460,19 @@ async function registrarPedidoNoBanco(dadosExtras = {}) {
     horario_agendado: horarioSelecionado,
     observacoes: observacoes || null,
     forma_pagamento: dadosExtras.forma_pagamento || 'Pix',
-    numero_pedido: proximoNumeroPedido,
     pago: dadosExtras.pago || false
   };
 
-  let { data: pedidoCriado, error: erroPedido } = await db
+  const { data: pedidoCriado, error: erroPedido } = await db
     .from('pedidos')
     .insert(novoPedido)
     .select()
     .single();
 
-  // Fallback se alguma coluna opcional ainda não existir
-  if (erroPedido && (erroPedido.message?.includes('numero_pedido') || erroPedido.code === '42703')) {
-    const pedidoSemColuna = { ...novoPedido };
-    delete pedidoSemColuna.numero_pedido;
-    const retry = await db.from('pedidos').insert(pedidoSemColuna).select().single();
-    pedidoCriado = retry.data;
-    erroPedido = retry.error;
-  }
-
   if (erroPedido) {
     console.error('Erro ao registrar pedido:', erroPedido);
     if (typeof mostrarToast === 'function') mostrarToast('Erro ao registrar pedido: ' + erroPedido.message, 'erro');
     return null;
-  }
-
-  if (pedidoCriado && !pedidoCriado.numero_pedido) {
-    pedidoCriado.numero_pedido = proximoNumeroPedido;
   }
 
   const itensParaInserir = carrinho.map(i => ({

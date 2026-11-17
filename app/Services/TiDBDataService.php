@@ -193,6 +193,8 @@ class TiDBDataService
                 $clean['usuario_id'] = $user['id'];
                 $clean['status'] = 'aguardando_confirmacao';
                 $clean['pago'] = 0;
+                // O número é sempre gerado aqui, nunca pelo navegador (que só enxerga os próprios pedidos).
+                $clean['numero_pedido'] = $this->gerarNumeroPedido($db);
             } elseif ($table === 'itens_pedido') {
                 $productId = trim((string) ($clean['produto_id'] ?? ''));
                 $quantity = (int) ($clean['quantidade'] ?? 0);
@@ -222,17 +224,37 @@ class TiDBDataService
             }
         }
 
-        $db->transStart();
-        foreach ($data as $row) {
-            if ($table === 'perfis') {
-                $db->table($table)->where('id', $user['id'])->update($row);
-            } else {
-                $db->table($table)->insert($row);
+        // Pedidos: se dois checkouts simultâneos sortearem o mesmo número, o índice único recusa
+        // a gravação e tentamos de novo com um número novo.
+        $tentativas = $table === 'pedidos' ? 3 : 1;
+        for ($tentativa = 1; $tentativa <= $tentativas; $tentativa++) {
+            try {
+                $db->transStart();
+                foreach ($data as $row) {
+                    if ($table === 'perfis') {
+                        $db->table($table)->where('id', $user['id'])->update($row);
+                    } else {
+                        $db->table($table)->insert($row);
+                    }
+                }
+                $db->transComplete();
+                $gravou = $db->transStatus();
+            } catch (Throwable $exception) {
+                // Com DBDebug ligado o CodeIgniter desfaz a transação e lança a exceção.
+                if ($table !== 'pedidos') {
+                    throw $exception;
+                }
+                $gravou = false;
             }
-        }
-        $db->transComplete();
-        if (!$db->transStatus()) {
-            return $this->failure(500, 'Não foi possível salvar os dados.');
+            if ($gravou) {
+                break;
+            }
+            if ($tentativa === $tentativas) {
+                return $this->failure(500, 'Não foi possível salvar os dados.');
+            }
+            foreach ($data as $i => $row) {
+                $data[$i]['numero_pedido'] = $this->gerarNumeroPedido($db);
+            }
         }
 
         $inserted = [];
@@ -258,6 +280,28 @@ class TiDBDataService
             }
         }
         return ['status' => 201, 'data' => $inserted, 'count' => null, 'error' => null];
+    }
+
+    /**
+     * Número exibido do pedido: sequência global (DB-17) + sufixo curto aleatório (DB-17-A7K2).
+     * A sequência conta todos os pedidos da loja (não só os do cliente); o sufixo e a checagem
+     * abaixo garantem que o número não se repita mesmo se a contagem voltar (pedido apagado).
+     */
+    private function gerarNumeroPedido($db): string
+    {
+        $sequencia = (int) $db->table('pedidos')->countAllResults() + 1;
+        $alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        for ($i = 0; $i < 5; $i++) {
+            $sufixo = '';
+            for ($c = 0; $c < 4; $c++) {
+                $sufixo .= $alfabeto[random_int(0, strlen($alfabeto) - 1)];
+            }
+            $numero = sprintf('DB-%02d-%s', $sequencia, $sufixo);
+            if ($db->table('pedidos')->where('numero_pedido', $numero)->countAllResults() === 0) {
+                return $numero;
+            }
+        }
+        return sprintf('DB-%02d-%s', $sequencia, strtoupper(bin2hex(random_bytes(4))));
     }
 
     private function update(string $table, array $query, mixed $payload, ?array $user, bool $isAdmin): array

@@ -133,4 +133,26 @@ final class TiDBDataServiceTest extends CIUnitTestCase
         $this->assertSame('Descrição editada', $updated['data'][0]['descricao_curta']);
         $this->assertSame(0, (int) $updated['data'][0]['disponivel']);
     }
+
+    public function testOrderNumberIsGeneratedByTheServerWithAGlobalSequence(): void
+    {
+        $numeros = [];
+        foreach (['cliente-a', 'cliente-b'] as $cliente) {
+            $this->database->table('perfis')->insert(['id' => $cliente, 'nome' => $cliente, 'email' => $cliente . '@exemplo.com', 'role' => 'cliente']);
+            session()->set('tidb_user_id', $cliente);
+
+            $result = (new TiDBDataService())->databaseRequest('POST', 'pedidos', [], [
+                'numero_pedido' => 'DB-01-HACK', // o valor enviado pelo navegador é ignorado
+                'valor_total'   => 10,
+                'tipo_entrega'  => 'retirada',
+            ]);
+
+            $this->assertSame(201, $result['status']);
+            $numeros[] = $result['data'][0]['numero_pedido'];
+        }
+
+        // Cada cliente só enxerga os próprios pedidos, mas a sequência é da loja toda.
+        $this->assertMatchesRegularExpression('/^DB-01-[A-Z2-9]{4}$/', $numeros[0]);
+        $this->assertMatchesRegularExpression('/^DB-02-[A-Z2-9]{4}$/', $numeros[1]);
+    }
 }

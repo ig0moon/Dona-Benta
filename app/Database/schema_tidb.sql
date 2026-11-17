@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS pedidos (
     PRIMARY KEY (id),
     INDEX idx_pedidos_cliente (cliente_id),
     INDEX idx_pedidos_usuario (usuario_id),
-    INDEX idx_pedidos_numero (numero_pedido),
+    UNIQUE KEY uq_pedidos_numero (numero_pedido),
     INDEX idx_pedidos_status (status),
     INDEX idx_pedidos_pago (pago),
     INDEX idx_pedidos_data_agendada (data_agendada),
