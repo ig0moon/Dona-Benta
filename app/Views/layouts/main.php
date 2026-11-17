@@ -32,7 +32,7 @@
   <script src="<?= base_url('js/backend-client.js?v=4.1') ?>"></script>
   <script src="<?= base_url('js/carrinho.js?v=3.0') ?>"></script>
   <script src="<?= base_url('js/layout.js?v=4.0') ?>"></script>
-  <script src="<?= base_url('js/efeitos.js?v=1.0') ?>"></script>
+  <script src="<?= base_url('js/efeitos.js?v=1.1') ?>"></script>
   <?= $this->renderSection('scripts') ?>
 </body>
 </html>

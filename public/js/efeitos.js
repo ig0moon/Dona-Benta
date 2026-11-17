@@ -325,9 +325,16 @@ function botaoAdicionarHtml(produto, esgotado) {
 
 window.botaoAdicionarHtml = botaoAdicionarHtml;
 
+// O banco devolve booleanos como 0/1 (às vezes em texto: "0"), e "0" conta como verdadeiro no JS.
+function estaDisponivel(p) {
+  if (typeof produtoDisponivel === 'function') return produtoDisponivel(p);
+  const v = p?.disponivel;
+  return !(v === false || v === 0 || v === '0' || v === 'false');
+}
+
 // Cartão de produto padrão (cardápio e página inicial)
 function cartaoProdutoHtml(p, indice = 0) {
-  const esgotado = p.disponivel === false;
+  const esgotado = !estaDisponivel(p);
   const desc = p.descricao_curta || p.descricao || '';
   return `
     <a href="produto?id=${encodeURIComponent(p.id)}" class="produto-cartao entra" style="animation-delay:${Math.min(indice, 12) * 40}ms">
@@ -357,7 +364,7 @@ function ligarBotoesAdicionar(area, produtos) {
       e.stopPropagation();
       const produto = produtos.find(p => String(p.id) === String(btn.dataset.add));
       if (!produto) return;
-      if (produto.disponivel === false) {
+      if (!estaDisponivel(produto)) {
         mostrarToast('Este produto está esgotado no momento.', 'alerta');
         return;
       }
