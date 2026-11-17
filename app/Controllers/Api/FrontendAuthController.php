@@ -16,6 +16,7 @@ class FrontendAuthController extends FrontendController
 
     public function session(): ResponseInterface
     {
+        $this->liberarSessao();
         $user = $this->auth->currentUser();
         return $this->response->setJSON([
             'data' => ['user' => $this->rewriteStorageUrls($user)],

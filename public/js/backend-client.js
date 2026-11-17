@@ -111,6 +111,8 @@ class BackendQuery {
 
   execute() {
     if (this.promise) return this.promise;
+    // Alterou o perfil (nome, foto, endereço...): o próximo pedido busca os dados novos.
+    if (this.table === 'perfis' && this.method !== 'GET') limparCacheAuth();
     const isHead = this.params.get('head') === 'true';
     this.params.delete('head');
     const path = `data/${encodeURIComponent(this.table)}?${this.params.toString()}`;
@@ -138,7 +140,24 @@ class BackendQuery {
 
 const authListeners = new Set();
 function notifyAuth(event, user) {
+  limparCacheAuth();
   for (const listener of authListeners) listener(event, user ? { user } : null);
+}
+
+// Cache curto da sessão e do perfil. O cabeçalho, o rodapé e a própria página pedem o usuário
+// várias vezes no mesmo carregamento; sem o cache, cada pedido vira uma chamada ao servidor e ao
+// banco (cada uma abre conexão com o TiDB). Login, logout e edição do perfil limpam o cache.
+const CACHE_AUTH_MS = 30000;
+let cacheSessao = null;
+let cachePerfil = null;
+
+function limparCacheAuth() {
+  cacheSessao = null;
+  cachePerfil = null;
+}
+
+function cacheValido(cache) {
+  return cache !== null && Date.now() - cache.em < CACHE_AUTH_MS;
 }
 
 const db = {
@@ -146,10 +165,18 @@ const db = {
     return new BackendQuery(table);
   },
   auth: {
-    async getSession() {
-      const { response, body } = await requestBackend('auth/session');
-      if (!response.ok) return { data: { session: null }, error: body?.error || { message: 'Falha ao consultar sessão.' } };
-      return { data: { session: body?.data?.user ? { user: body.data.user } : null }, error: null };
+    getSession() {
+      if (cacheValido(cacheSessao)) return cacheSessao.promessa;
+      const promessa = (async () => {
+        const { response, body } = await requestBackend('auth/session');
+        if (!response.ok) {
+          if (cacheSessao?.promessa === promessa) cacheSessao = null; // erro não fica guardado
+          return { data: { session: null }, error: body?.error || { message: 'Falha ao consultar sessão.' } };
+        }
+        return { data: { session: body?.data?.user ? { user: body.data.user } : null }, error: null };
+      })();
+      cacheSessao = { promessa, em: Date.now() };
+      return promessa;
     },
     async signInWithPassword({ email, password }) {
       const { response, body } = await requestBackend('auth/login', {
@@ -297,6 +324,15 @@ async function usuarioAtual() {
 }
 
 async function perfilAtual() {
+  if (!cacheValido(cachePerfil)) {
+    cachePerfil = { promessa: carregarPerfilAtual(), em: Date.now() };
+  }
+  const perfil = await cachePerfil.promessa;
+  // Cópia: quem chama pode alterar o objeto (ex.: CPF digitado no Pix) sem mexer no cache.
+  return perfil ? { ...perfil } : null;
+}
+
+async function carregarPerfilAtual() {
   const usuario = await usuarioAtual();
   if (!usuario) return null;
 

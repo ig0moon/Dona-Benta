@@ -19,6 +19,7 @@ class FrontendStorageController extends FrontendController
         if ($blocked = $this->rejectCrossOrigin()) {
             return $blocked;
         }
+        $this->liberarSessao();
 
         $file = $this->request->getFile('file');
         $bucket = (string) $this->request->getPost('bucket');

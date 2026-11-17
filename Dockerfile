@@ -5,7 +5,7 @@ ENV CI_ENVIRONMENT=production \
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libicu-dev libcurl4-openssl-dev libonig-dev unzip \
-    && docker-php-ext-install curl intl mbstring mysqli pdo_mysql \
+    && docker-php-ext-install curl intl mbstring mysqli pdo_mysql opcache \
     && a2enmod rewrite headers \
     && sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
     && sed -ri 's/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf \
@@ -15,6 +15,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 RUN printf 'upload_max_filesize=9M\npost_max_size=10M\n' > /usr/local/etc/php/conf.d/uploads.ini \
     && printf 'expose_php=Off\n' > /usr/local/etc/php/conf.d/hardening.ini \
+    && printf 'opcache.enable=1\nopcache.memory_consumption=128\nopcache.interned_strings_buffer=16\nopcache.max_accelerated_files=20000\nopcache.validate_timestamps=1\nopcache.revalidate_freq=2\n' > /usr/local/etc/php/conf.d/opcache.ini \
     && printf 'ServerTokens Prod\nServerSignature Off\n' > /etc/apache2/conf-available/zz-hardening.conf \
     && a2enconf zz-hardening
 
