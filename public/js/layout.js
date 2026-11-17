@@ -80,9 +80,9 @@ function alternarTema() {
 
 const LINKS_NAV = [
   { href: 'home', slug: 'inicio', label: 'Início' },
-  { href: 'catalogo', slug: 'catalogo', label: 'Catálogo' },
+  { href: 'catalogo', slug: 'catalogo', label: 'Cardápio' },
   { href: 'sobre', slug: 'sobre', label: 'Sobre' },
-  { href: 'faq', slug: 'faq', label: 'FAQ' },
+  { href: 'faq', slug: 'faq', label: 'Dúvidas' },
 ];
 
 function paginaAtual() {
@@ -162,19 +162,19 @@ function montarHeader() {
           <li>
             <a href="catalogo" class="${atual === 'catalogo' ? 'ativo' : ''}">
               <span class="material-symbols-outlined">storefront</span>
-              <span>Catálogo</span>
+              <span>Cardápio</span>
             </a>
           </li>
           <li>
             <a href="sobre" class="${atual === 'sobre' ? 'ativo' : ''}">
               <span class="material-symbols-outlined">auto_stories</span>
-              <span>Sobre nós</span>
+              <span>Sobre</span>
             </a>
           </li>
           <li>
             <a href="faq" class="${atual === 'faq' ? 'ativo' : ''}">
               <span class="material-symbols-outlined">help</span>
-              <span>Dúvidas Frequentes</span>
+              <span>Dúvidas</span>
             </a>
           </li>
         </ul>
@@ -310,7 +310,7 @@ function montarFooter() {
     <div class="footer-conteudo">
       <div>
         <div class="footer-marca">
-          Dona Benta
+          Feito à mão, todos os dias.
         </div>
         <p class="footer-desc">Pães, bolos e doces feitos como antigamente, com ingredientes selecionados e todo carinho da nossa cozinha para a sua mesa.</p>
         <div class="footer-social">
@@ -335,9 +335,9 @@ function montarFooter() {
         <h4>Navegação</h4>
         <ul>
           <li><a href="home">Início</a></li>
-          <li><a href="catalogo">Catálogo</a></li>
-          <li><a href="sobre">Sobre nós</a></li>
-          <li><a href="faq">Dúvidas frequentes</a></li>
+          <li><a href="catalogo">Cardápio</a></li>
+          <li><a href="sobre">Sobre</a></li>
+          <li><a href="faq">Dúvidas</a></li>
           <li><a href="privacidade">Política de privacidade</a></li>
         </ul>
       </div>
@@ -362,6 +362,7 @@ function montarFooter() {
     <div class="logo-benta-footer">
       <img src="img/LogoDonaBenta.png" alt="Logo Dona Benta">
     </div>
+    <div class="footer-monumento" aria-hidden="true">Dona Benta</div>
     <div class="footer-base">
       © ${new Date().getFullYear()} Dona Benta Confeitaria e Padaria. Todos os direitos reservados.
     </div>

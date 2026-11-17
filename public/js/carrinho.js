@@ -107,9 +107,9 @@ function renderizarCarrinho() {
       <div class="cartao vazio" style="grid-column: 1 / -1;">
         <span class="material-symbols-outlined vazio-icone">shopping_bag</span>
         <h3>Seu carrinho está vazio</h3>
-        <p>Que tal escolher uma de nossas delícias artesanais no catálogo?</p>
+        <p>Que tal escolher uma de nossas delícias artesanais no cardápio?</p>
         <a href="catalogo" class="btn btn-primario">
-          <span class="material-symbols-outlined">storefront</span> Ver catálogo
+          <span class="material-symbols-outlined">storefront</span> Ver cardápio
         </a>
       </div>
     `;

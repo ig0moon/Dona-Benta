@@ -3,8 +3,8 @@
 <?= $this->section('content') ?>
   <section class="pagina-header">
     <div class="container">
-      <span class="eyebrow">Ajuda & Suporte</span>
-      <h1>Perguntas frequentes</h1>
+      <span class="eyebrow">Dúvidas</span>
+      <h1>Perguntas de quem já é da casa.</h1>
       <p>Tudo o que você precisa saber antes de fazer ou agendar seu pedido.</p>
     </div>
   </section>
@@ -13,9 +13,11 @@
     <div class="container">
       <div class="faq-lista" id="faqLista"></div>
 
-      <div class="faq-cta">
-        <h2 style="font-size: 1.5rem; margin-bottom: 10px;">Ainda tem dúvidas?</h2>
-        <p style="color: var(--marrom-claro); margin-bottom: 20px;">Fale diretamente com nossa equipe pelo WhatsApp.</p>
+      <div class="faq-cta rv">
+        <div>
+          <h2>Ainda tem dúvidas?</h2>
+          <p>Fale direto com a nossa equipe pelo WhatsApp.</p>
+        </div>
         <a href="https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Gostaria%20de%20tirar%20uma%20d%C3%BAvida%20sobre%20as%20encomendas." target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
           <svg class="icone-whatsapp-svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 6px;"><path d="M11.42 9.49c-.19-.09-1.1-.54-1.27-.61s-.29-.09-.42.1-.48.6-.59.73-.21.14-.4 0a5.13 5.13 0 0 1-1.49-.92 5.25 5.25 0 0 1-1-1.29c-.11-.18 0-.28.08-.38s.18-.21.28-.32a1.39 1.39 0 0 0 .18-.31.38.38 0 0 0 0-.33c0-.09-.42-1-.58-1.37s-.3-.32-.41-.32h-.4a.72.72 0 0 0-.5.23 2.1 2.1 0 0 0-.65 1.55A3.59 3.59 0 0 0 5 8.2 8.32 8.32 0 0 0 8.19 11c.44.19.78.3 1.05.39a2.53 2.53 0 0 0 1.17.07 1.93 1.93 0 0 0 1.26-.88 1.67 1.67 0 0 0 .11-.88c-.05-.07-.17-.12-.36-.21z"></path><path d="M13.29 2.68A7.36 7.36 0 0 0 8 .5a7.44 7.44 0 0 0-6.41 11.15l-1 3.85 3.94-1a7.4 7.4 0 0 0 3.55.9H8a7.44 7.44 0 0 0 5.29-12.72zM8 14.12a6.12 6.12 0 0 1-3.15-.87l-.22-.13-2.34.61.62-2.28-.14-.23a6.18 6.18 0 0 1 9.6-7.65 6.12 6.12 0 0 1 1.81 4.37A6.19 6.19 0 0 1 8 14.12z"></path></svg>
           Conversar no WhatsApp
@@ -28,7 +30,7 @@
 <?= $this->section('scripts') ?>
   <script>
     const PERGUNTAS = [
-      { p: 'Como faço um pedido?', r: 'Escolha os produtos no catálogo, adicione ao carrinho e siga para o agendamento. Você vai escolher a data, o horário e a forma de entrega antes de confirmar o pedido pelo WhatsApp.' },
+      { p: 'Como faço um pedido?', r: 'Escolha os produtos no cardápio, adicione ao carrinho e siga para o agendamento. Você vai escolher a data, o horário e a forma de entrega antes de confirmar o pedido pelo WhatsApp.' },
       { p: 'Com quanto tempo de antecedência devo encomendar?', r: 'Recomendamos pelo menos 2 dias de antecedência para bolos e tortas personalizadas. Para pães e doces do dia a dia, aceitamos encomendas com 1 dia de antecedência.' },
       { p: 'Vocês fazem entrega?', r: 'Sim! Durante o agendamento você pode escolher entre retirar na loja ou receber no seu endereço em Ponta Grossa e região.' },
       { p: 'Quais formas de pagamento são aceitas?', r: 'Aceitamos Pix, cartão de débito/crédito e dinheiro. Você escolhe a forma de pagamento na finalização do pedido.' },
@@ -42,10 +44,10 @@
       listaEl.innerHTML = PERGUNTAS.map((item, i) => `
         <div class="faq-item" data-indice="${i}">
           <button class="faq-pergunta" aria-expanded="false">
-            ${escapeHtml(item.p)}
-            <span class="material-symbols-outlined">add</span>
+            <span>${escapeHtml(item.p)}</span>
+            <span class="material-symbols-outlined" aria-hidden="true">add</span>
           </button>
-          <div class="faq-resposta"><p>${escapeHtml(item.r)}</p></div>
+          <div class="faq-resposta"><div><p>${escapeHtml(item.r)}</p></div></div>
         </div>
       `).join('');
 
