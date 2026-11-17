@@ -169,7 +169,7 @@ class PagamentoController extends FrontendController
      */
     private function assinaturaWebhookValida(string $dataId): bool
     {
-        $secret = trim((string) env('MP_WEBHOOK_SECRET', ''));
+        $secret = $this->mpService->webhookSecret();
         if ($secret === '') {
             log_message('error', '[Webhook] MP_WEBHOOK_SECRET não configurado: notificação recusada.');
             return false;

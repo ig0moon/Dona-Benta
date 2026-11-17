@@ -24,9 +24,20 @@ class MercadoPagoService
         return $this->isProduction;
     }
 
+    /**
+     * Segredo usado para validar a assinatura (x-signature) das notificações do Mercado Pago.
+     */
+    public function webhookSecret(): string
+    {
+        return trim((string) env('MP_WEBHOOK_SECRET', ''));
+    }
+
+    /**
+     * O webhook só está pronto com a URL E o segredo: sem o segredo, toda notificação é recusada.
+     */
     public function hasWebhook(): bool
     {
-        return !empty($this->webhookUrl);
+        return !empty($this->webhookUrl) && $this->webhookSecret() !== '';
     }
 
     /**

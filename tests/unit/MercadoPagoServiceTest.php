@@ -214,6 +214,28 @@ final class MercadoPagoServiceTest extends CIUnitTestCase
         $this->assertSame('confirmado', $this->order()['status']);
     }
 
+    public function testWebhookIsOnlyReadyWithBothUrlAndSecret(): void
+    {
+        $urlAntiga = getenv('WEBHOOK_URL');
+        $segredoAntigo = getenv('MP_WEBHOOK_SECRET');
+        try {
+            putenv('WEBHOOK_URL=https://exemplo.com.br/api/webhook/mercadopago');
+            putenv('MP_WEBHOOK_SECRET');
+            unset($_ENV['MP_WEBHOOK_SECRET'], $_SERVER['MP_WEBHOOK_SECRET']);
+            $this->assertFalse((new MercadoPagoService())->hasWebhook(), 'Sem segredo o webhook não pode aparecer como pronto.');
+
+            putenv('MP_WEBHOOK_SECRET=segredo-de-teste');
+            $this->assertTrue((new MercadoPagoService())->hasWebhook());
+
+            putenv('WEBHOOK_URL');
+            unset($_ENV['WEBHOOK_URL'], $_SERVER['WEBHOOK_URL']);
+            $this->assertFalse((new MercadoPagoService())->hasWebhook(), 'Sem URL o webhook não pode aparecer como pronto.');
+        } finally {
+            putenv($urlAntiga === false ? 'WEBHOOK_URL' : 'WEBHOOK_URL=' . $urlAntiga);
+            putenv($segredoAntigo === false ? 'MP_WEBHOOK_SECRET' : 'MP_WEBHOOK_SECRET=' . $segredoAntigo);
+        }
+    }
+
     private function pixPayload(string $cpf = '11144477735'): array
     {
         return [
