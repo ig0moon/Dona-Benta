@@ -9,7 +9,7 @@
           <h1 data-split>Sabores que lembram a casa da <em>vovó.</em></h1>
           <p class="inicio-hero-sub" data-blur="700">Pães, bolos e doces artesanais com receitas de família. Encomende online e receba fresquinho.</p>
           <div class="inicio-acoes">
-            <a href="<?= base_url('catalogo') ?>" class="btn btn-primario" data-magnet>Ver o cardápio <span class="seta" aria-hidden="true">→</span></a>
+            <a href="<?= base_url('catalogo') ?>" class="btn btn-primario">Ver o cardápio <span class="seta" aria-hidden="true">→</span></a>
             <a href="<?= base_url('sobre') ?>" class="btn btn-outline">Nossa história</a>
           </div>
           <div class="inicio-numeros">
@@ -19,10 +19,9 @@
           </div>
         </div>
 
-        <div class="tilt-area">
-          <a href="<?= base_url('catalogo') ?>" class="destaque-card" id="destaqueCard" data-tilt aria-label="Ver produto em destaque">
+        <div>
+          <a href="<?= base_url('catalogo') ?>" class="destaque-card" id="destaqueCard" aria-label="Ver produto em destaque">
             <img id="destaqueImagem" src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1000&q=75" alt="Bolo de chocolate da Dona Benta">
-            <span class="tilt-brilho" aria-hidden="true"></span>
             <div class="destaque-etiqueta" id="destaqueEtiqueta">
               <div>
                 <h3 id="destaqueNome">Bolos da casa</h3>
@@ -46,19 +45,19 @@
           <p>Do pão de cada dia às tortas de comemoração. Escolha por onde começar.</p>
         </div>
         <div class="categorias-fotos rv">
-          <a href="<?= base_url('catalogo?categoria=bolos') ?>" class="categoria-foto spotlight">
+          <a href="<?= base_url('catalogo?categoria=bolos') ?>" class="categoria-foto">
             <img src="https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=600&q=70" alt="" loading="lazy"><span>Bolos</span>
           </a>
-          <a href="<?= base_url('catalogo?categoria=paes') ?>" class="categoria-foto spotlight">
+          <a href="<?= base_url('catalogo?categoria=paes') ?>" class="categoria-foto">
             <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=70" alt="" loading="lazy"><span>Pães</span>
           </a>
-          <a href="<?= base_url('catalogo?categoria=doces') ?>" class="categoria-foto spotlight">
+          <a href="<?= base_url('catalogo?categoria=doces') ?>" class="categoria-foto">
             <img src="https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=600&q=70" alt="" loading="lazy"><span>Doces</span>
           </a>
-          <a href="<?= base_url('catalogo?categoria=salgados') ?>" class="categoria-foto spotlight">
+          <a href="<?= base_url('catalogo?categoria=salgados') ?>" class="categoria-foto">
             <img src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&q=70" alt="" loading="lazy"><span>Salgados</span>
           </a>
-          <a href="<?= base_url('catalogo?categoria=tortas') ?>" class="categoria-foto spotlight">
+          <a href="<?= base_url('catalogo?categoria=tortas') ?>" class="categoria-foto">
             <img src="https://images.unsplash.com/photo-1464305795204-6f5bbfc7fb81?w=600&q=70" alt="" loading="lazy"><span>Tortas</span>
           </a>
         </div>
@@ -117,7 +116,7 @@
           <h2>Bateu a vontade de um docinho?</h2>
           <p>Monte seu pedido agora e combine a data de retirada ou entrega.</p>
           <div class="inicio-acoes">
-            <a href="<?= base_url('catalogo') ?>" class="btn btn-primario" data-magnet>Ver o cardápio <span class="seta" aria-hidden="true">→</span></a>
+            <a href="<?= base_url('catalogo') ?>" class="btn btn-primario">Ver o cardápio <span class="seta" aria-hidden="true">→</span></a>
             <a href="https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Vim%20pelo%20site%20Dona%20Benta" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Falar no WhatsApp</a>
           </div>
         </div>

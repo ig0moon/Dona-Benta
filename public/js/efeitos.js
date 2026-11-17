@@ -1,13 +1,12 @@
 // ============================================
 // DONA BENTA — js/efeitos.js
 // Efeitos de interface compartilhados por todas as páginas.
-// Inspirados no reactbits.dev (SplitText, BlurText, CountUp, Magnet, Tilt,
-// Spotlight, ScrollReveal, ClickSpark) e no transitions.dev (abas deslizantes,
+// Inspirados no reactbits.dev (SplitText, BlurText, CountUp, ScrollReveal,
+// ClickSpark) e no transitions.dev (abas deslizantes,
 // badge, troca de texto). Tudo respeita "reduzir movimento" do sistema.
 // ============================================
 
 const MOVIMENTO_REDUZIDO = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const PONTEIRO_FINO = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
 function proximoQuadro(fn) {
   requestAnimationFrame(() => requestAnimationFrame(fn));
@@ -149,52 +148,6 @@ function aplicarScrollReveal() {
   window.addEventListener('scroll', atualizar, { passive: true });
   window.addEventListener('resize', atualizar);
   atualizar();
-}
-
-// Magnet: o botão é puxado levemente pelo cursor
-function aplicarMagnet() {
-  if (!PONTEIRO_FINO || MOVIMENTO_REDUZIDO) return;
-  const alvos = [...document.querySelectorAll('[data-magnet]')];
-  if (!alvos.length) return;
-  document.addEventListener('mousemove', e => {
-    alvos.forEach(el => {
-      const r = el.getBoundingClientRect();
-      const dx = e.clientX - (r.left + r.width / 2);
-      const dy = e.clientY - (r.top + r.height / 2);
-      el.style.transform = Math.hypot(dx, dy) < 130 ? `translate(${dx * 0.25}px, ${dy * 0.32}px)` : '';
-    });
-  }, { passive: true });
-}
-
-// TiltedCard: cartão inclina em 3D na direção do cursor
-function aplicarTilt() {
-  if (!PONTEIRO_FINO || MOVIMENTO_REDUZIDO) return;
-  document.querySelectorAll('[data-tilt]').forEach(el => {
-    el.addEventListener('mousemove', e => {
-      const r = el.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width;
-      const y = (e.clientY - r.top) / r.height;
-      el.style.transform = `rotateY(${(x - 0.5) * 14}deg) rotateX(${(0.5 - y) * 12}deg) scale(1.02)`;
-      el.style.setProperty('--gx', `${x * 100}%`);
-      el.style.setProperty('--gy', `${y * 100}%`);
-    });
-    el.addEventListener('mouseleave', () => {
-      el.style.transform = '';
-    });
-  });
-}
-
-// SpotlightCard: luz que segue o cursor (delegado, funciona em cartões criados depois)
-function aplicarSpotlight() {
-  if (!PONTEIRO_FINO) return;
-  document.addEventListener('mousemove', e => {
-    const card = e.target.closest?.('.spotlight, .produto-cartao');
-    if (!card) return;
-    card.classList.add('spotlight');
-    const r = card.getBoundingClientRect();
-    card.style.setProperty('--mx', `${e.clientX - r.left}px`);
-    card.style.setProperty('--my', `${e.clientY - r.top}px`);
-  }, { passive: true });
 }
 
 // ClickSpark: faíscas a cada clique
@@ -392,9 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.aplicarEfeitos();
   aplicarScrollReveal();
-  aplicarMagnet();
-  aplicarTilt();
-  aplicarSpotlight();
   aplicarClickSpark();
   aplicarFiltrosDeslizantes();
 

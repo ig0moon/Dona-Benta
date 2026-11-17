@@ -261,40 +261,12 @@ h1 em, h2 em {
   transform: translateX(4px);
 }
 
-/* Magnet (reactbits) */
-[data-magnet] {
-  transition: transform 600ms var(--ease-bounce), background var(--d-quick) ease, color var(--d-quick) ease;
-  will-change: transform;
-}
-
 /* ---------- Cartões ---------- */
 .cartao {
   background: var(--cartao-bg);
   border: 1px solid var(--linha);
   box-shadow: none;
   border-radius: 24px;
-}
-
-/* Spotlight (reactbits · SpotlightCard) */
-.spotlight {
-  position: relative;
-  isolation: isolate;
-}
-
-.spotlight::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-  border-radius: inherit;
-  background: radial-gradient(380px circle at var(--mx, -50%) var(--my, -50%), rgba(242, 166, 90, 0.2), transparent 45%);
-  opacity: 0;
-  transition: opacity var(--d-fast) ease;
-}
-
-.spotlight:hover::before {
-  opacity: 1;
 }
 
 /* ---------- Cabeçalho das páginas internas ---------- */
@@ -969,32 +941,6 @@ h1 em, h2 em {
   to { transform: translateX(-50%); }
 }
 
-/* TiltedCard (reactbits) */
-.tilt-area {
-  perspective: 900px;
-}
-
-[data-tilt] {
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 500ms var(--ease-out);
-}
-
-[data-tilt] .tilt-brilho {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.35), transparent 45%);
-  opacity: 0;
-  transition: opacity var(--d-fast) ease;
-  pointer-events: none;
-  z-index: 2;
-}
-
-[data-tilt]:hover .tilt-brilho {
-  opacity: 1;
-}
-
 /* ClickSpark (reactbits) */
 .faisca {
   position: fixed;
@@ -1111,6 +1057,7 @@ h1 em, h2 em {
 }
 
 .destaque-card {
+  position: relative;
   display: block;
   border-radius: 28px;
   overflow: hidden;
@@ -1143,7 +1090,6 @@ h1 em, h2 em {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  transform: translateZ(50px);
   transition: opacity var(--d-fast) ease;
 }
 
@@ -1630,4 +1576,21 @@ h1 em, h2 em {
   .inicio-numeros span {
     font-size: 0.78rem;
   }
+}
+
+/* Tema escuro: o style.css antigo põe fundo e borda alaranjada em .faq-item e .cartao
+   com uma regra mais específica; aqui volta para o visual do tema (lista limpa, borda fina). */
+[data-tema="escuro"] .faq-item {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--linha-forte);
+}
+
+[data-tema="escuro"] .faq-item:first-child {
+  border-top: 1px solid var(--linha-forte);
+}
+
+[data-tema="escuro"] .cartao {
+  background: var(--cartao-bg);
+  border: 1px solid var(--linha);
 }

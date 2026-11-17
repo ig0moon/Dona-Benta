@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="<?= base_url('css/style.css?v=4.0') ?>">
-  <link rel="stylesheet" href="<?= base_url('css/tema.css?v=1.0') ?>">
+  <link rel="stylesheet" href="<?= base_url('css/tema.css?v=1.1') ?>">
   <?= $this->renderSection('styles') ?>
   <script>
     (function(){
@@ -32,7 +32,7 @@
   <script src="<?= base_url('js/backend-client.js?v=4.3') ?>"></script>
   <script src="<?= base_url('js/carrinho.js?v=3.0') ?>"></script>
   <script src="<?= base_url('js/layout.js?v=4.0') ?>"></script>
-  <script src="<?= base_url('js/efeitos.js?v=1.1') ?>"></script>
+  <script src="<?= base_url('js/efeitos.js?v=1.2') ?>"></script>
   <?= $this->renderSection('scripts') ?>
 </body>
 </html>

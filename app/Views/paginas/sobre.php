@@ -12,17 +12,16 @@
   <main>
     <section class="secao">
       <div class="container sobre-historia">
-        <div class="tilt-area rv">
-          <div data-tilt style="border-radius:28px;">
+        <div class="rv">
+          <div>
             <img src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=900&q=75" alt="Equipe preparando receitas artesanais na cozinha" loading="lazy">
-            <span class="tilt-brilho" aria-hidden="true"></span>
           </div>
         </div>
         <div class="rv">
           <h2>Tudo começou em uma cozinha pequena.</h2>
           <p>A Dona Benta nasceu do sonho de compartilhar receitas de família com toda a vizinhança. O que começou com bolos de aniversário para amigos próximos se tornou uma padaria e confeitaria querida pela comunidade.</p>
           <p>Hoje seguimos fiéis à mesma receita de sempre: ingredientes selecionados, processos artesanais e, acima de tudo, muito carinho em cada produto que sai do nosso forno.</p>
-          <a href="<?= base_url('catalogo') ?>" class="btn btn-primario" data-magnet>Ver o cardápio <span class="seta" aria-hidden="true">→</span></a>
+          <a href="<?= base_url('catalogo') ?>" class="btn btn-primario">Ver o cardápio <span class="seta" aria-hidden="true">→</span></a>
         </div>
       </div>
     </section>
@@ -62,7 +61,7 @@
           <h2>Venha provar de perto.</h2>
           <p>Rua Padre Anacleto, 1168 — Nova Rússia, Ponta Grossa. De segunda a sábado, das 8h às 19h.</p>
           <div class="inicio-acoes">
-            <a href="<?= base_url('catalogo') ?>" class="btn btn-primario" data-magnet>Encomendar online <span class="seta" aria-hidden="true">→</span></a>
+            <a href="<?= base_url('catalogo') ?>" class="btn btn-primario">Encomendar online <span class="seta" aria-hidden="true">→</span></a>
             <a href="https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Vim%20pelo%20site%20Dona%20Benta" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Falar no WhatsApp</a>
           </div>
         </div>
