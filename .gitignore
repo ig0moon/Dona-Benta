@@ -45,6 +45,7 @@ $RECYCLE.BIN/
 .vagrant
 Vagrantfile
 docker.env
+docker-compose.yml
 
 #-------------------------
 # Temporary Files
