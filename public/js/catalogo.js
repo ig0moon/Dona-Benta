@@ -40,15 +40,23 @@ async function carregarCatalogo() {
   const area = document.getElementById('areaCatalogo');
   if (!area) return;
 
+  // Servidor lento (ou acordando, no plano gratuito do Render): avisa em vez de dar erro.
+  const avisoDemora = setTimeout(() => {
+    area.innerHTML = `
+      <div class="spinner"></div>
+      <p style="text-align:center; color:var(--marrom-claro);">Estamos buscando as delícias do forno, só mais um instante…</p>`;
+  }, 4000);
+
   try {
     const consultaPromise = db
       .from('produtos')
       .select('*')
       .order('criado_em', { ascending: false });
 
-    // Limite de 3 segundos para evitar trava de rede
+    // Limite generoso: o banco fica em outra região e o servidor pode estar acordando.
+    // (Antes era 3 s, o que mostrava erro com o banco funcionando normalmente.)
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('timeout')), 3000)
+      setTimeout(() => reject(new Error('timeout')), 45000)
     );
 
     const { data, error } = await Promise.race([consultaPromise, timeoutPromise]);
@@ -61,6 +69,8 @@ async function carregarCatalogo() {
     console.error('Não foi possível carregar o catálogo do TiDB:', err.message || err);
     TODOS_PRODUTOS = [];
     erroCarregamentoCatalogo = true;
+  } finally {
+    clearTimeout(avisoDemora);
   }
 
   // Categoria via parâmetro de URL (?categoria=bolos)
@@ -85,7 +95,7 @@ function renderizarCatalogo() {
       <div class="vazio cartao">
         <span class="material-symbols-outlined">database_off</span>
         <h3>Não foi possível carregar os produtos</h3>
-        <p>Verifique a conexão do banco TiDB e tente novamente.</p>
+        <p>Nossa vitrine demorou para responder. Tente novamente em instantes.</p>
         <button type="button" class="btn btn-primario" onclick="window.location.reload()">Tentar novamente</button>
       </div>
     `;

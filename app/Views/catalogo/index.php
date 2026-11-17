@@ -35,5 +35,5 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-  <script src="<?= base_url('js/catalogo.js?v=4.1') ?>"></script>
+  <script src="<?= base_url('js/catalogo.js?v=4.2') ?>"></script>
 <?= $this->endSection() ?>
