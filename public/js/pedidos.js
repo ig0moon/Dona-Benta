@@ -449,13 +449,7 @@ async function registrarPedidoNoBanco(dadosExtras = {}) {
     return null;
   }
 
-  // Número do pedido por data + sufixo aleatório: não depende da contagem de linhas,
-  // então apagar um pedido pendente nunca gera número repetido.
-  const agora = new Date();
-  const dataCurta = `${String(agora.getFullYear()).slice(2)}${String(agora.getMonth() + 1).padStart(2, '0')}${String(agora.getDate()).padStart(2, '0')}`;
-  const sufixo = Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, 'X');
-  const proximoNumeroPedido = `DB-${dataCurta}-${sufixo}`;
-
+  // O número do pedido (DB-17-A7K2) é gerado pelo servidor ao gravar: só ele enxerga todos os pedidos.
   const novoPedido = {
     cliente_id: usuario.id,
     valor_total: total,
@@ -466,33 +460,19 @@ async function registrarPedidoNoBanco(dadosExtras = {}) {
     horario_agendado: horarioSelecionado,
     observacoes: observacoes || null,
     forma_pagamento: dadosExtras.forma_pagamento || 'Pix',
-    numero_pedido: proximoNumeroPedido,
     pago: dadosExtras.pago || false
   };
 
-  let { data: pedidoCriado, error: erroPedido } = await db
+  const { data: pedidoCriado, error: erroPedido } = await db
     .from('pedidos')
     .insert(novoPedido)
     .select()
     .single();
 
-  // Fallback se alguma coluna opcional ainda não existir
-  if (erroPedido && (erroPedido.message?.includes('numero_pedido') || erroPedido.code === '42703')) {
-    const pedidoSemColuna = { ...novoPedido };
-    delete pedidoSemColuna.numero_pedido;
-    const retry = await db.from('pedidos').insert(pedidoSemColuna).select().single();
-    pedidoCriado = retry.data;
-    erroPedido = retry.error;
-  }
-
   if (erroPedido) {
     console.error('Erro ao registrar pedido:', erroPedido);
     if (typeof mostrarToast === 'function') mostrarToast('Erro ao registrar pedido: ' + erroPedido.message, 'erro');
     return null;
-  }
-
-  if (pedidoCriado && !pedidoCriado.numero_pedido) {
-    pedidoCriado.numero_pedido = proximoNumeroPedido;
   }
 
   const itensParaInserir = carrinho.map(i => ({

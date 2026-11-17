@@ -60,7 +60,7 @@ async function carregarProduto() {
 
     document.title = `${produto.nome || 'Produto'} — Dona Benta`;
 
-    const disponivel = produto.disponivel !== false;
+    const disponivel = produtoDisponivel(produto);
 
     area.innerHTML = `
       <div class="produto-detalhe">

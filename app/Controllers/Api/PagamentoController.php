@@ -45,8 +45,8 @@ class PagamentoController extends FrontendController
      */
     public function gerarPix(): ResponseInterface
     {
-        if ($blocked = $this->rejectCrossOrigin()) {
-            return $blocked;
+        if ($this->rejectCrossOrigin()) {
+            return $this->response->setStatusCode(403)->setJSON(['erro' => 'Origem da requisição não permitida.', 'sem_cobranca' => true]);
         }
 
         $payload = $this->request->getJSON(true) ?: $this->request->getPost();
@@ -169,7 +169,7 @@ class PagamentoController extends FrontendController
      */
     private function assinaturaWebhookValida(string $dataId): bool
     {
-        $secret = trim((string) env('MP_WEBHOOK_SECRET', ''));
+        $secret = $this->mpService->webhookSecret();
         if ($secret === '') {
             log_message('error', '[Webhook] MP_WEBHOOK_SECRET não configurado: notificação recusada.');
             return false;

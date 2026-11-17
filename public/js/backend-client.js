@@ -368,6 +368,13 @@ function mostrarToast(mensagem, tipo = 'info') {
   }, 3500);
 }
 
+// O banco devolve booleanos como 0/1 (às vezes em texto: "0"), e "0" conta como verdadeiro no JS.
+// Ausente (null/undefined) = disponível, como era antes.
+function produtoDisponivel(produto) {
+  const v = produto?.disponivel;
+  return !(v === false || v === 0 || v === '0' || v === 'false');
+}
+
 function formatarPreco(valor) {
   const num = Number(valor) || 0;
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }).replace(/[\u00A0\u202F]/g, ' ');
