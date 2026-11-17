@@ -1607,3 +1607,224 @@ h1 em, h2 em {
 .btn .icone-pix-svg {
   flex-shrink: 0;
 }
+
+/* ============================================
+   RELATÓRIO FINANCEIRO (prévia no painel)
+   O PDF é um documento A4 próprio, gerado em relatorio-financeiro.js.
+   ============================================ */
+.modal-cartao.rf-modal {
+  max-width: 960px;
+  width: 100%;
+  max-height: min(92vh, 900px);
+}
+
+.rf-cabecalho {
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.rf-cabecalho h3 {
+  margin: 0;
+  font-size: clamp(1.3rem, 3vw, 1.6rem);
+  line-height: 1.15;
+}
+
+.rf-cabecalho p {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  color: var(--tinta-suave);
+}
+
+.rf-corpo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px clamp(16px, 4vw, 32px) 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rf-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.rf-filtros span {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--tinta-suave);
+  background: var(--papel-2);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.rf-kpis {
+  display: grid;
+  /* "Recebido" numa faixa em cima e as outras quatro embaixo, largas o bastante para R$ 99.999,00 */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.rf-kpi {
+  border: 1px solid var(--linha-forte);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rf-kpi-valor {
+  font-family: var(--fonte-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--tinta);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rf-kpi-rotulo {
+  font-size: 0.78rem;
+  color: var(--tinta-suave);
+}
+
+.rf-kpi-destaque {
+  grid-column: 1 / -1;
+  background: var(--papel-2);
+  border-color: transparent;
+}
+
+.rf-kpi-destaque .rf-kpi-valor {
+  color: #2b6e43;
+  font-size: 1.8rem;
+}
+
+.rf-kpi-pendente .rf-kpi-valor {
+  color: #a5402f;
+}
+
+[data-tema="escuro"] .rf-kpi-destaque .rf-kpi-valor { color: #8fd19e; }
+[data-tema="escuro"] .rf-kpi-pendente .rf-kpi-valor { color: #ff9e9e; }
+
+.rf-tabela {
+  width: 100%;
+  min-width: 0; /* o style.css põe min-width: 600px em toda tabela */
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.rf-tabela th {
+  text-align: left;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--tinta-suave);
+  padding: 8px 10px;
+  border-bottom: 1.5px solid var(--tinta);
+  white-space: nowrap;
+}
+
+.rf-tabela td {
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--linha);
+  vertical-align: top;
+  color: var(--tinta);
+}
+
+.rf-tabela td small {
+  display: block;
+  color: var(--tinta-suave);
+  font-size: 0.78rem;
+}
+
+.rf-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rf-status {
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.rf-status.pago { background: #e3f1e7; color: #2b6e43; }
+.rf-status.pendente { background: #f8e4df; color: #a5402f; }
+
+.rf-rodape {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px clamp(16px, 4vw, 32px);
+  border-top: 1px solid var(--linha);
+  flex-shrink: 0;
+  background: inherit;
+}
+
+.rf-rodape .btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .rf-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Celular: cada pedido vira um cartão com rótulo e valor, em vez da tabela espremida */
+@media (max-width: 640px) {
+  .modal-overlay#modalRelatorioFinanceiro {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal-cartao.rf-modal {
+    max-height: 94vh;
+    border-radius: 24px 24px 0 0;
+  }
+  .rf-tabela thead {
+    display: none;
+  }
+  .rf-tabela,
+  .rf-tabela tbody,
+  .rf-tabela tr,
+  .rf-tabela td {
+    display: block;
+    width: 100%;
+  }
+  .rf-tabela tr {
+    border: 1px solid var(--linha-forte);
+    border-radius: 16px;
+    padding: 6px 14px;
+    margin-bottom: 10px;
+  }
+  .rf-tabela td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0;
+    text-align: right;
+  }
+  .rf-tabela td:last-child {
+    border-bottom: 0;
+  }
+  .rf-tabela td::before {
+    content: attr(data-rotulo);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--tinta-suave);
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .rf-rodape {
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+  .rf-rodape .btn {
+    flex: 1;
+    padding-inline: 12px;
+  }
+}
