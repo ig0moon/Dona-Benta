@@ -1594,3 +1594,16 @@ h1 em, h2 em {
   background: var(--cartao-bg);
   border: 1px solid var(--linha);
 }
+
+/* Botões de largura total (modais do Pix e do recibo): em celular estreito o texto
+   pode quebrar linha em vez de vazar para fora do botão; o ícone não encolhe. */
+.btn-bloco {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.btn .icone-whatsapp-svg,
+.btn .icone-pix-svg {
+  flex-shrink: 0;
+}

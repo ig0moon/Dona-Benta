@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="<?= base_url('css/style.css?v=4.0') ?>">
-  <link rel="stylesheet" href="<?= base_url('css/tema.css?v=1.1') ?>">
+  <link rel="stylesheet" href="<?= base_url('css/tema.css?v=1.2') ?>">
   <?= $this->renderSection('styles') ?>
   <script>
     (function(){
