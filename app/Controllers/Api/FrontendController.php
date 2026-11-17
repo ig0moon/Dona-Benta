@@ -54,6 +54,12 @@ abstract class FrontendController extends BaseController
         ]);
     }
 
+    /**
+     * As fotos enviadas são gravadas no banco com o endereço completo de onde o site estava na
+     * hora do envio (ex.: https://dona-benta.onrender.com/api/storage/public?...). Aberto em outro
+     * endereço (domínio próprio, localhost), essas imagens viram "de outro site" e o CSP
+     * (img-src 'self') bloqueia. Aqui o endereço é trocado pelo do site atual, na leitura.
+     */
     protected function rewriteStorageUrls(mixed $value): mixed
     {
         if (is_array($value)) {
@@ -62,6 +68,28 @@ abstract class FrontendController extends BaseController
             }
             return $value;
         }
+        if (is_string($value) && str_contains($value, 'api/storage/public')) {
+            return $this->urlStorageLocal($value);
+        }
         return $value;
+    }
+
+    private function urlStorageLocal(string $url): string
+    {
+        $partes = parse_url($url);
+        if (!is_array($partes)
+            || !preg_match('#(^|/)api/storage/public/?$#', (string) ($partes['path'] ?? ''))
+            || empty($partes['query'])) {
+            return $url;
+        }
+
+        parse_str($partes['query'], $parametros);
+        $bucket = $parametros['bucket'] ?? '';
+        $caminho = $parametros['path'] ?? '';
+        if (!is_string($bucket) || !is_string($caminho) || $bucket === '' || $caminho === '') {
+            return $url;
+        }
+
+        return base_url('api/storage/public') . '?' . http_build_query(['bucket' => $bucket, 'path' => $caminho], '', '&', PHP_QUERY_RFC3986);
     }
 }
