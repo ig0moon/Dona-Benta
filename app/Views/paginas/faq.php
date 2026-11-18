@@ -28,13 +28,15 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-  <script>
+  <script <?= csp_script_nonce() ?>>
     const PERGUNTAS = [
       { p: 'Como faço um pedido?', r: 'Escolha os produtos no cardápio, adicione ao carrinho e siga para o agendamento. Você vai escolher a data, o horário e a forma de entrega antes de confirmar o pedido pelo WhatsApp.' },
       { p: 'Com quanto tempo de antecedência devo encomendar?', r: 'Recomendamos pelo menos 2 dias de antecedência para bolos e tortas personalizadas. Para pães e doces do dia a dia, aceitamos encomendas com 1 dia de antecedência.' },
       { p: 'Vocês fazem entrega?', r: 'Sim! Durante o agendamento você pode escolher entre retirar na loja ou receber no seu endereço em Ponta Grossa e região.' },
       { p: 'Quais formas de pagamento são aceitas?', r: 'Aceitamos Pix, cartão de débito/crédito e dinheiro. Você escolhe a forma de pagamento na finalização do pedido.' },
-      { p: 'Posso cancelar ou alterar meu pedido?', r: 'Sim! Entre em contato conosco pelo WhatsApp o quanto antes informando o número do seu pedido.' },
+      { p: 'Posso cancelar ou alterar meu pedido?', r: 'Sim! Fale com a gente pelo WhatsApp o quanto antes, informando o número do pedido. Antes do início do preparo, o valor pago é devolvido integralmente. As regras completas estão nos Termos e Condições, no rodapé do site.' },
+      { p: 'Tenho alergia ou restrição alimentar. Posso pedir?', r: 'Nossa cozinha manipula trigo (glúten), leite, ovos, soja, amendoim e castanhas, e os produtos podem conter traços desses ingredientes. Fale com a gente pelo WhatsApp antes de fazer o pedido para confirmarmos os ingredientes.' },
+      { p: 'Como vejo, baixo ou apago meus dados?', r: 'Em Minha conta → Meus dados você edita suas informações, baixa uma cópia de tudo o que guardamos e pode excluir sua conta. Os detalhes estão na Política de Privacidade, no rodapé do site.' },
       { p: 'Vocês fazem produtos personalizados?', r: 'Fazemos! Bolos com mensagens, decorações temáticas e tamanhos sob medida podem ser combinados diretamente pelo WhatsApp.' },
       { p: 'Como acompanho o status do meu pedido?', r: 'Na aba "Meus Pedidos", dentro da sua conta, você acompanha em tempo real se seu pedido está aguardando, confirmado, em preparo ou pronto.' }
     ];
