@@ -67,7 +67,7 @@
       <p>Conexão criptografada (HTTPS), senhas guardadas com criptografia de mão única, banco de dados com conexão criptografada, acesso aos pedidos restrito ao próprio cliente e à equipe da loja, e limite de tentativas de login. Se acontecer um incidente de segurança que possa trazer risco a você, vamos avisar você e a Autoridade Nacional de Proteção de Dados (ANPD), como manda a lei.</p>
 
       <h2>8. Seus direitos</h2>
-      <p>Pela LGPD (art. 18), você pode a qualquer momento: confirmar se tratamos seus dados; acessá-los; corrigir dados incompletos ou errados; pedir anonimização, bloqueio ou eliminação do que for desnecessário; pedir a portabilidade; saber com quem compartilhamos; e se opor a tratamentos irregulares.</p>
+      <p>Pela LGPD (art. 18), você pode a qualquer momento: confirmar se tratamos seus dados; acessá-los; corrigir dados incompletos ou errados; pedir anonimização, bloqueio ou eliminação do que for desnecessário; pedir a portabilidade; saber com quem compartilhamos; ser informado sobre a possibilidade de não dar consentimento e suas consequências, e revogar um consentimento já dado; e se opor a tratamentos irregulares.</p>
       <p><strong>Direto pelo site, em <a href="conta">Minha conta → Meus dados</a>:</strong></p>
       <ul>
         <li>editar seus dados e seu endereço;</li>
