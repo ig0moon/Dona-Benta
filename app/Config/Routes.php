@@ -21,6 +21,7 @@ $routes->get('login', 'Auth::login');
 $routes->get('sobre', 'Sobre::index');
 $routes->get('faq', 'Faq::index');
 $routes->get('privacidade', 'Privacidade::index');
+$routes->get('termos', 'Termos::index');
 $routes->get('teste-banco', 'DatabaseTest::index');
 $routes->post('teste-banco', 'DatabaseTest::test');
 
@@ -48,6 +49,10 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function (R
     $routes->match(['get', 'post', 'patch', 'delete'], 'data/(:segment)', 'FrontendDataController::handle/$1');
     $routes->get('storage/public', 'FrontendStorageController::publicObject');
     $routes->post('storage/upload', 'FrontendStorageController::upload');
+
+    // Direitos do titular (LGPD): cópia dos dados e exclusão da conta
+    $routes->get('conta/meus-dados', 'ContaController::meusDados');
+    $routes->post('conta/excluir', 'ContaController::excluir');
 
     // Status e Configurações
     $routes->get('health', 'PagamentoController::health');

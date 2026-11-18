@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Filters\RateLimitFilter;
 use Throwable;
 
 class TiDBAuthService
@@ -77,6 +78,7 @@ class TiDBAuthService
 
             session()->regenerate(true);
             session()->set('tidb_user_id', (string) $profile['id']);
+            $this->registrarAcesso((string) $profile['id'], 'login');
             return ['status' => 200, 'data' => ['user' => $this->userFromProfile($profile)], 'error' => null];
         } catch (Throwable $exception) {
             log_message('error', 'Falha no login pelo TiDB ({exception}).', ['exception' => $exception::class]);
@@ -110,6 +112,7 @@ class TiDBAuthService
 
             session()->regenerate(true);
             session()->set('tidb_user_id', $id);
+            $this->registrarAcesso($id, 'cadastro');
             $profile = [
                 'id' => $id,
                 'nome' => $name,
@@ -141,12 +144,20 @@ class TiDBAuthService
 
         try {
             db_connect()->table('perfis')->where('id', $user['id'])->update($updates);
+            if (array_key_exists('avatar_url', $updates)) {
+                (new PrivacidadeService())->limparFotosNaoUsadas($user['id']);
+            }
             $updated = $this->currentUser();
             return ['status' => 200, 'data' => ['user' => $updated], 'error' => null];
         } catch (Throwable $exception) {
             log_message('error', 'Falha ao atualizar perfil no TiDB ({exception}).', ['exception' => $exception::class]);
             return $this->failure(503, 'Não foi possível atualizar o perfil agora.');
         }
+    }
+
+    private function registrarAcesso(string $userId, string $evento): void
+    {
+        (new PrivacidadeService())->registrarAcesso($userId, $evento, RateLimitFilter::clientIp(service('request')));
     }
 
     private function userFromProfile(array $profile): array

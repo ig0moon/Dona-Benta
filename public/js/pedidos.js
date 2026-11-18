@@ -180,6 +180,12 @@ function renderizarCheckout() {
           ${window.ICONE_PIX_SVG || ''}
           Pagar com Pix
         </button>
+        <p class="checkout-aviso-legal" style="font-size:0.78rem; color:var(--marrom-claro); margin-top:12px; line-height:1.5;">
+          Ao continuar, você concorda com os <a href="termos" target="_blank" rel="noopener">Termos e Condições</a>
+          (preparo sob encomenda, cancelamento e entrega) e declara ter lido a
+          <a href="privacidade" target="_blank" rel="noopener">Política de Privacidade</a>.
+          Nossos produtos podem conter glúten, leite, ovos, soja, amendoim e castanhas; em caso de alergia, avise nas observações ou fale com a gente antes de pedir.
+        </p>
       </div>
     </aside>
   `;

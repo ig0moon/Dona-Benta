@@ -18,3 +18,16 @@ CREATE TABLE IF NOT EXISTS arquivos (
 -- 2) Troque o índice comum pelo índice único:
 ALTER TABLE pedidos DROP INDEX IF EXISTS idx_pedidos_numero;
 ALTER TABLE pedidos ADD UNIQUE INDEX IF NOT EXISTS uq_pedidos_numero (numero_pedido);
+
+-- Registros de acesso (Marco Civil da Internet, art. 15): data, hora e IP de logins e cadastros,
+-- guardados por 6 meses. A limpeza do que passou do prazo é feita pelo próprio site.
+CREATE TABLE IF NOT EXISTS registros_acesso (
+    id BIGINT AUTO_INCREMENT NOT NULL,
+    perfil_id VARCHAR(255) NOT NULL,
+    evento VARCHAR(30) NOT NULL,
+    ip VARCHAR(45) NOT NULL,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_registros_perfil (perfil_id),
+    INDEX idx_registros_criado_em (criado_em)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

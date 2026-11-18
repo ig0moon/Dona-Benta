@@ -3348,6 +3348,55 @@ td {
   opacity: 0.85;
 }
 
+.footer-empresa {
+  margin-top: 4px;
+  font-size: 0.75rem;
+}
+
+/* Avisos ao consumidor (alérgenos, imagens ilustrativas) */
+.aviso-consumidor {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(212, 160, 23, 0.1);
+  border: 1px solid rgba(212, 160, 23, 0.35);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--marrom);
+}
+
+.aviso-consumidor .material-symbols-outlined {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+[data-tema="escuro"] .aviso-consumidor {
+  color: #f1e6d6;
+  background: rgba(212, 160, 23, 0.12);
+}
+
+/* Privacidade e dados (Minha conta) */
+.privacidade-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.btn-perigo {
+  background: transparent;
+  color: var(--erro);
+  border: 1.5px solid var(--erro);
+}
+
+.btn-perigo:hover:not(:disabled) {
+  background: var(--erro);
+  color: #fff;
+}
+
 /* ============================================
    MODO ESCURO — REGRAS ESPECÍFICAS DE COMPONENTES
    ============================================ */
@@ -4618,3 +4667,86 @@ body,
 }
 
 /* O relatório financeiro (prévia e PDF) tem estilo próprio: tema.css (.rf-*) e o documento A4 em relatorio-financeiro.js. */
+
+/* Páginas legais (Privacidade e Termos) */
+.texto-legal h2 {
+  margin: 28px 0 8px;
+  font-size: 1.3rem;
+}
+
+.texto-legal ul {
+  list-style: disc;
+  padding-left: 22px;
+  margin: 8px 0 12px;
+}
+
+.texto-legal li {
+  margin-bottom: 6px;
+}
+
+/* Aviso de cookies (informativo, só cookies essenciais) */
+.aviso-cookies {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 900;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--raio-sm);
+  background: var(--branco);
+  color: var(--marrom);
+  border: 1px solid rgba(107, 66, 38, 0.15);
+  box-shadow: 0 8px 24px rgba(43, 26, 15, 0.12);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.aviso-cookies p {
+  margin: 0;
+}
+
+.aviso-cookies a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.aviso-cookies-fechar {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--marrom);
+  color: var(--branco);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aviso-cookies.saindo {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+[data-tema="escuro"] .aviso-cookies {
+  background: #2a211c;
+  color: #f1e6d6;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-tema="escuro"] .aviso-cookies-fechar {
+  background: #f1e6d6;
+  color: #2a211c;
+}
+
+@media (max-width: 768px) {
+  .aviso-cookies {
+    left: 12px;
+    right: 12px;
+    bottom: max(env(safe-area-inset-bottom, 12px), 12px);
+    max-width: none;
+  }
+}

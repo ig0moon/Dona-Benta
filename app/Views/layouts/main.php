@@ -10,10 +10,10 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="<?= base_url('css/style.css?v=4.1') ?>">
+  <link rel="stylesheet" href="<?= base_url('css/style.css?v=4.3') ?>">
   <link rel="stylesheet" href="<?= base_url('css/tema.css?v=1.7') ?>">
   <?= $this->renderSection('styles') ?>
-  <script>
+  <script <?= csp_script_nonce() ?>>
     (function(){
       try {
         if(localStorage.getItem('donaBentaTema') === 'escuro'){
@@ -22,6 +22,7 @@
       } catch(e){}
     })();
     window.BASE_URL = <?= json_encode(base_url('/'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    window.LOJA = <?= json_encode(config('Loja')->publico(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
   </script>
 </head>
 <body data-pagina="<?= esc($pagina ?? 'inicio') ?>">
@@ -31,7 +32,7 @@
   <!-- Scripts Globais MVC -->
   <script src="<?= base_url('js/backend-client.js?v=4.3') ?>"></script>
   <script src="<?= base_url('js/carrinho.js?v=3.0') ?>"></script>
-  <script src="<?= base_url('js/layout.js?v=4.0') ?>"></script>
+  <script src="<?= base_url('js/layout.js?v=4.3') ?>"></script>
   <script src="<?= base_url('js/efeitos.js?v=1.2') ?>"></script>
   <?= $this->renderSection('scripts') ?>
 </body>

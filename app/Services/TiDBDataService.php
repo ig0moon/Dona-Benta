@@ -21,6 +21,13 @@ class TiDBDataService
         'itens_pedido' => ['pedido_id', 'produto_id', 'nome', 'nome_produto', 'quantidade', 'preco'],
     ];
 
+    /**
+     * O que visitantes sem login enxergam dos pedidos (horários já ocupados na agenda).
+     * Filtros e ordenação também ficam restritos a essas colunas, para que ninguém consiga
+     * "testar" endereço, cliente ou valor de pedidos alheios pela contagem de resultados.
+     */
+    private const PEDIDOS_COLUNAS_PUBLICAS = ['data_agendada', 'horario_agendado', 'status'];
+
     public function __construct(private ?TiDBAuthService $auth = null)
     {
         $this->auth ??= new TiDBAuthService();
@@ -142,7 +149,7 @@ class TiDBDataService
         $select = $this->parseSelect((string) ($query['select'] ?? '*'), $table);
         $builder = $db->table($table);
         $this->applyAccessScope($builder, $table, $user, $isAdmin, $select);
-        if (!$this->applyFilters($builder, $query, $table)) {
+        if (!$this->applyFilters($builder, $query, $table, $table === 'pedidos' && $user === null ? self::PEDIDOS_COLUNAS_PUBLICAS : null)) {
             return $this->failure(400, 'Filtro de consulta inválido.');
         }
 
@@ -155,10 +162,10 @@ class TiDBDataService
         }
 
         $columns = $table === 'pedidos' && $user === null
-            ? ['data_agendada', 'horario_agendado', 'status']
+            ? self::PEDIDOS_COLUNAS_PUBLICAS
             : $select['columns'];
         $builder->select($columns === [] ? '*' : implode(',', $columns));
-        $this->applyOrderLimit($builder, $query, $table);
+        $this->applyOrderLimit($builder, $query, $table, $table === 'pedidos' && $user === null ? self::PEDIDOS_COLUNAS_PUBLICAS : null);
         $rows = $builder->get()->getResultArray();
         foreach ($rows as &$row) {
             unset($row['senha_hash']);
@@ -320,6 +327,9 @@ class TiDBDataService
             return $this->failure(400, 'Filtro de consulta inválido.');
         }
         $builder->update($updates);
+        if ($table === 'perfis' && array_key_exists('avatar_url', $updates) && $user !== null) {
+            (new PrivacidadeService())->limparFotosNaoUsadas((string) $user['id']);
+        }
         return ['status' => 200, 'data' => [], 'count' => null, 'error' => null];
     }
 
@@ -371,9 +381,9 @@ class TiDBDataService
         }
     }
 
-    private function applyFilters($builder, array $query, string $table): bool
+    private function applyFilters($builder, array $query, string $table, ?array $allowed = null): bool
     {
-        $allowed = self::TABLE_COLUMNS[$table];
+        $allowed ??= self::TABLE_COLUMNS[$table];
         foreach ($query as $key => $expression) {
             if (in_array($key, ['select', 'order', 'limit', 'offset', 'head', 'count'], true)) {
                 continue;
@@ -408,9 +418,9 @@ class TiDBDataService
         return true;
     }
 
-    private function applyOrderLimit($builder, array $query, string $table): void
+    private function applyOrderLimit($builder, array $query, string $table, ?array $allowed = null): void
     {
-        $allowed = self::TABLE_COLUMNS[$table];
+        $allowed ??= self::TABLE_COLUMNS[$table];
         if (!empty($query['order'])) {
             foreach (explode(',', $query['order']) as $order) {
                 [$column, $direction] = array_pad(explode('.', $order, 2), 2, 'asc');
