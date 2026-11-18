@@ -212,9 +212,9 @@ select:focus-visible {
 }
 
 .nav-logo img {
-  width: clamp(140px, 18vw, 210px);
-  height: auto;
-  max-height: 44px;
+  width: auto;
+  height: 52px;
+  max-width: 100%;
   object-fit: contain;
 }
 
@@ -412,7 +412,7 @@ select:focus-visible {
 }
 
 .nav-drawer-marca img {
-  height: 32px;
+  height: 44px;
   width: auto;
   object-fit: contain;
 }
@@ -591,9 +591,10 @@ body.drawer-aberto > *:not(.nav-drawer):not(.nav-drawer-overlay) {
   }
 
   .nav-logo img {
-    max-height: 38px;
+    height: 46px;
+    max-height: 46px;
     width: auto;
-    max-width: 140px;
+    max-width: 150px;
     object-fit: contain;
     margin: 0 auto;
     display: block;
@@ -627,7 +628,8 @@ body.drawer-aberto > *:not(.nav-drawer):not(.nav-drawer-overlay) {
   }
   .nav-logo img {
     max-width: 125px;
-    max-height: 32px;
+    height: 40px;
+    max-height: 40px;
   }
   .nav-actions {
     gap: 6px;
@@ -3362,7 +3364,7 @@ td {
 
 [data-tema="escuro"] .nav-logo img,
 [data-tema="escuro"] .nav-drawer-marca img {
-  filter: drop-shadow(0 1px 3px rgba(255, 248, 240, 0.5));
+  filter: none;
 }
 
 [data-tema="escuro"] .nav-links-desktop a {
