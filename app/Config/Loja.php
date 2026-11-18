@@ -10,7 +10,10 @@ use CodeIgniter\Config\BaseConfig;
  * O Decreto 7.962/2013 (comércio eletrônico) exige que o site mostre, em local de destaque,
  * nome empresarial, CNPJ, endereço físico e eletrônico. Preencha no ambiente (Render ou .env):
  *   LOJA_RAZAO_SOCIAL, LOJA_CNPJ, LOJA_ENDERECO, LOJA_EMAIL, LOJA_WHATSAPP
- * Enquanto LOJA_CNPJ / LOJA_RAZAO_SOCIAL estiverem vazios, essas linhas não aparecem.
+ * Enquanto LOJA_CNPJ / LOJA_RAZAO_SOCIAL / LOJA_EMAIL estiverem vazios, essas linhas não aparecem.
+ *
+ * ATENÇÃO: não use @donabenta.com.br. Esse domínio é da J. Macêdo (marca de farinha), não da loja;
+ * e-mails para ele iriam para outra empresa.
  */
 class Loja extends BaseConfig
 {
@@ -18,7 +21,7 @@ class Loja extends BaseConfig
     public string $razaoSocial = '';
     public string $cnpj = '';
     public string $endereco = 'Rua Padre Anacleto, 1168 - Nova Rússia, Ponta Grossa - PR';
-    public string $email = 'contato@donabenta.com.br';
+    public string $email = '';
     public string $whatsapp = '(42) 99982-3994';
 
     public function __construct()

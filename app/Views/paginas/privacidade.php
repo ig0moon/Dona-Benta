@@ -17,8 +17,8 @@
         com endereço na <?= esc($loja->endereco) ?>, é a controladora dos dados pessoais tratados neste site.
       </p>
       <p>
-        <strong>Canal de privacidade (encarregado):</strong> para qualquer assunto sobre seus dados, escreva para
-        <a href="mailto:<?= esc($loja->email, 'attr') ?>"><?= esc($loja->email) ?></a> ou chame no WhatsApp <?= esc($loja->whatsapp) ?>.
+        <strong>Canal de privacidade (encarregado):</strong> para qualquer assunto sobre seus dados, chame no WhatsApp <?= esc($loja->whatsapp) ?><?php if ($loja->email !== ''): ?> ou escreva para
+        <a href="mailto:<?= esc($loja->email, 'attr') ?>"><?= esc($loja->email) ?></a><?php endif ?>.
       </p>
 
       <h2>2. Quais dados coletamos</h2>
@@ -74,7 +74,7 @@
         <li>baixar uma cópia de todos os seus dados e pedidos (<em>Baixar meus dados</em>);</li>
         <li>excluir sua conta (<em>Excluir minha conta</em>).</li>
       </ul>
-      <p>Para outros pedidos, escreva para <a href="mailto:<?= esc($loja->email, 'attr') ?>"><?= esc($loja->email) ?></a>. Respondemos em até 15 dias. Você também pode reclamar na ANPD (<a href="https://www.gov.br/anpd" target="_blank" rel="noopener noreferrer">gov.br/anpd</a>).</p>
+      <p>Para outros pedidos, fale com a gente pelo WhatsApp <?= esc($loja->whatsapp) ?><?php if ($loja->email !== ''): ?> ou pelo e-mail <a href="mailto:<?= esc($loja->email, 'attr') ?>"><?= esc($loja->email) ?></a><?php endif ?>. Respondemos em até 15 dias. Você também pode reclamar na ANPD (<a href="https://www.gov.br/anpd" target="_blank" rel="noopener noreferrer">gov.br/anpd</a>).</p>
 
       <h2>9. Cookies e armazenamento no navegador</h2>
       <p>Usamos apenas o cookie essencial de sessão (<code>ci_session</code>), que mantém você conectado e protege sua conta, e o armazenamento do navegador para guardar o carrinho, o tema (claro/escuro) que você escolheu e o fechamento do aviso de cookies. Não usamos cookies de publicidade nem ferramentas de rastreamento ou de análise de visitas.</p>

@@ -36,3 +36,5 @@ services:
         sync: false
       - key: LOJA_CNPJ # ex.: 00.000.000/0000-00
         sync: false
+      - key: LOJA_EMAIL # e-mail de atendimento e privacidade (não use @donabenta.com.br)
+        sync: false

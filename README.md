@@ -79,7 +79,7 @@ DEPLOY.md            Passo a passo para colocar o site no ar
 | `LOJA_RAZAO_SOCIAL` | Razão social da empresa, exibida no rodapé, nos Termos e na Política de Privacidade (exigência do Decreto 7.962/2013). |
 | `LOJA_CNPJ` | CNPJ da empresa, no formato `00.000.000/0000-00`. Enquanto estiver vazio, a linha do CNPJ não aparece. |
 | `LOJA_ENDERECO` | Opcional. Endereço completo da loja (padrão: Rua Padre Anacleto, 1168 - Nova Rússia, Ponta Grossa - PR). |
-| `LOJA_EMAIL` | Opcional. E-mail de atendimento e de privacidade (padrão: `contato@donabenta.com.br`). Precisa ser uma caixa que alguém leia. |
+| `LOJA_EMAIL` | E-mail de atendimento e de privacidade. Precisa ser uma caixa que alguém leia. Enquanto estiver vazio, o site mostra só o WhatsApp. **Não use `@donabenta.com.br`**: esse domínio é da J. Macêdo. |
 | `LOJA_WHATSAPP` | Opcional. WhatsApp de atendimento exibido nos textos legais (padrão: `(42) 99982-3994`). |
 
 O Render define `PORT` automaticamente. Não configure um `.env` com credenciais no repositório. A chave `MP_PUBLIC_KEY` não é necessária: pagamentos com cartão usam o checkout hospedado do Mercado Pago.

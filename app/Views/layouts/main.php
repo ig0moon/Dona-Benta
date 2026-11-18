@@ -32,7 +32,7 @@
   <!-- Scripts Globais MVC -->
   <script src="<?= base_url('js/backend-client.js?v=4.3') ?>"></script>
   <script src="<?= base_url('js/carrinho.js?v=3.0') ?>"></script>
-  <script src="<?= base_url('js/layout.js?v=4.2') ?>"></script>
+  <script src="<?= base_url('js/layout.js?v=4.3') ?>"></script>
   <script src="<?= base_url('js/efeitos.js?v=1.2') ?>"></script>
   <?= $this->renderSection('scripts') ?>
 </body>

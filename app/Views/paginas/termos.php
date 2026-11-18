@@ -15,7 +15,7 @@
       <p>
         <?= esc($loja->nomeFantasia) ?><?= $loja->razaoSocial !== '' ? ' — ' . esc($loja->razaoSocial) : '' ?><?= $loja->cnpj !== '' ? ', CNPJ ' . esc($loja->cnpj) : '' ?>.<br>
         Endereço: <?= esc($loja->endereco) ?>.<br>
-        Atendimento: WhatsApp <?= esc($loja->whatsapp) ?> e e-mail <a href="mailto:<?= esc($loja->email, 'attr') ?>"><?= esc($loja->email) ?></a>, de segunda a sábado, das 8h às 19h.
+        Atendimento: WhatsApp <?= esc($loja->whatsapp) ?><?php if ($loja->email !== ''): ?> e e-mail <a href="mailto:<?= esc($loja->email, 'attr') ?>"><?= esc($loja->email) ?></a><?php endif ?>, de segunda a sábado, das 8h às 19h.
       </p>
 
       <h2>2. Produtos e informações</h2>
@@ -61,7 +61,7 @@
       <p>Você é responsável por manter sua senha em segredo e pelos dados que informa. Você pode corrigir seus dados, baixar uma cópia deles ou excluir a conta a qualquer momento em <a href="conta">Minha conta</a>. O uso dos seus dados segue a nossa <a href="privacidade">Política de Privacidade</a>.</p>
 
       <h2>8. Atendimento e reclamações</h2>
-      <p>Fale primeiro com a gente pelo WhatsApp <?= esc($loja->whatsapp) ?> ou pelo e-mail <a href="mailto:<?= esc($loja->email, 'attr') ?>"><?= esc($loja->email) ?></a>; respondemos em até 5 dias úteis. Você também pode procurar o Procon ou a plataforma <a href="https://www.consumidor.gov.br" target="_blank" rel="noopener noreferrer">consumidor.gov.br</a>.</p>
+      <p>Fale primeiro com a gente pelo WhatsApp <?= esc($loja->whatsapp) ?><?php if ($loja->email !== ''): ?> ou pelo e-mail <a href="mailto:<?= esc($loja->email, 'attr') ?>"><?= esc($loja->email) ?></a><?php endif ?>; respondemos em até 5 dias úteis. Você também pode procurar o Procon ou a plataforma <a href="https://www.consumidor.gov.br" target="_blank" rel="noopener noreferrer">consumidor.gov.br</a>.</p>
 
       <h2>9. Foro</h2>
       <p>Para qualquer disputa, vale a legislação brasileira, e você pode escolher o foro do seu domicílio, como prevê o Código de Defesa do Consumidor.</p>

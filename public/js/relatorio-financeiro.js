@@ -315,7 +315,7 @@ function htmlDocumentoRelatorio(d, logo = '') {
     <header class="topo">
       <div>
         ${logo ? `<img src="${logo}" alt="Dona Benta">` : '<div class="marca">Dona Benta</div>'}
-        <div class="empresa">Rua Padre Anacleto, 1168 · Nova Rússia · Ponta Grossa/PR<br>(42) 99982-3994 · contato@donabenta.com.br</div>
+        <div class="empresa">Rua Padre Anacleto, 1168 · Nova Rússia · Ponta Grossa/PR<br>(42) 99982-3994${window.LOJA?.email ? ' · ' + escapeHtml(window.LOJA.email) : ''}</div>
       </div>
       <div class="titulo">
         <h1>Relatório financeiro</h1>
