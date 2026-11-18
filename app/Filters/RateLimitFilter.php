@@ -16,7 +16,7 @@ class RateLimitFilter implements FilterInterface
     public function before(RequestInterface $request, $arguments = null)
     {
         $throttler = Services::throttler();
-        $ip = $this->clientIp($request);
+        $ip = self::clientIp($request);
         $path = $request->getUri()->getPath();
 
         // Limites estritos baseados na criticidade da rota
@@ -42,6 +42,13 @@ class RateLimitFilter implements FilterInterface
             // Limite de 60 verificações de status por minuto por IP
             $maxRequests = 60;
             $bucket = 'api_status';
+        } elseif (str_contains($path, 'conta/excluir')) {
+            // Pede a senha: mesmo limite do login contra tentativas em série
+            $maxRequests = 5;
+            $bucket = 'api_conta_excluir';
+        } elseif (str_contains($path, 'conta/meus-dados')) {
+            $maxRequests = 5;
+            $bucket = 'api_conta_dados';
         } elseif (str_contains($path, 'simular-aprovacao')) {
             // Limite de 10 simulações por minuto por IP
             $maxRequests = 10;
@@ -72,7 +79,7 @@ class RateLimitFilter implements FilterInterface
      * cabeçalho True-Client-IP (definido pela borda e não forjável pelo visitante).
      * Fora do Render deixe a variável desligada.
      */
-    private function clientIp(RequestInterface $request): string
+    public static function clientIp(RequestInterface $request): string
     {
         if (filter_var(env('TRUST_TRUE_CLIENT_IP', false), FILTER_VALIDATE_BOOLEAN)) {
             $candidate = trim($request->getHeaderLine('True-Client-IP'));

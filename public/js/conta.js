@@ -819,7 +819,48 @@ function renderizarPerfil(area, usuario, perfil) {
         </button>
       </form>
     </div>
+
+    <div class="cartao" id="cartaoPrivacidade" style="margin-top: 20px;">
+      <div class="secao-cabecalho" style="margin-bottom: 8px;">
+        <h3>Privacidade e dados</h3>
+        <p style="color: var(--marrom-claro); font-size: 0.9rem;">
+          Você pode baixar uma cópia dos seus dados ou excluir sua conta quando quiser.
+          Saiba mais na <a href="privacidade">Política de Privacidade</a>.
+        </p>
+      </div>
+      <div class="privacidade-acoes">
+        <a href="api/conta/meus-dados" class="btn btn-outline" id="btnBaixarDados" download>
+          <span class="material-symbols-outlined">download</span> Baixar meus dados
+        </a>
+        ${perfil?.role === 'admin' ? '' : `
+        <button type="button" class="btn btn-perigo" id="btnMostrarExclusao">
+          <span class="material-symbols-outlined">delete_forever</span> Excluir minha conta
+        </button>`}
+      </div>
+      <form id="formExcluirConta" hidden style="margin-top: 18px;">
+        <p style="font-size: 0.88rem; line-height: 1.6; margin-bottom: 12px;">
+          <strong>Esta ação não pode ser desfeita.</strong> Seu perfil, endereço, foto e pedidos não pagos serão apagados.
+          Pedidos pagos ou concluídos ficam guardados sem endereço e observações, apenas pelo prazo exigido pela lei fiscal.
+          Se tiver um pedido em andamento, aguarde a entrega antes de excluir.
+        </p>
+        <div class="campo-linha">
+          <div class="campo">
+            <label for="senhaExclusao">Sua senha</label>
+            <input type="password" id="senhaExclusao" autocomplete="current-password" required>
+          </div>
+          <div class="campo">
+            <label for="confirmacaoExclusao">Digite EXCLUIR para confirmar</label>
+            <input type="text" id="confirmacaoExclusao" autocomplete="off" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-perigo" id="btnConfirmarExclusao">
+          <span class="material-symbols-outlined">delete_forever</span> Excluir conta definitivamente
+        </button>
+      </form>
+    </div>
   `;
+
+  configurarPrivacidadeConta();
 
   document.getElementById('formPerfil').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -859,6 +900,47 @@ function renderizarPerfil(area, usuario, perfil) {
       const elInicial = document.getElementById('avatarInicial');
       if (elInicial) elInicial.textContent = dados.nome.charAt(0).toUpperCase();
     }
+  });
+}
+
+// Direitos do titular (LGPD): baixar dados e excluir a conta.
+function configurarPrivacidadeConta() {
+  const btnMostrar = document.getElementById('btnMostrarExclusao');
+  const form = document.getElementById('formExcluirConta');
+  if (!btnMostrar || !form) return;
+
+  btnMostrar.addEventListener('click', () => {
+    form.hidden = !form.hidden;
+    if (!form.hidden) document.getElementById('senhaExclusao')?.focus();
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const senha = document.getElementById('senhaExclusao').value;
+    const confirmacao = document.getElementById('confirmacaoExclusao').value.trim().toUpperCase();
+    if (confirmacao !== 'EXCLUIR') {
+      mostrarToast('Digite EXCLUIR para confirmar.', 'erro');
+      return;
+    }
+    if (!confirm('Tem certeza? Sua conta será excluída definitivamente.')) return;
+
+    const btn = document.getElementById('btnConfirmarExclusao');
+    btn.disabled = true;
+    const { response, body } = await requestBackend('conta/excluir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senha, confirmacao })
+    });
+    btn.disabled = false;
+
+    if (!response.ok) {
+      mostrarToast(body?.error?.message || body?.erro || 'Não foi possível excluir a conta.', 'erro');
+      return;
+    }
+    if (typeof limparCacheAuth === 'function') limparCacheAuth();
+    try { localStorage.removeItem('donaBentaCarrinho'); } catch (err) { /* sem acesso ao armazenamento */ }
+    mostrarToast('Sua conta foi excluída.', 'sucesso');
+    setTimeout(() => { window.location.href = 'home'; }, 800);
   });
 }
 

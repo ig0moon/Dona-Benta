@@ -49,7 +49,7 @@
             <label for="senhaCadastro">Senha (mínimo 8 caracteres)</label>
             <input type="password" id="senhaCadastro" placeholder="••••••••" minlength="8" required autocomplete="new-password">
           </div>
-          <p style="font-size: 0.85rem; color: var(--marrom-claro); margin-bottom: 12px;">Ao criar a conta você concorda com a nossa <a href="privacidade">Política de Privacidade</a>.</p>
+          <p style="font-size: 0.85rem; color: var(--marrom-claro); margin-bottom: 12px;">Ao criar a conta, você concorda com os <a href="termos">Termos e Condições</a> e declara ter lido a <a href="privacidade">Política de Privacidade</a>, que explica como usamos seus dados. O site é destinado a maiores de 18 anos.</p>
           <button type="submit" class="btn btn-primario btn-bloco" id="btnCadastrar">
             Criar conta
           </button>

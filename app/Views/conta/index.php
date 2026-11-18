@@ -10,5 +10,5 @@
 
 <?= $this->section('scripts') ?>
   <script src="<?= base_url('js/relatorio-financeiro.js?v=1.1') ?>"></script>
-  <script src="<?= base_url('js/conta.js?v=6.0') ?>"></script>
+  <script src="<?= base_url('js/conta.js?v=6.1') ?>"></script>
 <?= $this->endSection() ?>

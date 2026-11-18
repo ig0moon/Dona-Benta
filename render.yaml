@@ -32,3 +32,7 @@ services:
         sync: false
       - key: MP_WEBHOOK_SECRET # "assinatura secreta" do webhook, no painel do Mercado Pago
         sync: false
+      - key: LOJA_RAZAO_SOCIAL # razão social exibida no rodapé e nos textos legais
+        sync: false
+      - key: LOJA_CNPJ # ex.: 00.000.000/0000-00
+        sync: false

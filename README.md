@@ -76,6 +76,11 @@ DEPLOY.md            Passo a passo para colocar o site no ar
 | `WEBHOOK_URL` | URL pública completa de `https://<dominio>/api/webhook/mercadopago`. |
 | `MP_WEBHOOK_SECRET` | Obrigatória. Assinatura secreta do webhook (painel do Mercado Pago → Webhooks). Sem ela, todas as notificações do webhook são recusadas. |
 | `TRUST_TRUE_CLIENT_IP` | Use `true` no Render. Faz o limite de requisições usar o IP real do visitante (cabeçalho `True-Client-IP`) em vez do IP do proxy. |
+| `LOJA_RAZAO_SOCIAL` | Razão social da empresa, exibida no rodapé, nos Termos e na Política de Privacidade (exigência do Decreto 7.962/2013). |
+| `LOJA_CNPJ` | CNPJ da empresa, no formato `00.000.000/0000-00`. Enquanto estiver vazio, a linha do CNPJ não aparece. |
+| `LOJA_ENDERECO` | Opcional. Endereço completo da loja (padrão: Rua Padre Anacleto, 1168 - Nova Rússia, Ponta Grossa - PR). |
+| `LOJA_EMAIL` | Opcional. E-mail de atendimento e de privacidade (padrão: `contato@donabenta.com.br`). Precisa ser uma caixa que alguém leia. |
+| `LOJA_WHATSAPP` | Opcional. WhatsApp de atendimento exibido nos textos legais (padrão: `(42) 99982-3994`). |
 
 O Render define `PORT` automaticamente. Não configure um `.env` com credenciais no repositório. A chave `MP_PUBLIC_KEY` não é necessária: pagamentos com cartão usam o checkout hospedado do Mercado Pago.
 
@@ -88,6 +93,13 @@ Pedidos de Pix e cartão só são marcados como pagos depois que o servidor conf
 Em produção, a página `/teste-banco` só abre para administradores logados (os demais recebem 404). Ela executa `SELECT 1` para verificar a conexão configurada, sem alterar dados. Os nomes `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_PORT` e `DB_ENCRYPT` também são aceitos como estão no Render. `DB_ENCRYPT=true` habilita a opção SSL do MySQLi usada pelo TiDB Cloud. Os nomes legados `database.default.*` continuam aceitos.
 
 Execute `app/Database/schema_tidb.sql` no banco TiDB para criar as tabelas e inserir os produtos iniciais. Para um banco que já existe, execute uma vez `app/Database/migrate_tidb.sql` para adicionar hash de senha e armazenamento de imagens. Contas/senhas que existiam em outro provedor não são copiadas automaticamente; cada cliente precisa criar uma conta no TiDB.
+
+### LGPD e direitos do consumidor
+
+- **Política de Privacidade** (`/privacidade`) e **Termos e Condições** (`/termos`), com links no rodapé, no cadastro e no checkout.
+- **Minha conta → Meus dados → Privacidade e dados:** o cliente baixa uma cópia dos dados (`GET /api/conta/meus-dados`) e exclui a conta (`POST /api/conta/excluir`, com senha). Pedidos pagos ou concluídos são mantidos sem endereço e observações (obrigação fiscal); pedidos não pagos, perfil e fotos são apagados. Contas de administrador não podem ser excluídas pelo site.
+- **Fotos de perfil:** ao trocar ou remover a foto, a anterior é apagada do banco.
+- **Registros de acesso** (Marco Civil da Internet, art. 15): login e cadastro gravam data, hora e IP na tabela `registros_acesso`, apagados após 6 meses. Em banco existente, rode o trecho de `registros_acesso` do `migrate_tidb.sql`; sem a tabela o login continua funcionando, mas o registro não é gravado (fica um erro no log).
 
 Para conceder acesso administrativo, crie a conta pelo site e então altere o perfil no TiDB: `UPDATE perfis SET role = 'admin' WHERE email = 'seu-email';`. Não existe senha administrativa padrão.
 

@@ -304,6 +304,17 @@ function montarHeader() {
 }
 
 function montarFooter() {
+  // Identificação exigida pelo Decreto 7.962/2013 (vem de app/Config/Loja.php).
+  const loja = Object.assign({
+    nomeFantasia: 'Dona Benta Confeitaria e Padaria',
+    endereco: 'Rua Padre Anacleto, 1168 - Nova Rússia, Ponta Grossa - PR',
+    email: 'contato@donabenta.com.br'
+  }, window.LOJA || {});
+  const identificacaoEmpresa = [
+    loja.razaoSocial ? escapeHtml(loja.razaoSocial) : '',
+    loja.cnpj ? `CNPJ ${escapeHtml(loja.cnpj)}` : ''
+  ].filter(Boolean).join(' · ');
+
   const footer = document.createElement('footer');
   footer.className = 'footer';
   footer.innerHTML = `
@@ -338,6 +349,7 @@ function montarFooter() {
           <li><a href="catalogo">Cardápio</a></li>
           <li><a href="sobre">Sobre</a></li>
           <li><a href="faq">Dúvidas</a></li>
+          <li><a href="termos">Termos e condições</a></li>
           <li><a href="privacidade">Política de privacidade</a></li>
         </ul>
       </div>
@@ -352,10 +364,10 @@ function montarFooter() {
       <div class="footer-col">
         <h4>Contato</h4>
         <ul class="footer-contato">
-          <li><span class="material-symbols-outlined">location_on</span> Rua Padre Anacleto, 1168 - Nova Rússia</li>
+          <li><span class="material-symbols-outlined">location_on</span> ${escapeHtml(loja.endereco)}</li>
           <li><span class="material-symbols-outlined">schedule</span> Seg a Sáb, 8h às 19h</li>
           <li>${ICONE_WHATSAPP_SVG}<a href="https://api.whatsapp.com/send?phone=5542999823994&text=Ol%C3%A1!%20Vim%20pelo%20site%20Dona%20Benta%20e%20gostaria%20de%20saber%20mais%20sobre." target="_blank" rel="noopener noreferrer">(42) 99982-3994</a></li>
-          <li><span class="material-symbols-outlined">mail</span><a href="mailto:contato@donabenta.com.br" class="footer-link-email">contato@donabenta.com.br</a></li>
+          <li><span class="material-symbols-outlined">mail</span><a href="mailto:${escapeHtml(loja.email)}" class="footer-link-email">${escapeHtml(loja.email)}</a></li>
         </ul>
       </div>
     </div>
@@ -364,7 +376,9 @@ function montarFooter() {
     </div>
     <div class="footer-monumento" aria-hidden="true">Dona Benta</div>
     <div class="footer-base">
-      © ${new Date().getFullYear()} Dona Benta Confeitaria e Padaria. Todos os direitos reservados.
+      © ${new Date().getFullYear()} ${escapeHtml(loja.nomeFantasia)}. Todos os direitos reservados.
+      ${identificacaoEmpresa ? `<div class="footer-empresa">${identificacaoEmpresa}</div>` : ''}
+      <div class="footer-empresa">Imagens meramente ilustrativas.</div>
     </div>
   `;
   document.body.appendChild(footer);
