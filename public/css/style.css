@@ -213,7 +213,8 @@ select:focus-visible {
 
 .nav-logo img {
   width: auto;
-  height: 52px;
+  height: 62px;
+  margin: -8px 0; /* cresce sem aumentar a altura do header */
   max-width: 100%;
   object-fit: contain;
 }
@@ -412,7 +413,7 @@ select:focus-visible {
 }
 
 .nav-drawer-marca img {
-  height: 44px;
+  height: 54px;
   width: auto;
   object-fit: contain;
 }
@@ -591,10 +592,11 @@ body.drawer-aberto > *:not(.nav-drawer):not(.nav-drawer-overlay) {
   }
 
   .nav-logo img {
-    height: 46px;
-    max-height: 46px;
+    height: 54px;
+    max-height: 54px;
+    margin: -4px 0;
     width: auto;
-    max-width: 150px;
+    max-width: 170px;
     object-fit: contain;
     margin: 0 auto;
     display: block;
@@ -627,9 +629,10 @@ body.drawer-aberto > *:not(.nav-drawer):not(.nav-drawer-overlay) {
     gap: 6px;
   }
   .nav-logo img {
-    max-width: 125px;
-    height: 40px;
-    max-height: 40px;
+    max-width: 150px;
+    height: 48px;
+    max-height: 48px;
+    margin: -3px 0;
   }
   .nav-actions {
     gap: 6px;
