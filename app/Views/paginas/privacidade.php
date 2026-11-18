@@ -77,7 +77,7 @@
       <p>Para outros pedidos, escreva para <a href="mailto:<?= esc($loja->email, 'attr') ?>"><?= esc($loja->email) ?></a>. Respondemos em até 15 dias. Você também pode reclamar na ANPD (<a href="https://www.gov.br/anpd" target="_blank" rel="noopener noreferrer">gov.br/anpd</a>).</p>
 
       <h2>9. Cookies e armazenamento no navegador</h2>
-      <p>Usamos apenas o cookie essencial de sessão (<code>ci_session</code>), que mantém você conectado e protege sua conta, e o armazenamento do navegador para guardar o carrinho e o tema (claro/escuro) que você escolheu. Não usamos cookies de publicidade nem ferramentas de rastreamento ou de análise de visitas.</p>
+      <p>Usamos apenas o cookie essencial de sessão (<code>ci_session</code>), que mantém você conectado e protege sua conta, e o armazenamento do navegador para guardar o carrinho, o tema (claro/escuro) que você escolheu e o fechamento do aviso de cookies. Não usamos cookies de publicidade nem ferramentas de rastreamento ou de análise de visitas.</p>
 
       <h2>10. Crianças e adolescentes</h2>
       <p>O site é destinado a maiores de 18 anos. Menores devem fazer pedidos com um responsável.</p>

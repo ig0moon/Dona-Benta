@@ -648,10 +648,39 @@ function atualizarContagemCarrinho() {
   }
 }
 
+// Aviso informativo de cookies: o site só usa o essencial (sessão, carrinho e tema),
+// que não depende de consentimento (LGPD / guia da ANPD). Por isso não há "aceitar/recusar",
+// só a informação e um botão para fechar, lembrado no navegador.
+const CHAVE_AVISO_COOKIES = 'donaBentaAvisoCookies';
+
+function montarAvisoCookies() {
+  try {
+    if (localStorage.getItem(CHAVE_AVISO_COOKIES) === 'ok') return;
+  } catch (e) {
+    return; // sem armazenamento, não dá para lembrar o fechamento: melhor não insistir a cada página
+  }
+
+  const aviso = document.createElement('div');
+  aviso.className = 'aviso-cookies';
+  aviso.setAttribute('role', 'region');
+  aviso.setAttribute('aria-label', 'Aviso sobre cookies');
+  aviso.innerHTML = `
+    <p>Usamos apenas cookies essenciais, para manter você conectado e guardar seu carrinho. Nada de publicidade ou rastreamento. <a href="privacidade">Saiba mais</a></p>
+    <button type="button" class="aviso-cookies-fechar">Entendi</button>
+  `;
+  aviso.querySelector('button').addEventListener('click', () => {
+    try { localStorage.setItem(CHAVE_AVISO_COOKIES, 'ok'); } catch (e) { /* ignora */ }
+    aviso.classList.add('saindo');
+    setTimeout(() => aviso.remove(), 250);
+  });
+  document.body.appendChild(aviso);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   montarHeader();
   montarFooter();
   atualizarAuthLayout();
+  montarAvisoCookies();
 
   // Atualiza o layout quando o backend informa uma mudança de autenticação.
   if (typeof db !== 'undefined' && db.auth) {
