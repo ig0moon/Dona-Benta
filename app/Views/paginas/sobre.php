@@ -4,7 +4,7 @@
   <section class="pagina-header">
     <div class="container">
       <span class="eyebrow">Sobre</span>
-      <h1>Conheça a Dona Benta.</h1>
+      <h1>Conheça a Panificadora Dona Benta.</h1>
       <p>Uma paixão por confeitaria que virou tradição de família.</p>
     </div>
   </section>
@@ -19,7 +19,7 @@
         </div>
         <div class="rv">
           <h2>Tudo começou em uma cozinha pequena.</h2>
-          <p>A Dona Benta nasceu do sonho de compartilhar receitas de família com toda a vizinhança. O que começou com bolos de aniversário para amigos próximos se tornou uma padaria e confeitaria querida pela comunidade.</p>
+          <p>A Panificadora Dona Benta nasceu do sonho de compartilhar receitas de família com toda a vizinhança. O que começou com bolos de aniversário para amigos próximos se tornou uma padaria e confeitaria querida pela comunidade.</p>
           <p>Hoje seguimos fiéis à mesma receita de sempre: ingredientes selecionados, processos artesanais e, acima de tudo, muito carinho em cada produto que sai do nosso forno.</p>
           <a href="<?= base_url('catalogo') ?>" class="btn btn-primario">Ver o cardápio <span class="seta" aria-hidden="true">→</span></a>
         </div>

@@ -21,7 +21,7 @@
 
         <div>
           <a href="<?= base_url('catalogo') ?>" class="destaque-card" id="destaqueCard" aria-label="Ver produto em destaque">
-            <img id="destaqueImagem" src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1000&q=75" alt="Bolo de chocolate da Dona Benta">
+            <img id="destaqueImagem" src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1000&q=75" alt="Bolo de chocolate da Panificadora Dona Benta">
             <div class="destaque-etiqueta" id="destaqueEtiqueta">
               <div>
                 <h3 id="destaqueNome">Bolos da casa</h3>

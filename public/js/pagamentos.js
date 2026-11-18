@@ -381,7 +381,7 @@ async function iniciarFluxoPix(pedido, perfil) {
     const payload = {
       pedido_id: pedido.id,
       valor: pedido.valor_total,
-      descricao: `Pedido Dona Benta #${pedido.numero_pedido || 'DB'}`,
+      descricao: `Pedido Panificadora Dona Benta #${pedido.numero_pedido || 'DB'}`,
       cliente: {
         nome: perfil?.nome || 'Cliente',
         email: emailPagador || (isProducao ? '' : 'cliente.donabenta@gmail.com'),
@@ -588,7 +588,7 @@ function confirmarPagamentoSucesso(pedido, perfil) {
   if (btnZap) {
     const numeroRecibo = pedido.numero_pedido || 'DB';
     const totalFormatado = typeof formatarPreco === 'function' ? formatarPreco(pedido.valor_total) : `R$ ${pedido.valor_total}`;
-    const msg = encodeURIComponent(`Olá! Realizei o pagamento via Pix do meu pedido *${numeroRecibo}* na Dona Benta!\nTotal: ${totalFormatado}\nStatus: PAGO ✓`);
+    const msg = encodeURIComponent(`Olá! Realizei o pagamento via Pix do meu pedido *${numeroRecibo}* na Panificadora Dona Benta!\nTotal: ${totalFormatado}\nStatus: PAGO ✓`);
     btnZap.href = `https://api.whatsapp.com/send?phone=${window.NUMERO_WHATSAPP || '5542999823994'}&text=${msg}`;
   }
 

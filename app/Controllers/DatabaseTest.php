@@ -122,7 +122,7 @@ class DatabaseTest extends BaseController
         $this->response->setHeader('X-Robots-Tag', 'noindex, nofollow');
 
         return view('diagnostico_banco/index', [
-            'titulo'      => 'Teste de conexão com o banco — Dona Benta',
+            'titulo'      => 'Teste de conexão com o banco — Panificadora Dona Benta',
             'descricao'   => 'Diagnóstico de conexão com o banco de dados.',
             'pagina'      => 'diagnostico-banco',
             'diagnostic'  => $diagnostic,

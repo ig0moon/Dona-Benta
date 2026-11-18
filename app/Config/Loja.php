@@ -17,7 +17,7 @@ use CodeIgniter\Config\BaseConfig;
  */
 class Loja extends BaseConfig
 {
-    public string $nomeFantasia = 'Dona Benta Confeitaria e Padaria';
+    public string $nomeFantasia = 'Panificadora Dona Benta';
     public string $razaoSocial = '';
     public string $cnpj = '';
     public string $endereco = 'Rua Padre Anacleto, 1168 - Nova Rússia, Ponta Grossa - PR';

@@ -245,7 +245,7 @@ function htmlDocumentoRelatorio(d, logo = '') {
   @page {
     size: A4;
     margin: 14mm 12mm 18mm;
-    @bottom-left { content: "Dona Benta · Relatório financeiro · emitido em ${d.emissao}"; font: 8px Inter, sans-serif; color: #8a7a6d; }
+    @bottom-left { content: "Panificadora Dona Benta · Relatório financeiro · emitido em ${d.emissao}"; font: 8px Inter, sans-serif; color: #8a7a6d; }
     @bottom-right { content: "Página " counter(page) " de " counter(pages); font: 8px Inter, sans-serif; color: #8a7a6d; }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -314,7 +314,7 @@ function htmlDocumentoRelatorio(d, logo = '') {
   <main class="folha">
     <header class="topo">
       <div>
-        ${logo ? `<img src="${logo}" alt="Dona Benta">` : '<div class="marca">Dona Benta</div>'}
+        ${logo ? `<img src="${logo}" alt="Panificadora Dona Benta">` : '<div class="marca">Panificadora Dona Benta</div>'}
         <div class="empresa">Rua Padre Anacleto, 1168 · Nova Rússia · Ponta Grossa/PR<br>(42) 99982-3994${window.LOJA?.email ? ' · ' + escapeHtml(window.LOJA.email) : ''}</div>
       </div>
       <div class="titulo">
@@ -350,7 +350,7 @@ function htmlDocumentoRelatorio(d, logo = '') {
       <div>Responsável pelo caixa</div>
       <div>Conferido por</div>
     </section>
-    <p class="nota">Documento gerado pelo painel da Dona Benta para conferência interna. Valores de pedidos pagos consideram a confirmação registrada no sistema.</p>
+    <p class="nota">Documento gerado pelo painel da Panificadora Dona Benta para conferência interna. Valores de pedidos pagos consideram a confirmação registrada no sistema.</p>
   </main>
   </div>
 </body>

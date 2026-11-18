@@ -7,8 +7,8 @@ class Pedidos extends BaseController
     public function index(): string
     {
         $data = [
-            'titulo'    => 'Finalizar e Agendar Pedido — Dona Benta',
-            'descricao' => 'Agende a retirada ou entrega de sua encomenda artesanal na Dona Benta Confeitaria e Padaria.',
+            'titulo'    => 'Finalizar e Agendar Pedido — Panificadora Dona Benta',
+            'descricao' => 'Agende a retirada ou entrega de sua encomenda artesanal na Panificadora Dona Benta.',
             'pagina'    => 'pedidos'
         ];
 

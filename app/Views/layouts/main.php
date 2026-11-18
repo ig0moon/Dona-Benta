@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="<?= esc($descricao ?? 'Dona Benta — Confeitaria e Padaria Artesanal em Ponta Grossa. Pães de fermentação natural, bolos caseiros, doces e tortas para encomenda.') ?>">
-  <title><?= esc($titulo ?? 'Dona Benta — Confeitaria e Padaria Artesanal') ?></title>
+  <meta name="description" content="<?= esc($descricao ?? 'Panificadora Dona Benta — Confeitaria e Padaria Artesanal em Ponta Grossa. Pães de fermentação natural, bolos caseiros, doces e tortas para encomenda.') ?>">
+  <title><?= esc($titulo ?? 'Panificadora Dona Benta — Confeitaria e Padaria Artesanal') ?></title>
   <base href="<?= base_url('/') ?>">
   <link rel="shortcut icon" href="<?= base_url('img/favicon.png') ?>" type="image/x-icon">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">

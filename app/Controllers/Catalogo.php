@@ -12,8 +12,8 @@ class Catalogo extends BaseController
         $produtoModel = new ProdutoModel();
 
         $data = [
-            'titulo'     => 'Cardápio — Dona Benta',
-            'descricao'  => 'Explore o cardápio da Dona Benta: bolos, pães artesanais, doces finos, tortas e salgados. Encomende online.',
+            'titulo'     => 'Cardápio — Panificadora Dona Benta',
+            'descricao'  => 'Explore o cardápio da Panificadora Dona Benta: bolos, pães artesanais, doces finos, tortas e salgados. Encomende online.',
             'pagina'     => 'catalogo',
             'categoria'  => $categoria,
             'categorias' => $produtoModel->getCategorias()
@@ -27,8 +27,8 @@ class Catalogo extends BaseController
         $id = $this->request->getGet('id');
 
         $data = [
-            'titulo'    => 'Detalhes do Produto — Dona Benta',
-            'descricao' => 'Detalhes do produto, preço e encomenda artesanal na Dona Benta Confeitaria e Padaria.',
+            'titulo'    => 'Detalhes do Produto — Panificadora Dona Benta',
+            'descricao' => 'Detalhes do produto, preço e encomenda artesanal na Panificadora Dona Benta.',
             'pagina'    => 'produto',
             'produtoId' => $id
         ];

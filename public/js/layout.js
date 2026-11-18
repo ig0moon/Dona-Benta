@@ -106,8 +106,8 @@ function montarHeader() {
       </button>
 
       <!-- Logo centralizada no mobile / à esquerda no desktop -->
-      <a href="home" class="nav-logo" aria-label="Página inicial Dona Benta">
-        <img src="${isEscuro ? 'img/HeaderDonaBentaBranco.png' : 'img/HeaderDonaBenta.png'}" alt="Dona Benta Padaria & Confeitaria">
+      <a href="home" class="nav-logo" aria-label="Página inicial Panificadora Dona Benta">
+        <img src="${isEscuro ? 'img/HeaderDonaBentaBranco.png' : 'img/HeaderDonaBenta.png'}" alt="Panificadora Dona Benta Padaria & Confeitaria">
       </a>
 
       <!-- Links de navegação tradicionais para telas grandes (desktop) -->
@@ -143,7 +143,7 @@ function montarHeader() {
     <aside class="nav-drawer" id="navDrawer" aria-label="Menu de navegação mobile" aria-hidden="true">
       <div class="nav-drawer-topo">
         <a href="home" class="nav-drawer-marca">
-          <img src="${isEscuro ? 'img/HeaderDonaBentaBranco.png' : 'img/HeaderDonaBenta.png'}" alt="Dona Benta">
+          <img src="${isEscuro ? 'img/HeaderDonaBentaBranco.png' : 'img/HeaderDonaBenta.png'}" alt="Panificadora Dona Benta">
         </a>
         <button class="nav-drawer-fechar" id="navDrawerFechar" aria-label="Fechar menu">
           <span class="material-symbols-outlined">close</span>
@@ -306,7 +306,7 @@ function montarHeader() {
 function montarFooter() {
   // Identificação exigida pelo Decreto 7.962/2013 (vem de app/Config/Loja.php).
   const loja = Object.assign({
-    nomeFantasia: 'Dona Benta Confeitaria e Padaria',
+    nomeFantasia: 'Panificadora Dona Benta',
     endereco: 'Rua Padre Anacleto, 1168 - Nova Rússia, Ponta Grossa - PR',
     email: ''
   }, window.LOJA || {});
@@ -372,9 +372,9 @@ function montarFooter() {
       </div>
     </div>
     <div class="logo-benta-footer">
-      <img src="img/LogoDonaBenta.png" alt="Logo Dona Benta">
+      <img src="img/LogoDonaBenta.png" alt="Logo Panificadora Dona Benta">
     </div>
-    <div class="footer-monumento" aria-hidden="true">Dona Benta</div>
+    <div class="footer-monumento" aria-hidden="true">Panificadora Dona Benta</div>
     <div class="footer-base">
       © ${new Date().getFullYear()} ${escapeHtml(loja.nomeFantasia)}. Todos os direitos reservados.
       ${identificacaoEmpresa ? `<div class="footer-empresa">${identificacaoEmpresa}</div>` : ''}

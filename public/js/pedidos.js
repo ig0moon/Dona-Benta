@@ -558,7 +558,7 @@ function exibirRecibo(pedido, perfil) {
   const dataHoraWhatsApp = horarioValido ? `${dataFormatada} às ${pedido.horario_agendado}` : dataFormatada;
 
   const linhasTexto = [
-    `Olá! Gostaria de confirmar meu pedido *${numeroRecibo}* na Dona Benta:`,
+    `Olá! Gostaria de confirmar meu pedido *${numeroRecibo}* na Panificadora Dona Benta:`,
     '',
     ...pedido.itens.map(i => `- ${i.quantidade}x ${i.nome}`),
     '',

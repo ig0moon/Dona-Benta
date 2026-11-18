@@ -7,8 +7,8 @@ class Sobre extends BaseController
     public function index(): string
     {
         $data = [
-            'titulo'    => 'Sobre Nós — Dona Benta',
-            'descricao' => 'Conheça a história e os valores da Dona Benta Confeitaria e Padaria Artesanal. Receitas de família feitas com amor.',
+            'titulo'    => 'Sobre Nós — Panificadora Dona Benta',
+            'descricao' => 'Conheça a história e os valores da Panificadora Dona Benta Artesanal. Receitas de família feitas com amor.',
             'pagina'    => 'sobre'
         ];
 

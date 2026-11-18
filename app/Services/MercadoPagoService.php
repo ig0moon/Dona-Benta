@@ -199,7 +199,7 @@ class MercadoPagoService
         $partesNome  = explode(' ', $nomeLimpo, 2);
         $firstName   = $partesNome[0] ?: 'Cliente';
         $lastName    = $partesNome[1] ?? 'Dona Benta';
-        $descSegura  = $this->sanitizeInput($descricao ?: ('Pedido Dona Benta #' . ($pedidoId ? substr($pedidoId, 0, 8) : 'DB')), 120);
+        $descSegura  = $this->sanitizeInput($descricao ?: ('Pedido Panificadora Dona Benta #' . ($pedidoId ? substr($pedidoId, 0, 8) : 'DB')), 120);
 
         $mpPayload = [
             'transaction_amount' => round($valorEfetivo, 2),
@@ -365,7 +365,7 @@ class MercadoPagoService
         $returnUrl = $baseUrl . '/conta?aba=pedidos&checkout=retorno&pedido_id=' . rawurlencode($pedidoId);
         $mpPayload = [
             'items' => [[
-                'title'       => 'Pedido Dona Benta ' . ($pedidoDb['id'] ?? $pedidoId),
+                'title'       => 'Pedido Panificadora Dona Benta ' . ($pedidoDb['id'] ?? $pedidoId),
                 'quantity'    => 1,
                 'unit_price'  => round($valorEfetivo, 2),
                 'currency_id' => 'BRL',

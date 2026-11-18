@@ -42,7 +42,7 @@ async function carregarProduto() {
       return;
     }
 
-    document.title = `${produto.nome || 'Produto'} — Dona Benta`;
+    document.title = `${produto.nome || 'Produto'} — Panificadora Dona Benta`;
 
     const disponivel = produtoDisponivel(produto);
 
@@ -58,7 +58,7 @@ async function carregarProduto() {
 
           ${!disponivel ? `<span class="produto-nao-disponivel">Esgotado no momento</span>` : ''}
 
-          <p class="produto-detalhe-descricao">${escapeHtml(produto.descricao || produto.descricao_curta || 'Receita tradicional preparada artesanalmente com ingredientes frescos e selecionados na cozinha da Dona Benta.')}</p>
+          <p class="produto-detalhe-descricao">${escapeHtml(produto.descricao || produto.descricao_curta || 'Receita tradicional preparada artesanalmente com ingredientes frescos e selecionados na cozinha da Panificadora Dona Benta.')}</p>
 
           <div class="produto-detalhe-compra">
             <div class="produto-detalhe-qtd">

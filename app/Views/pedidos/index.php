@@ -50,7 +50,7 @@
         </div>
 
         <div class="pix-qrcode-area">
-          <img id="pixQrCodeImg" src="" alt="QR Code Pix Dona Benta">
+          <img id="pixQrCodeImg" src="" alt="QR Code Pix Panificadora Dona Benta">
           <div class="pix-timer-container">
             <span class="material-symbols-outlined" style="font-size:16px;">timer</span>
             <span>Expira em: <strong id="pixContador">15:00</strong></span>
@@ -83,7 +83,7 @@
           <span class="material-symbols-outlined">check_circle</span>
         </div>
         <h3 style="color:var(--sucesso); margin-top:12px; font-size:1.35rem; font-family:var(--fonte-display);">Pagamento Confirmado! 🎉</h3>
-        <p style="margin: 8px 0 20px; font-size:0.92rem; color:var(--marrom-claro);">Recebemos seu pagamento com sucesso. Seu pedido já foi registrado na Dona Benta!</p>
+        <p style="margin: 8px 0 20px; font-size:0.92rem; color:var(--marrom-claro);">Recebemos seu pagamento com sucesso. Seu pedido já foi registrado na Panificadora Dona Benta!</p>
         
         <div class="recibo-acoes">
           <a href="#" id="btnWhatsappPixSucesso" class="btn btn-whatsapp btn-bloco" target="_blank" rel="noopener noreferrer">

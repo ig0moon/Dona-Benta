@@ -9,8 +9,8 @@ class Conta extends BaseController
         $aba = $this->request->getGet('aba') ?? 'perfil';
 
         $data = [
-            'titulo'    => 'Minha Conta — Dona Benta',
-            'descricao' => 'Gerencie sua conta, pedidos e dados pessoais na Dona Benta Confeitaria e Padaria Artesanal.',
+            'titulo'    => 'Minha Conta — Panificadora Dona Benta',
+            'descricao' => 'Gerencie sua conta, pedidos e dados pessoais na Panificadora Dona Benta Artesanal.',
             'pagina'    => 'conta',
             'aba'       => $aba
         ];

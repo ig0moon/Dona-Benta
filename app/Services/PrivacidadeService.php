@@ -47,7 +47,7 @@ class PrivacidadeService
 
         return [
             'gerado_em'   => date('c'),
-            'controlador' => 'Dona Benta Confeitaria e Padaria',
+            'controlador' => 'Panificadora Dona Benta',
             'observacao'  => 'Cópia dos dados pessoais guardados na sua conta (LGPD, art. 18). '
                 . 'A senha não é incluída: ela é guardada apenas de forma criptografada e não pode ser lida nem por nós.',
             'perfil'      => $perfil,
