@@ -31,3 +31,8 @@ CREATE TABLE IF NOT EXISTS registros_acesso (
     INDEX idx_registros_perfil (perfil_id),
     INDEX idx_registros_criado_em (criado_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Frete da entrega: valor fixo definido no servidor (LOJA_FRETE) e guardado em cada pedido.
+-- valor_total passa a ser subtotal dos itens + frete. Pedidos antigos ficam com frete 0.
+-- Rode uma vez só (se a coluna já existir, o erro "Duplicate column name" pode ser ignorado).
+ALTER TABLE pedidos ADD COLUMN frete DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER valor_total;

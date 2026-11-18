@@ -122,5 +122,5 @@
 
 <?= $this->section('scripts') ?>
   <script src="<?= base_url('js/pagamentos.js?v=5.5') ?>"></script>
-  <script src="<?= base_url('js/pedidos.js?v=5.4') ?>"></script>
+  <script src="<?= base_url('js/pedidos.js?v=5.5') ?>"></script>
 <?= $this->endSection() ?>

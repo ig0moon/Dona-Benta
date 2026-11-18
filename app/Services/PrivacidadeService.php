@@ -13,12 +13,15 @@ use Throwable;
  *   defesa do consumidor (LGPD, art. 16, I); o restante é apagado.
  * - limparFotosNaoUsadas(): apaga do banco as fotos de perfil que não estão mais em uso.
  * - registrarAcesso(): registro de acesso exigido pelo Marco Civil da Internet (art. 15),
- *   guardado por 6 meses.
+ *   guardado por 6 meses. Esse prazo (e o de 5 anos dos pedidos) é aplicado por apagarPrazosVencidos().
  */
 class PrivacidadeService
 {
     /** Marco Civil da Internet, art. 15: registros de acesso guardados por 6 meses. */
     private const MESES_REGISTRO_ACESSO = 6;
+
+    /** Prazo de guarda dos pedidos para obrigações fiscais e de defesa do consumidor. */
+    private const ANOS_GUARDA_PEDIDOS = 5;
 
     /** Status em que o pedido ainda está em andamento e a conta não pode ser excluída. */
     private const STATUS_EM_ANDAMENTO = ['confirmado', 'em_preparo', 'pronto'];
@@ -32,7 +35,7 @@ class PrivacidadeService
             ->get()->getRowArray();
 
         $pedidos = $db->table('pedidos')
-            ->select('id, numero_pedido, valor_total, tipo_entrega, endereco_entrega, data_agendada, horario_agendado, forma_pagamento, observacoes, status, pago, criado_em')
+            ->select('id, numero_pedido, valor_total, frete, tipo_entrega, endereco_entrega, data_agendada, horario_agendado, forma_pagamento, observacoes, status, pago, criado_em')
             ->groupStart()->where('cliente_id', $user['id'])->orWhere('usuario_id', $user['id'])->groupEnd()
             ->orderBy('criado_em', 'desc')
             ->get()->getResultArray();
@@ -143,15 +146,40 @@ class PrivacidadeService
                 'evento'    => substr($evento, 0, 30),
                 'ip'        => substr($ip, 0, 45),
             ]);
-            // Limpeza ocasional do que passou do prazo de guarda.
-            if (random_int(1, 50) === 1) {
-                $db->table('registros_acesso')
-                    ->where('criado_em <', date('Y-m-d H:i:s', strtotime('-' . self::MESES_REGISTRO_ACESSO . ' months')))
-                    ->delete();
-            }
+            $this->apagarPrazosVencidos($db);
         } catch (Throwable $exception) {
             log_message('error', 'Falha ao gravar registro de acesso ({exception}). A tabela registros_acesso foi criada?', ['exception' => $exception::class]);
         }
+    }
+
+    /**
+     * Apaga o que passou do prazo de guarda anunciado na Política de Privacidade:
+     * registros de acesso (6 meses, a cada login) e pedidos (5 anos, em parte dos logins,
+     * em lotes pequenos para não pesar). Pedidos em andamento nunca são apagados.
+     */
+    private function apagarPrazosVencidos($db): void
+    {
+        $db->table('registros_acesso')
+            ->where('criado_em <', date('Y-m-d H:i:s', strtotime('-' . self::MESES_REGISTRO_ACESSO . ' months')))
+            ->delete();
+
+        if (random_int(1, 20) !== 1) {
+            return;
+        }
+        $limite = date('Y-m-d H:i:s', strtotime('-' . self::ANOS_GUARDA_PEDIDOS . ' years'));
+        $vencidos = $db->table('pedidos')->select('id')
+            ->where('criado_em <', $limite)
+            ->whereNotIn('status', self::STATUS_EM_ANDAMENTO)
+            ->limit(200)
+            ->get()->getResultArray();
+        $ids = array_column($vencidos, 'id');
+        if ($ids === []) {
+            return;
+        }
+        $db->transStart();
+        $db->table('itens_pedido')->whereIn('pedido_id', $ids)->delete();
+        $db->table('pedidos')->whereIn('id', $ids)->delete();
+        $db->transComplete();
     }
 
     private function caminhoDaFoto(string $url): ?string

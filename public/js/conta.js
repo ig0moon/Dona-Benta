@@ -1995,6 +1995,7 @@ function abrirModalDetalhesPedido(pedidoId) {
         </strong>
       </div>
       <div style="text-align:right;">
+        ${Number(pedido.frete) > 0 ? `<span style="font-size:0.78rem; color:var(--marrom-claro); display:block;">Inclui frete de ${formatarPreco(pedido.frete)}</span>` : ''}
         <span style="font-size:0.78rem; color:var(--marrom-claro); display:block;">Valor Total</span>
         <strong style="font-size:1.35rem; color:var(--dourado-escuro); font-family:var(--fonte-display);">${formatarPreco(pedido.valor_total)}</strong>
       </div>

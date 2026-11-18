@@ -56,7 +56,9 @@ class TiDBStoreService
                 }
                 $total += $quantity * (float) $item['preco'];
             }
-            return round($total, 2);
+            // Soma o frete gravado no pedido pelo servidor (0 na retirada).
+            $pedido = db_connect()->table('pedidos')->select('frete')->where('id', $pedidoId)->get()->getRowArray();
+            return round($total + (float) ($pedido['frete'] ?? 0), 2);
         } catch (Throwable $exception) {
             log_message('error', 'Falha ao recalcular pedido no TiDB ({exception}).', ['exception' => $exception::class]);
             return null;

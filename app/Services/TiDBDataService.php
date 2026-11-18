@@ -10,7 +10,7 @@ class TiDBDataService
     private const TABLE_COLUMNS = [
         'perfis' => ['id', 'nome', 'email', 'telefone', 'cep', 'bairro', 'logradouro', 'numero', 'complemento', 'role', 'avatar_url', 'criado_em', 'created_at', 'updated_at'],
         'produtos' => ['id', 'nome', 'categoria', 'preco', 'estoque', 'imagem_url', 'foto_url', 'descricao_curta', 'descricao', 'destaque', 'disponivel', 'ativo', 'criado_em', 'created_at', 'updated_at'],
-        'pedidos' => ['id', 'numero_pedido', 'cliente_id', 'usuario_id', 'itens', 'valor_total', 'tipo_entrega', 'endereco_entrega', 'data_agendada', 'horario_agendado', 'data_entrega', 'horario_entrega', 'forma_pagamento', 'observacoes', 'status', 'pago', 'criado_em', 'created_at', 'updated_at'],
+        'pedidos' => ['id', 'numero_pedido', 'cliente_id', 'usuario_id', 'itens', 'valor_total', 'frete', 'tipo_entrega', 'endereco_entrega', 'data_agendada', 'horario_agendado', 'data_entrega', 'horario_entrega', 'forma_pagamento', 'observacoes', 'status', 'pago', 'criado_em', 'created_at', 'updated_at'],
         'itens_pedido' => ['id', 'pedido_id', 'produto_id', 'nome', 'nome_produto', 'quantidade', 'preco', 'criado_em', 'created_at'],
     ];
 
@@ -200,6 +200,8 @@ class TiDBDataService
                 $clean['usuario_id'] = $user['id'];
                 $clean['status'] = 'aguardando_confirmacao';
                 $clean['pago'] = 0;
+                // O frete vem da configuração da loja, nunca do navegador.
+                $clean['frete'] = (($clean['tipo_entrega'] ?? '') === 'entrega') ? round((float) config('Loja')->frete, 2) : 0.0;
                 // O número é sempre gerado aqui, nunca pelo navegador (que só enxerga os próprios pedidos).
                 $clean['numero_pedido'] = $this->gerarNumeroPedido($db);
             } elseif ($table === 'itens_pedido') {
@@ -282,8 +284,9 @@ class TiDBDataService
                     ->select('SUM(preco * quantidade) AS total', false)
                     ->where('pedido_id', $row['pedido_id'])
                     ->get()->getRowArray();
+                $pedidoFrete = $db->table('pedidos')->select('frete')->where('id', $row['pedido_id'])->get()->getRowArray();
                 $db->table('pedidos')->where('id', $row['pedido_id'])
-                    ->update(['valor_total' => (float) ($total['total'] ?? 0)]);
+                    ->update(['valor_total' => round((float) ($total['total'] ?? 0) + (float) ($pedidoFrete['frete'] ?? 0), 2)]);
             }
         }
         return ['status' => 201, 'data' => $inserted, 'count' => null, 'error' => null];

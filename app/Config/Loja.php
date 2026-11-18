@@ -23,6 +23,8 @@ class Loja extends BaseConfig
     public string $endereco = 'Rua Padre Anacleto, 1168 - Nova Rússia, Ponta Grossa - PR';
     public string $email = '';
     public string $whatsapp = '(42) 99982-3994';
+    /** Frete fixo das entregas, em reais. Defina LOJA_FRETE no ambiente (ex.: 10,00). 0 = entrega sem frete. */
+    public float $frete = 0.0;
 
     public function __construct()
     {
@@ -33,6 +35,8 @@ class Loja extends BaseConfig
         $this->endereco = trim((string) env('LOJA_ENDERECO', $this->endereco));
         $this->email = trim((string) env('LOJA_EMAIL', $this->email));
         $this->whatsapp = trim((string) env('LOJA_WHATSAPP', $this->whatsapp));
+        $frete = str_replace(',', '.', trim((string) env('LOJA_FRETE', '')));
+        $this->frete = is_numeric($frete) && (float) $frete >= 0 ? round((float) $frete, 2) : 0.0;
     }
 
     /** Dados seguros para expor ao navegador (rodapé). */
@@ -45,6 +49,7 @@ class Loja extends BaseConfig
             'endereco'     => $this->endereco,
             'email'        => $this->email,
             'whatsapp'     => $this->whatsapp,
+            'frete'        => $this->frete,
         ];
     }
 }

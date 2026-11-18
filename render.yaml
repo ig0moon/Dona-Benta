@@ -36,5 +36,7 @@ services:
         sync: false
       - key: LOJA_CNPJ # ex.: 00.000.000/0000-00
         sync: false
+      - key: LOJA_FRETE # valor fixo do frete das entregas, ex.: 10,00 (vazio = sem frete)
+        sync: false
       - key: LOJA_EMAIL # e-mail de atendimento e privacidade (não use @donabenta.com.br)
         sync: false

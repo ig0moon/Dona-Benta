@@ -102,12 +102,36 @@ async function carregarHorariosOcupados() {
   }
 }
 
+// Frete fixo vindo da configuração da loja (window.LOJA.frete). Só vale na entrega;
+// o servidor grava e cobra o valor oficial, aqui é apenas para exibir.
+function valorFrete() {
+  return tipoEntrega === 'entrega' ? (Number(window.LOJA?.frete) || 0) : 0;
+}
+
+function textoFrete(valor) {
+  return valor > 0 ? formatarPreco(valor) : 'Grátis';
+}
+
+function atualizarResumoValores() {
+  const subtotal = totalCarrinho();
+  const frete = valorFrete();
+  const linhaFrete = document.getElementById('resumoLinhaFrete');
+  const elFrete = document.getElementById('resumoFrete');
+  const elTotal = document.getElementById('resumoTotal');
+  const elSubtotal = document.getElementById('resumoSubtotal');
+  if (elSubtotal) elSubtotal.textContent = formatarPreco(subtotal);
+  if (linhaFrete) linhaFrete.style.display = tipoEntrega === 'entrega' ? '' : 'none';
+  if (elFrete) elFrete.textContent = textoFrete(frete);
+  if (elTotal) elTotal.textContent = formatarPreco(subtotal + frete);
+}
+
 function renderizarCheckout() {
   const layout = document.getElementById('checkoutLayout');
   if (!layout) return;
 
   const carrinho = lerCarrinho();
   const total = totalCarrinho();
+  const freteConfigurado = Number(window.LOJA?.frete) || 0;
 
   layout.innerHTML = `
     <div class="checkout-principal">
@@ -122,7 +146,7 @@ function renderizarCheckout() {
           <div class="opcao-entrega" id="opcaoEntrega" role="button" tabindex="0">
             <span class="material-symbols-outlined">local_shipping</span>
             <h4>Entrega no endereço</h4>
-            <p style="font-size:0.8rem; color:var(--marrom-claro); margin-top:4px;">Em Ponta Grossa e região</p>
+            <p style="font-size:0.8rem; color:var(--marrom-claro); margin-top:4px;">Em Ponta Grossa e região · Frete: ${textoFrete(freteConfigurado)}</p>
           </div>
         </div>
         <div class="campo" id="campoEndereco" style="display:none;">
@@ -169,9 +193,17 @@ function renderizarCheckout() {
             </div>
           `).join('')}
         </div>
+        <div class="resumo-linha">
+          <span>Subtotal</span>
+          <span id="resumoSubtotal">${formatarPreco(total)}</span>
+        </div>
+        <div class="resumo-linha" id="resumoLinhaFrete" style="display:none;">
+          <span>Frete</span>
+          <span id="resumoFrete">${textoFrete(freteConfigurado)}</span>
+        </div>
         <div class="resumo-linha total">
           <span>Total</span>
-          <span>${formatarPreco(total)}</span>
+          <span id="resumoTotal">${formatarPreco(total)}</span>
         </div>
 
         <div id="containerFormasPagamento" style="margin-top: 16px;"></div>
@@ -213,6 +245,7 @@ async function selecionarTipoEntrega(tipo) {
   if (optRetirada) optRetirada.classList.toggle('selecionada', tipo === 'retirada');
   if (optEntrega) optEntrega.classList.toggle('selecionada', tipo === 'entrega');
   if (campoEnd) campoEnd.style.display = tipo === 'entrega' ? 'block' : 'none';
+  atualizarResumoValores();
 
   if (tipo === 'entrega') {
     if (!PERFIL_CLIENTE && typeof perfilAtual === 'function') {
@@ -443,7 +476,9 @@ async function registrarPedidoNoBanco(dadosExtras = {}) {
   }
   if (typeof salvarCarrinho === 'function') salvarCarrinho(carrinho);
 
-  const total = carrinho.reduce((acc, item) => acc + (Number(item.preco) || 0) * (Number(item.quantidade) || 1), 0);
+  const subtotal = carrinho.reduce((acc, item) => acc + (Number(item.preco) || 0) * (Number(item.quantidade) || 1), 0);
+  const frete = valorFrete();
+  const total = Math.round((subtotal + frete) * 100) / 100;
   const observacoes = document.getElementById('observacoesPedido')?.value?.trim() || '';
   const tipoEntregaAtual = tipoEntrega;
   const enderecoInput = document.getElementById('enderecoEntrega');
@@ -459,6 +494,7 @@ async function registrarPedidoNoBanco(dadosExtras = {}) {
   const novoPedido = {
     cliente_id: usuario.id,
     valor_total: total,
+    frete,
     status: dadosExtras.status || 'aguardando_confirmacao',
     tipo_entrega: tipoEntregaAtual,
     endereco_entrega: tipoEntregaAtual === 'entrega' ? endereco : null,
@@ -546,6 +582,7 @@ function exibirRecibo(pedido, perfil) {
       <div class="recibo-linha-detalhe"><span>Data da encomenda</span><span>${escapeHtml((pedido.data_agendada && pedido.data_agendada !== 'null') ? formatarData(pedido.data_agendada) : 'A combinar com a loja')}</span></div>
       <div class="recibo-linha-detalhe"><span>Horário agendado</span><span>${escapeHtml((pedido.horario_agendado && pedido.horario_agendado !== 'null') ? pedido.horario_agendado : 'A combinar')}</span></div>
       <div class="recibo-linha-detalhe"><span>Forma de pagamento</span><span>${escapeHtml(pedido.forma_pagamento || 'Cartão de Crédito')}</span></div>
+      ${Number(pedido.frete) > 0 ? `<div class="recibo-linha-detalhe"><span>Frete</span><span>${formatarPreco(pedido.frete)}</span></div>` : ''}
       <div class="recibo-linha-detalhe" style="font-weight:700;"><span>Total</span><span style="color:var(--dourado-escuro); font-size:1.1rem;">${formatarPreco(pedido.valor_total)}</span></div>
     `;
   }
@@ -564,6 +601,7 @@ function exibirRecibo(pedido, perfil) {
     '',
     `*Data:* ${dataHoraWhatsApp}`,
     `*Entrega:* ${pedido.tipo_entrega === 'entrega' ? (pedido.endereco_entrega || 'A informar') : 'Retirada na loja'}`,
+    ...(Number(pedido.frete) > 0 ? [`*Frete:* ${formatarPreco(pedido.frete).replace(/[  ]/g, ' ')}`] : []),
     `*Total:* ${totalFormatado}`,
     `*Pagamento:* ${pedido.forma_pagamento || 'Cartão de Crédito'}`
   ];

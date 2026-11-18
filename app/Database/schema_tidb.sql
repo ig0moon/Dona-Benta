@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS pedidos (
     usuario_id VARCHAR(255) DEFAULT NULL,
     itens JSON DEFAULT NULL,
     valor_total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    frete DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     tipo_entrega VARCHAR(50) NOT NULL DEFAULT 'retirada',
     endereco_entrega TEXT DEFAULT NULL,
     data_agendada DATE DEFAULT NULL,
