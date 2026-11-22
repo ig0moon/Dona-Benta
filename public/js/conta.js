@@ -1097,6 +1097,7 @@ async function renderizarPainelAdmin(area, perfil) {
         <button class="btn btn-outline admin-tab-btn" data-tab="produtos">Produtos</button>
         <button class="btn btn-outline admin-tab-btn" data-tab="pedidos-admin">Pedidos</button>
         <button class="btn btn-outline admin-tab-btn" data-tab="pagamentos-admin">Financeiro</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="entregas-admin">Entregas</button>
       </div>
     </div>
     <div id="adminConteudoSecao"></div>
@@ -1121,6 +1122,7 @@ function carregarTabAdmin(tab) {
   else if (tab === 'produtos') renderizarProdutosAdmin(areaAdmin);
   else if (tab === 'pedidos-admin') renderizarPedidosAdmin(areaAdmin);
   else if (tab === 'pagamentos-admin') renderizarPagamentosAdmin(areaAdmin);
+  else if (tab === 'entregas-admin') renderizarEntregasAdmin(areaAdmin);
 }
 
 function renderizarVisaoGeralAdmin(area) {

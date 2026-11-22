@@ -2214,3 +2214,70 @@ h1 em, h2 em {
 .ped-tabela .custom-status-menu {
   text-align: left;
 }
+
+/* ============================================
+   PAINEL · RELATÓRIO DE ENTREGA (romaneio para impressora de cupom)
+   ============================================ */
+.ent-filtros {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+}
+.ent-campo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--tinta-suave);
+}
+.ent-campo input[type="date"] {
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--linha-forte);
+  border-radius: 999px;
+  background: var(--cartao-bg);
+  color: var(--tinta);
+  font: inherit;
+}
+.ent-campo input[type="date"]:disabled { opacity: 0.5; }
+.ent-campo-check, .ent-selecionar-todos { cursor: pointer; white-space: nowrap; }
+.ent-selecionar-todos {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.ent-lista { display: grid; gap: 8px; }
+.ent-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid var(--linha-forte);
+  border-radius: 12px;
+  background: var(--cartao-bg);
+  cursor: pointer;
+}
+.ent-item:has(input:checked) { border-color: var(--dourado-escuro); }
+.ent-item input, .ent-selecionar-todos input, .ent-campo-check input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--dourado-escuro);
+  flex-shrink: 0;
+}
+.ent-info { display: grid; gap: 3px; min-width: 0; }
+.ent-linha1 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ent-endereco { color: var(--tinta); font-size: 0.9rem; overflow-wrap: anywhere; }
+.ent-meta { color: var(--tinta-suave); font-size: 0.8rem; }
+.ent-vazio { color: var(--tinta-suave); padding: 16px 0; }
+
+@media (max-width: 1180px) {
+  .ent-filtros { grid-template-columns: auto auto minmax(0, 1fr); }
+  .ent-filtros .fin-relatorio { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .ent-filtros { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .ent-filtros .ent-campo:first-child { grid-column: 1 / -1; }
+  .ent-campo input[type="date"] { flex: 1; min-width: 0; }
+}
