@@ -195,6 +195,11 @@ class TiDBDataService
             if ($table === 'produtos') {
                 $clean['id'] = $clean['id'] ?? bin2hex(random_bytes(16));
             } elseif ($table === 'pedidos') {
+                if (!$isAdmin && ($erro = $this->validarNovoPedido($db, $clean, $user)) !== null) {
+                    return $erro;
+                }
+                // Os itens valem só pela tabela itens_pedido (preço do catálogo); nunca pela cópia do navegador.
+                unset($clean['itens']);
                 $clean['id'] = $clean['id'] ?? bin2hex(random_bytes(16));
                 $clean['cliente_id'] = $user['id'];
                 $clean['usuario_id'] = $user['id'];
@@ -292,6 +297,49 @@ class TiDBDataService
         return ['status' => 201, 'data' => $inserted, 'count' => null, 'error' => null];
     }
 
+    /** Pedidos ainda não pagos que um cliente pode ter ao mesmo tempo (evita lotar a agenda). */
+    private const MAX_PEDIDOS_PENDENTES = 3;
+
+    /**
+     * Regras para o cliente criar pedido: data válida e não passada, horário livre
+     * e um limite de pedidos não pagos em aberto. Retorna a falha, ou null se estiver ok.
+     */
+    private function validarNovoPedido($db, array $pedido, array $user): ?array
+    {
+        // O app roda em UTC; "hoje" é o dia em Brasília.
+        $hoje = (new \DateTimeImmutable('now', new \DateTimeZone('America/Sao_Paulo')))->format('Y-m-d');
+
+        // Só contam pedidos não pagos ainda por vir: um pedido abandonado deixa de contar quando a data passa.
+        $pendentes = $db->table('pedidos')
+            ->where('pago', 0)->where('status', 'aguardando_confirmacao')
+            ->where('data_agendada >=', $hoje)
+            ->groupStart()->where('cliente_id', $user['id'])->orWhere('usuario_id', $user['id'])->groupEnd()
+            ->countAllResults();
+        if ($pendentes >= self::MAX_PEDIDOS_PENDENTES) {
+            return $this->failure(429, 'Você já tem ' . self::MAX_PEDIDOS_PENDENTES . ' pedidos aguardando pagamento. Pague um deles ou fale com a loja pelo WhatsApp para cancelar antes de fazer outro.');
+        }
+
+        $data = (string) ($pedido['data_agendada'] ?? '');
+        if ($data !== '') {
+            $dia = \DateTimeImmutable::createFromFormat('!Y-m-d', $data);
+            if ($dia === false || $dia->format('Y-m-d') !== $data) {
+                return $this->failure(400, 'Data de agendamento inválida.');
+            }
+            if ($data < $hoje) {
+                return $this->failure(400, 'Escolha uma data a partir de hoje.');
+            }
+            $horario = (string) ($pedido['horario_agendado'] ?? '');
+            if ($horario !== '' && $db->table('pedidos')
+                ->where('data_agendada', $data)
+                ->where('horario_agendado', $horario)
+                ->where('status !=', 'cancelado')
+                ->countAllResults() > 0) {
+                return $this->failure(409, 'Este horário acabou de ser reservado. Escolha outro.');
+            }
+        }
+        return null;
+    }
+
     /**
      * Número exibido do pedido: sequência global (DB-17) + sufixo curto aleatório (DB-17-A7K2).
      * A sequência conta todos os pedidos da loja (não só os do cliente); o sufixo e a checagem
@@ -322,6 +370,10 @@ class TiDBDataService
         $updates = $this->filterWritable($table, $payload);
         if ($updates === []) {
             return $this->failure(400, 'Nenhum campo permitido para atualização.');
+        }
+        if ($table === 'perfis' && array_key_exists('avatar_url', $updates)
+            && !TiDBAuthService::avatarUrlValida($updates['avatar_url'], (string) ($user['id'] ?? ''))) {
+            return $this->failure(400, 'Foto de perfil inválida.');
         }
 
         $builder = db_connect()->table($table);

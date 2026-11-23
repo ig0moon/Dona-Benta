@@ -155,4 +155,68 @@ final class TiDBDataServiceTest extends CIUnitTestCase
         $this->assertMatchesRegularExpression('/^DB-01-[A-Z2-9]{4}$/', $numeros[0]);
         $this->assertMatchesRegularExpression('/^DB-02-[A-Z2-9]{4}$/', $numeros[1]);
     }
+
+    private function logarCliente(string $id = 'cliente-1'): string
+    {
+        $this->database->table('perfis')->insert(['id' => $id, 'nome' => 'Cliente', 'email' => $id . '@example.com', 'role' => 'cliente']);
+        session()->set('tidb_user_id', $id);
+        return $id;
+    }
+
+    private function diaFuturo(int $dias = 5): string
+    {
+        return (new DateTimeImmutable('now', new DateTimeZone('America/Sao_Paulo')))->modify("+{$dias} days")->format('Y-m-d');
+    }
+
+    public function testClienteNaoGravaItensDoNavegadorNemDataPassadaNemHorarioOcupado(): void
+    {
+        $this->logarCliente();
+        $service = new TiDBDataService();
+
+        $ok = $service->databaseRequest('POST', 'pedidos', [], [
+            'data_agendada' => $this->diaFuturo(), 'horario_agendado' => '10:00', 'tipo_entrega' => 'entrega',
+            'itens' => json_encode([['nome' => 'Bolo', 'preco' => 0.01, 'quantidade' => 1]]),
+        ]);
+        $this->assertSame(201, $ok['status']);
+        $this->assertNull($ok['data'][0]['itens']);
+
+        $ocupado = $service->databaseRequest('POST', 'pedidos', [], ['data_agendada' => $this->diaFuturo(), 'horario_agendado' => '10:00']);
+        $this->assertSame(409, $ocupado['status']);
+
+        $passado = $service->databaseRequest('POST', 'pedidos', [], ['data_agendada' => '2020-01-01', 'horario_agendado' => '11:00']);
+        $this->assertSame(400, $passado['status']);
+
+        $invalida = $service->databaseRequest('POST', 'pedidos', [], ['data_agendada' => '2030-02-31', 'horario_agendado' => '11:00']);
+        $this->assertSame(400, $invalida['status']);
+    }
+
+    public function testClienteTemLimiteDePedidosNaoPagos(): void
+    {
+        $this->logarCliente();
+        $service = new TiDBDataService();
+        foreach (['09:00', '10:00', '11:00'] as $hora) {
+            $this->assertSame(201, $service->databaseRequest('POST', 'pedidos', [], ['data_agendada' => $this->diaFuturo(), 'horario_agendado' => $hora])['status']);
+        }
+        $quarto = $service->databaseRequest('POST', 'pedidos', [], ['data_agendada' => $this->diaFuturo(), 'horario_agendado' => '12:00']);
+        $this->assertSame(429, $quarto['status']);
+    }
+
+    public function testFotoDePerfilSoAceitaImagemDoProprioUsuario(): void
+    {
+        $id = $this->logarCliente();
+        $service = new TiDBDataService();
+        $propria = 'https://site.test/api/storage/public?bucket=fotos-perfil&path=' . $id . '/avatar_1.jpg';
+
+        $this->assertSame(200, $service->databaseRequest('PATCH', 'perfis', ['id' => 'eq.' . $id], ['avatar_url' => $propria])['status']);
+        $this->assertSame(200, $service->databaseRequest('PATCH', 'perfis', ['id' => 'eq.' . $id], ['avatar_url' => null])['status']);
+        foreach ([
+            'https://rastreador.example.com/pixel.gif',
+            'javascript:alert(1)',
+            'https://site.test/api/storage/public?bucket=fotos-perfil&path=outro-usuario/avatar.jpg',
+        ] as $ruim) {
+            $this->assertSame(400, $service->databaseRequest('PATCH', 'perfis', ['id' => 'eq.' . $id], ['avatar_url' => $ruim])['status'], $ruim);
+        }
+        $auth = (new TiDBAuthService())->auth('update', ['data' => ['avatar_url' => 'https://rastreador.example.com/x.gif']]);
+        $this->assertSame(400, $auth['status']);
+    }
 }
