@@ -173,8 +173,14 @@ function htmlCupomEntrega(pedidos, { largura = '80', dia = null } = {}) {
   .obs { margin-top: 1mm; font-style: italic; overflow-wrap: anywhere; }
   .ass { margin-top: 3mm; }
   .rod { text-align: center; margin-top: 2mm; }
+  .barra { display: flex; gap: 8px; justify-content: center; padding: 10px 0 14px; font-family: system-ui, sans-serif; }
+  .barra button { font: 600 15px system-ui, sans-serif; padding: 10px 18px; border-radius: 999px; border: 1px solid #000; background: #fff; color: #000; }
+  .barra button.pri { background: #000; color: #fff; }
+  @media screen { body { width: auto; max-width: ${util}mm; padding: 0 12px 24px; } }
+  @media print { .barra { display: none; } }
 </style></head>
 <body>
+  <div class="barra"><button type="button" class="pri" id="reImprimir">Imprimir</button><button type="button" id="reFechar">Fechar</button></div>
   <div class="cab">
     <b>DONA BENTA</b>
     ROMANEIO DE ENTREGA<br>
@@ -186,21 +192,36 @@ function htmlCupomEntrega(pedidos, { largura = '80', dia = null } = {}) {
 </body></html>`;
 }
 
-// Imprime direto por um iframe escondido: um clique e já abre o diálogo de impressão.
+// Abre o cupom numa aba própria e imprime de lá. Imprimir por iframe escondido não serve:
+// no iPhone/Safari o diálogo imprime a página do painel inteira em vez do iframe.
 function imprimirCupomEntrega(pedidos, opcoes) {
+  const html = htmlCupomEntrega(pedidos, opcoes);
+  const aba = window.open('', '_blank'); // precisa ser no clique, senão vira pop-up bloqueado
+  if (aba) {
+    aba.document.open();
+    aba.document.write(html);
+    aba.document.close();
+    aba.document.getElementById('reImprimir')?.addEventListener('click', () => aba.print());
+    aba.document.getElementById('reFechar')?.addEventListener('click', () => aba.close());
+    aba.setTimeout(() => { aba.focus(); aba.print(); }, 400);
+    return;
+  }
+
+  // Pop-up bloqueado: tenta pelo iframe (funciona no computador).
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0;';
   document.body.appendChild(iframe);
   const doc = iframe.contentWindow.document;
   doc.open();
-  doc.write(htmlCupomEntrega(pedidos, opcoes));
+  doc.write(html);
   doc.close();
   setTimeout(() => {
     iframe.contentWindow.focus();
     iframe.contentWindow.print();
     setTimeout(() => iframe.remove(), 60000);
   }, 250);
+  mostrarToast('Permita pop-ups deste site para imprimir o romaneio no celular.', 'info');
 }
 
 window.renderizarEntregasAdmin = renderizarEntregasAdmin;
