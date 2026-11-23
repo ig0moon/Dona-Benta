@@ -65,6 +65,10 @@ class TiDBAuthService
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') {
             return $this->failure(400, 'Informe um e-mail e uma senha válidos.');
         }
+        // Limite por conta, além do limite por IP: impede testar senhas de um e-mail trocando de IP.
+        if (\Config\Services::throttler()->check('login_conta_' . md5($email), 20, 900) === false) {
+            return $this->failure(429, 'Muitas tentativas para esta conta. Aguarde alguns minutos e tente de novo.');
+        }
 
         try {
             $profile = db_connect()->table('perfis')
@@ -94,7 +98,8 @@ class TiDBAuthService
         $name = trim((string) ($metadata['nome'] ?? ''));
         $phone = trim((string) ($metadata['telefone'] ?? ''));
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8 || strlen($password) > 128 || $name === '') {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8 || strlen($password) > 128 || $name === ''
+            || mb_strlen($name) > 120 || mb_strlen($phone) > 30) {
             return $this->failure(400, 'Informe nome, e-mail válido e senha entre 8 e 128 caracteres.');
         }
 
@@ -141,6 +146,9 @@ class TiDBAuthService
         if ($updates === []) {
             return $this->failure(400, 'Nenhum dado de perfil válido foi enviado.');
         }
+        if (array_key_exists('avatar_url', $updates) && !self::avatarUrlValida($updates['avatar_url'], $user['id'])) {
+            return $this->failure(400, 'Foto de perfil inválida.');
+        }
 
         try {
             db_connect()->table('perfis')->where('id', $user['id'])->update($updates);
@@ -153,6 +161,36 @@ class TiDBAuthService
             log_message('error', 'Falha ao atualizar perfil no TiDB ({exception}).', ['exception' => $exception::class]);
             return $this->failure(503, 'Não foi possível atualizar o perfil agora.');
         }
+    }
+
+    /**
+     * A foto de perfil só pode ser vazia ou uma imagem enviada pelo próprio usuário ao
+     * storage do site (fotos-perfil/<id>/... ou produtos/avatars/<id>/...). Assim ninguém grava
+     * um link externo (rastreador) ou um endereço "javascript:" como foto.
+     */
+    public static function avatarUrlValida(mixed $url, string $userId): bool
+    {
+        if ($url === null || $url === '') {
+            return true;
+        }
+        if (!is_string($url) || strlen($url) > 1000 || $userId === '') {
+            return false;
+        }
+        $partes = parse_url($url);
+        if (!is_array($partes)
+            || !preg_match('#(^|/)api/storage/public/?$#', (string) ($partes['path'] ?? ''))
+            || (isset($partes['scheme']) && !in_array(strtolower($partes['scheme']), ['http', 'https'], true))
+            || empty($partes['query'])) {
+            return false;
+        }
+        parse_str($partes['query'], $parametros);
+        $bucket = $parametros['bucket'] ?? '';
+        $caminho = $parametros['path'] ?? '';
+        if (!is_string($bucket) || !is_string($caminho)) {
+            return false;
+        }
+        return ($bucket === 'fotos-perfil' && str_starts_with($caminho, $userId . '/'))
+            || ($bucket === 'produtos' && str_starts_with($caminho, 'avatars/' . $userId . '/'));
     }
 
     private function registrarAcesso(string $userId, string $evento): void
