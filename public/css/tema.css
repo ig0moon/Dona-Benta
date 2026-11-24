@@ -2325,3 +2325,38 @@ h1 em, h2 em {
   body.imprimindo-cupom .cupom-previa { padding: 0; background: none; overflow: visible; }
   body.imprimindo-cupom .cupom-papel { box-shadow: none; margin: 0; max-width: none; }
 }
+
+/* Dropdown próprio do tamanho do papel */
+.cdd { position: relative; flex: 1; min-width: 170px; }
+.cdd-btn {
+  width: 100%; height: 44px; padding: 0 14px;
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--linha-forte); border-radius: 999px;
+  background: var(--cartao-bg); color: var(--tinta);
+  font: inherit; font-weight: 600; cursor: pointer; text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cdd-btn:hover, .cdd.aberto .cdd-btn { border-color: var(--dourado-escuro); }
+.cdd-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(224, 142, 60, 0.3); }
+.cdd-btn > span:nth-child(2) { flex: 1; }
+.cdd-ico { font-size: 20px; color: var(--dourado-escuro); }
+.cdd-seta { font-size: 22px; color: var(--tinta-suave); transition: transform 0.2s ease; }
+.cdd.aberto .cdd-seta { transform: rotate(180deg); }
+.cdd-lista {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 20;
+  margin: 0; padding: 6px; list-style: none;
+  background: var(--cartao-bg); border: 1px solid var(--linha-forte); border-radius: 16px;
+  box-shadow: var(--sombra-forte);
+  display: none;
+}
+.cdd.aberto .cdd-lista { display: block; }
+.cdd-lista li {
+  padding: 10px 12px; border-radius: 10px; cursor: pointer;
+  color: var(--tinta); font-weight: 500;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cdd-lista li:hover, .cdd-lista li:focus-visible { background: var(--creme-escuro); outline: none; }
+.cdd-lista li[aria-selected="true"] { font-weight: 700; color: var(--dourado-escuro); }
+.cdd-lista li[aria-selected="true"]::after {
+  content: "check"; font-family: "Material Symbols Outlined"; font-size: 20px;
+}
