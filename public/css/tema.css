@@ -2382,3 +2382,10 @@ table.fin-tabela { min-width: 0; table-layout: auto; }
   .fin-duo { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
   .fin-tabela td:nth-child(1) { width: 100%; }
 }
+
+/* Itens da tabela financeira centralizados (desktop) */
+@media (min-width: 641px) {
+  .fin-tabela th, .fin-tabela td { text-align: center; }
+  .fin-duo { align-items: center; }
+  .fin-tabela td[colspan] { text-align: center; }
+}
