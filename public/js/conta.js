@@ -1093,11 +1093,11 @@ async function renderizarPainelAdmin(area, perfil) {
   area.innerHTML = `
     <div class="cartao" style="margin-bottom: 20px; padding: 12px 16px;">
       <div class="admin-tabs" id="adminTabs">
-        <button class="btn btn-outline admin-tab-btn ativo" data-tab="visao-geral">Visão geral</button>
-        <button class="btn btn-outline admin-tab-btn" data-tab="produtos">Produtos</button>
-        <button class="btn btn-outline admin-tab-btn" data-tab="pedidos-admin">Pedidos</button>
-        <button class="btn btn-outline admin-tab-btn" data-tab="pagamentos-admin">Financeiro</button>
-        <button class="btn btn-outline admin-tab-btn" data-tab="entregas-admin">Entregas</button>
+        <button class="btn btn-outline admin-tab-btn ativo" data-tab="visao-geral"><span class="material-symbols-outlined admin-tab-ico" aria-hidden="true">dashboard</span>Visão geral</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="produtos"><span class="material-symbols-outlined admin-tab-ico" aria-hidden="true">inventory_2</span>Produtos</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="pedidos-admin"><span class="material-symbols-outlined admin-tab-ico" aria-hidden="true">receipt_long</span>Pedidos</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="pagamentos-admin"><span class="material-symbols-outlined admin-tab-ico" aria-hidden="true">payments</span>Financeiro</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="entregas-admin"><span class="material-symbols-outlined admin-tab-ico" aria-hidden="true">local_shipping</span>Entregas</button>
       </div>
     </div>
     <div id="adminConteudoSecao"></div>

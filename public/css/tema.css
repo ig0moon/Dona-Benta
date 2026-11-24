@@ -2389,3 +2389,11 @@ table.fin-tabela { min-width: 0; table-layout: auto; }
   .fin-duo { align-items: center; }
   .fin-tabela td[colspan] { text-align: center; }
 }
+
+/* Ícones nas abas do painel: só aparecem no celular */
+.admin-tab-ico { display: none; }
+@media (max-width: 640px) {
+  .admin-tab-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .admin-tab-ico { display: inline-block; font-size: 20px; }
+  .admin-tabs .admin-tab-btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}

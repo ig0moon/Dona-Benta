@@ -12,5 +12,5 @@
   <script src="<?= base_url('js/dropdown-filtro.js?v=1.0') ?>"></script>
   <script src="<?= base_url('js/relatorio-financeiro.js?v=1.2') ?>"></script>
   <script src="<?= base_url('js/relatorio-entrega.js?v=1.5') ?>"></script>
-  <script src="<?= base_url('js/conta.js?v=6.6') ?>"></script>
+  <script src="<?= base_url('js/conta.js?v=6.7') ?>"></script>
 <?= $this->endSection() ?>
