@@ -2099,7 +2099,7 @@ h1 em, h2 em {
    PAINEL · ABAS E LISTA DE PEDIDOS (celular)
    ============================================ */
 /* Abas: no celular viram uma grade 2x2, sem rolagem lateral cortando o texto */
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .admin-tabs {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2392,7 +2392,7 @@ table.fin-tabela { min-width: 0; table-layout: auto; }
 
 /* Ícones nas abas do painel: só aparecem no celular */
 .admin-tab-ico { display: none; }
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .admin-tab-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
   .admin-tab-ico { display: inline-block; font-size: 20px; }
   .admin-tabs .admin-tab-btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
