@@ -2496,3 +2496,36 @@ table.fin-tabela { min-width: 0; table-layout: auto; }
   .ent-barra .cal { flex: 1; width: auto; max-width: 190px; }
   .ent-barra .fin-relatorio { width: 100%; }
 }
+
+/* Checkboxes do relatório de entrega */
+.ent-item input[type="checkbox"],
+.ent-selecionar-todos input[type="checkbox"],
+.ent-todas input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none;
+  width: 22px; height: 22px; flex-shrink: 0; margin: 0; cursor: pointer;
+  border: 2px solid var(--linha-forte); border-radius: 7px;
+  background: var(--cartao-bg) center / 14px no-repeat;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.ent-item input[type="checkbox"] { margin-top: 1px; }
+.ent-item input[type="checkbox"]:hover,
+.ent-selecionar-todos input[type="checkbox"]:hover,
+.ent-todas input[type="checkbox"]:hover { border-color: var(--dourado-escuro); }
+.ent-item input[type="checkbox"]:checked,
+.ent-selecionar-todos input[type="checkbox"]:checked,
+.ent-todas input[type="checkbox"]:checked {
+  background-color: var(--dourado-escuro); border-color: var(--dourado-escuro);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='5 12.5 10 17.5 19 7.5'/%3E%3C/svg%3E");
+}
+.ent-selecionar-todos input[type="checkbox"]:indeterminate {
+  background-color: var(--dourado-escuro); border-color: var(--dourado-escuro);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round'%3E%3Cline x1='6' y1='12' x2='18' y2='12'/%3E%3C/svg%3E");
+}
+.ent-item input[type="checkbox"]:active,
+.ent-selecionar-todos input[type="checkbox"]:active,
+.ent-todas input[type="checkbox"]:active { transform: scale(0.9); }
+.ent-item input[type="checkbox"]:focus-visible,
+.ent-selecionar-todos input[type="checkbox"]:focus-visible,
+.ent-todas input[type="checkbox"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(224, 142, 60, 0.3); }
+.ent-item { transition: border-color 0.15s ease, background 0.15s ease; }
+.ent-item:has(input:checked) { background: rgba(242, 166, 90, 0.08); }
