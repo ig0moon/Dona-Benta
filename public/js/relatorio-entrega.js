@@ -161,19 +161,11 @@ function injetarModalCupomEntrega() {
           <button class="modal-fechar" id="cupomX" aria-label="Fechar"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="cupom-opcoes">
-          <span id="cupomLarguraRotulo">Tamanho do papel</span>
-          <div class="cdd" id="cupomDd">
-            <input type="hidden" id="cupomLargura" value="80">
-            <button type="button" class="cdd-btn" id="cupomDdBtn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="cupomLarguraRotulo cupomDdAtual">
-              <span class="material-symbols-outlined cdd-ico" aria-hidden="true">receipt_long</span>
-              <span id="cupomDdAtual">Papel 80mm</span>
-              <span class="material-symbols-outlined cdd-seta" aria-hidden="true">expand_more</span>
-            </button>
-            <ul class="cdd-lista" role="listbox" aria-labelledby="cupomLarguraRotulo">
-              <li role="option" tabindex="-1" data-valor="80">Papel 80mm</li>
-              <li role="option" tabindex="-1" data-valor="58">Papel 58mm</li>
-            </ul>
-          </div>
+          <span>Tamanho do papel</span>
+          <select id="cupomLargura" class="admin-select-filtro" aria-label="Tamanho do papel">
+            <option value="80">Papel 80mm</option>
+            <option value="58">Papel 58mm</option>
+          </select>
         </div>
         <div class="cupom-previa"><div class="cupom-papel" id="cupomPapel"></div></div>
         <div class="rf-rodape cupom-rodape">
@@ -194,28 +186,11 @@ function injetarModalCupomEntrega() {
   modal.addEventListener('click', (e) => { if (e.target === modal) fechar(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fechar(); });
 
-  // Dropdown próprio (a lista do <select> nativo não aceita estilo).
-  const dd = document.getElementById('cupomDd');
-  const ddBtn = document.getElementById('cupomDdBtn');
-  const fecharDd = () => { dd.classList.remove('aberto'); ddBtn.setAttribute('aria-expanded', 'false'); };
-  ddBtn.addEventListener('click', () => {
-    const abrir = !dd.classList.contains('aberto');
-    dd.classList.toggle('aberto', abrir);
-    ddBtn.setAttribute('aria-expanded', String(abrir));
-  });
-  dd.querySelectorAll('[role=option]').forEach(li => {
-    const escolher = () => {
-      aplicarLarguraCupom(li.dataset.valor);
-      try { localStorage.setItem('db_largura_cupom', li.dataset.valor); } catch (err) { /* sem armazenamento local */ }
-      fecharDd();
-      ddBtn.focus();
-    };
-    li.addEventListener('click', escolher);
-    li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); escolher(); } });
-  });
-  document.addEventListener('click', (e) => { if (!dd.contains(e.target)) fecharDd(); });
-  dd.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && dd.classList.contains('aberto')) { e.stopPropagation(); fecharDd(); ddBtn.focus(); }
+  const selLargura = document.getElementById('cupomLargura');
+  estilizarSelect(selLargura);
+  selLargura.addEventListener('change', () => {
+    aplicarLarguraCupom(selLargura.value);
+    try { localStorage.setItem('db_largura_cupom', selLargura.value); } catch (err) { /* sem armazenamento local */ }
   });
 
   // Imprime a própria página mostrando só o cupom (CSS @media print em tema.css).
@@ -245,10 +220,7 @@ function aplicarLarguraCupom(largura) {
   papelEl.classList.toggle('cupom-58', papel === 58);
   papelEl.classList.toggle('cupom-80', papel === 80);
   document.getElementById('cupomLargura').value = String(papel);
-  document.getElementById('cupomDdAtual').textContent = `Papel ${papel}mm`;
-  document.querySelectorAll('#cupomDd [role=option]').forEach(li => {
-    li.setAttribute('aria-selected', String(li.dataset.valor === String(papel)));
-  });
+  document.getElementById('cupomLargura')._cddSincronizar?.();
 }
 
 function abrirModalCupomEntrega(pedidos, opcoes) {

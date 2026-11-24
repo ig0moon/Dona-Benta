@@ -2326,37 +2326,47 @@ h1 em, h2 em {
   body.imprimindo-cupom .cupom-papel { box-shadow: none; margin: 0; max-width: none; }
 }
 
-/* Dropdown próprio do tamanho do papel */
-.cdd { position: relative; flex: 1; min-width: 170px; }
+/* Dropdown de filtro (troca o <select>; mesmo visual do status do pedido) */
+.cdd-oculto { display: none !important; }
+.cdd { position: relative; min-width: 0; width: 100%; user-select: none; }
+.cupom-opcoes .cdd { flex: 1; min-width: 170px; }
+.cdd.aberto { z-index: 100; }
 .cdd-btn {
-  width: 100%; height: 44px; padding: 0 14px;
-  display: flex; align-items: center; gap: 8px;
-  border: 1px solid var(--linha-forte); border-radius: 999px;
+  width: 100%; height: 44px; padding: 0 12px 0 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  border: 1.5px solid var(--linha-forte); border-radius: 999px;
   background: var(--cartao-bg); color: var(--tinta);
-  font: inherit; font-weight: 600; cursor: pointer; text-align: left;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer; text-align: left;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.cdd-btn:hover, .cdd.aberto .cdd-btn { border-color: var(--dourado-escuro); }
-.cdd-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(224, 142, 60, 0.3); }
-.cdd-btn > span:nth-child(2) { flex: 1; }
-.cdd-ico { font-size: 20px; color: var(--dourado-escuro); }
-.cdd-seta { font-size: 22px; color: var(--tinta-suave); transition: transform 0.2s ease; }
-.cdd.aberto .cdd-seta { transform: rotate(180deg); }
+.cdd-btn:hover { border-color: var(--dourado-escuro); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08); }
+.cdd-btn:focus-visible, .cdd.aberto .cdd-btn {
+  outline: none; border-color: var(--dourado-escuro); box-shadow: 0 0 0 3px rgba(224, 142, 60, 0.3);
+}
+.cdd-atual { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdd-seta { font-size: 20px; opacity: 0.7; transition: transform 0.25s ease; flex-shrink: 0; }
+.cdd.aberto .cdd-seta { transform: rotate(180deg); opacity: 1; }
 .cdd-lista {
-  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 20;
+  position: absolute; left: 0; top: calc(100% + 6px); min-width: 100%; z-index: 250;
   margin: 0; padding: 6px; list-style: none;
-  background: var(--cartao-bg); border: 1px solid var(--linha-forte); border-radius: 16px;
-  box-shadow: var(--sombra-forte);
-  display: none;
+  background: var(--branco); border: 1px solid rgba(107, 66, 38, 0.14); border-radius: var(--raio-md);
+  box-shadow: 0 12px 32px rgba(74, 52, 36, 0.18), 0 4px 10px rgba(0, 0, 0, 0.04);
+  display: none; opacity: 0; transform: translateY(-6px) scale(0.98); pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
-.cdd.aberto .cdd-lista { display: block; }
+.cdd.aberto .cdd-lista { display: block; opacity: 1; transform: none; pointer-events: auto; }
+.cdd.para-cima .cdd-lista { top: auto; bottom: calc(100% + 6px); }
 .cdd-lista li {
-  padding: 10px 12px; border-radius: 10px; cursor: pointer;
-  color: var(--tinta); font-weight: 500;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 12px; border-radius: 10px; cursor: pointer; white-space: nowrap;
+  font-size: 0.86rem; font-weight: 600; color: var(--marrom);
+  transition: background 0.15s ease, transform 0.15s ease;
 }
-.cdd-lista li:hover, .cdd-lista li:focus-visible { background: var(--creme-escuro); outline: none; }
-.cdd-lista li[aria-selected="true"] { font-weight: 700; color: var(--dourado-escuro); }
-.cdd-lista li[aria-selected="true"]::after {
-  content: "check"; font-family: "Material Symbols Outlined"; font-size: 20px;
+.cdd-lista li:hover, .cdd-lista li:focus-visible { background: var(--azul-bebe); transform: translateX(2px); outline: none; }
+.cdd-lista li[aria-selected="true"] { background: rgba(242, 166, 90, 0.14); color: var(--dourado-escuro); }
+.cdd-check { font-size: 18px; visibility: hidden; }
+.cdd-lista li[aria-selected="true"] .cdd-check { visibility: visible; }
+@media (max-width: 640px) {
+  .fin-filtros .cdd-btn { font-size: 0.82rem; padding-left: 12px; }
 }

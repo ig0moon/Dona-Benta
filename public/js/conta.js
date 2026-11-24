@@ -1760,6 +1760,8 @@ function renderizarPagamentosAdmin(area) {
   }
 
   document.getElementById('filtroTextoFinanceiro')?.addEventListener('input', renderLinhasFinanceiro);
+  estilizarSelect(document.getElementById('filtroStatusPagamento'));
+  estilizarSelect(document.getElementById('filtroMetodoPagamento'));
   document.getElementById('filtroStatusPagamento')?.addEventListener('change', renderLinhasFinanceiro);
   document.getElementById('filtroMetodoPagamento')?.addEventListener('change', renderLinhasFinanceiro);
   document.getElementById('btnImprimirFinanceiro')?.addEventListener('click', () => {
