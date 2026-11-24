@@ -38,10 +38,10 @@ function renderizarEntregasAdmin(area) {
         Pedidos já entregues ou cancelados não aparecem.
       </p>
       <div class="fin-filtros ent-filtros">
-        <label class="ent-campo">
+        <div class="ent-campo">
           <span>Dia da entrega</span>
           <input type="date" id="entData" value="${reHoje()}">
-        </label>
+        </div>
         <label class="ent-campo ent-campo-check">
           <input type="checkbox" id="entTodasDatas"> Todas as datas
         </label>
@@ -58,6 +58,7 @@ function renderizarEntregasAdmin(area) {
   `;
 
   const inputData = document.getElementById('entData');
+  estilizarData(inputData);
   const todasDatas = document.getElementById('entTodasDatas');
   const marcarTodos = document.getElementById('entMarcarTodos');
   const lista = document.getElementById('entLista');
@@ -82,6 +83,7 @@ function renderizarEntregasAdmin(area) {
 
   const renderLista = () => {
     inputData.disabled = todasDatas.checked;
+    inputData._sincronizarData?.();
     const pedidos = visiveis();
     if (!pedidos.length) {
       lista.innerHTML = '<p class="ent-vazio">Nenhum pedido de entrega pendente para este dia.</p>';
