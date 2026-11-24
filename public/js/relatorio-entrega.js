@@ -29,30 +29,36 @@ function rePendentesDeEntrega() {
 function renderizarEntregasAdmin(area) {
   area.innerHTML = `
     <div class="cartao">
-      <div class="fin-topo">
-        <h3>Relatório de entrega</h3>
-        <span class="fin-contagem" id="entContagem"></span>
-      </div>
-      <p style="color: var(--marrom-claro); font-size: 0.9rem; margin-bottom: 12px;">
-        Marque os pedidos que saem para entrega e imprima o romaneio na impressora de cupom.
-        Pedidos já entregues ou cancelados não aparecem.
-      </p>
-      <div class="fin-filtros ent-filtros">
-        <div class="ent-campo">
-          <span>Dia da entrega</span>
-          <input type="date" id="entData" value="${reHoje()}">
+      <div class="ent-cabeca">
+        <span class="ent-cabeca-ico material-symbols-outlined" aria-hidden="true">local_shipping</span>
+        <div>
+          <h3>Relatório de entrega</h3>
+          <p>Marque os pedidos que saem para entrega e imprima o romaneio na impressora de cupom. Pedidos já entregues ou cancelados não aparecem.</p>
         </div>
-        <label class="ent-campo ent-campo-check">
-          <input type="checkbox" id="entTodasDatas"> Todas as datas
-        </label>
+      </div>
+
+      <div class="ent-barra">
+        <div class="ent-barra-filtros">
+          <div class="ent-campo">
+            <span>Dia da entrega</span>
+            <input type="date" id="entData" value="${reHoje()}">
+          </div>
+          <label class="ent-todas">
+            <input type="checkbox" id="entTodasDatas"> Todas as datas
+          </label>
+        </div>
         <button type="button" class="btn btn-primario fin-relatorio" id="btnImprimirEntrega">
           <span class="material-symbols-outlined" aria-hidden="true">print</span>
           Imprimir selecionados
         </button>
       </div>
-      <label class="ent-selecionar-todos">
-        <input type="checkbox" id="entMarcarTodos"> Selecionar todos
-      </label>
+
+      <div class="ent-lista-topo">
+        <label class="ent-selecionar-todos">
+          <input type="checkbox" id="entMarcarTodos"> Selecionar todos
+        </label>
+        <span class="fin-contagem" id="entContagem"></span>
+      </div>
       <div id="entLista" class="ent-lista"></div>
     </div>
   `;
@@ -86,7 +92,7 @@ function renderizarEntregasAdmin(area) {
     inputData._sincronizarData?.();
     const pedidos = visiveis();
     if (!pedidos.length) {
-      lista.innerHTML = '<p class="ent-vazio">Nenhum pedido de entrega pendente para este dia.</p>';
+      lista.innerHTML = '<div class="ent-vazio"><span class="material-symbols-outlined" aria-hidden="true">inventory_2</span><strong>Nenhum pedido para entregar</strong><span>Não há entregas pendentes para este dia. Tente outra data ou marque “Todas as datas”.</span></div>';
     } else {
       lista.innerHTML = pedidos.map(p => `
         <label class="ent-item">
