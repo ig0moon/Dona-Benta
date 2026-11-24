@@ -1093,11 +1093,11 @@ async function renderizarPainelAdmin(area, perfil) {
   area.innerHTML = `
     <div class="cartao" style="margin-bottom: 20px; padding: 12px 16px;">
       <div class="admin-tabs" id="adminTabs">
-        <button class="btn btn-outline admin-tab-btn ativo" data-tab="visao-geral">Visão geral</button>
-        <button class="btn btn-outline admin-tab-btn" data-tab="produtos">Produtos</button>
-        <button class="btn btn-outline admin-tab-btn" data-tab="pedidos-admin">Pedidos</button>
-        <button class="btn btn-outline admin-tab-btn" data-tab="pagamentos-admin">Financeiro</button>
-        <button class="btn btn-outline admin-tab-btn" data-tab="entregas-admin">Entregas</button>
+        <button class="btn btn-outline admin-tab-btn ativo" data-tab="visao-geral"><span class="material-symbols-outlined admin-tab-ico" aria-hidden="true">dashboard</span>Visão geral</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="produtos"><span class="material-symbols-outlined admin-tab-ico" aria-hidden="true">inventory_2</span>Produtos</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="pedidos-admin"><span class="material-symbols-outlined admin-tab-ico" aria-hidden="true">receipt_long</span>Pedidos</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="pagamentos-admin"><span class="material-symbols-outlined admin-tab-ico" aria-hidden="true">payments</span>Financeiro</button>
+        <button class="btn btn-outline admin-tab-btn" data-tab="entregas-admin"><span class="material-symbols-outlined admin-tab-ico" aria-hidden="true">local_shipping</span>Entregas</button>
       </div>
     </div>
     <div id="adminConteudoSecao"></div>
@@ -1362,17 +1362,27 @@ function renderizarPedidosAdmin(area) {
       });
 
       if (!estaAberto) {
-        // Verifica se há espaço suficiente abaixo da linha
-        const rect = trigger.getBoundingClientRect();
-        const espacoAbaixo = window.innerHeight - rect.bottom;
-        if (espacoAbaixo < 240) {
-          menu.classList.add('abrir-para-cima');
-        } else {
-          menu.classList.remove('abrir-para-cima');
-        }
-
         dropdown.classList.add('aberto');
         trigger.setAttribute('aria-expanded', 'true');
+
+        // O menu é "fixed" para não ser cortado pelo scroll da tabela; a posição
+        // sai do botão e inverte para cima quando falta espaço embaixo.
+        const rect = trigger.getBoundingClientRect();
+        const altMenu = menu.offsetHeight;
+        const paraCima = window.innerHeight - rect.bottom < altMenu + 12 && rect.top > altMenu + 12;
+        menu.classList.toggle('abrir-para-cima', paraCima);
+        menu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - menu.offsetWidth - 8))}px`;
+        menu.style.top = paraCima ? `${rect.top - altMenu - 6}px` : `${rect.bottom + 6}px`;
+        menu.style.bottom = 'auto';
+        const fecharAoRolar = () => {
+          dropdown.classList.remove('aberto');
+          trigger.setAttribute('aria-expanded', 'false');
+          dropdown.closest('tr')?.classList.remove('linha-com-dropdown-aberto');
+          window.removeEventListener('scroll', fecharAoRolar, true);
+          window.removeEventListener('resize', fecharAoRolar);
+        };
+        window.addEventListener('scroll', fecharAoRolar, true);
+        window.addEventListener('resize', fecharAoRolar);
         dropdown.closest('tr')?.classList.add('linha-com-dropdown-aberto');
       } else {
         dropdown.classList.remove('aberto');
@@ -1588,10 +1598,8 @@ function renderizarPagamentosAdmin(area) {
             <tr>
               <th>Pedido & Data</th>
               <th>Cliente</th>
-              <th>Valor Total</th>
-              <th>Forma</th>
-              <th>Status Pagamento</th>
-              <th>Status Encomenda</th>
+              <th>Valor & Forma</th>
+              <th>Pagamento & Encomenda</th>
               <th style="text-align:center;">Ações</th>
             </tr>
           </thead>
@@ -1665,7 +1673,7 @@ function renderizarPagamentosAdmin(area) {
     }
 
     if (lista.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 24px; color:var(--marrom-claro);">Nenhum pagamento ou compra encontrada para os filtros selecionados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 24px; color:var(--marrom-claro);">Nenhum pagamento ou compra encontrada para os filtros selecionados.</td></tr>';
       return;
     }
 
@@ -1687,24 +1695,24 @@ function renderizarPagamentosAdmin(area) {
             <span style="font-size:0.8rem; color:var(--marrom-claro);">${escapeHtml(p.perfis?.telefone || 'Sem telefone')}</span></span>
           </td>
           <td data-rotulo="Valor">
-            <strong style="font-size:0.95rem; color:var(--dourado-escuro); font-family:var(--fonte-display);">${formatarPreco(p.valor_total)}</strong>
+            <div class="fin-duo">
+              <strong style="font-size:0.95rem; color:var(--dourado-escuro); font-family:var(--fonte-display);">${formatarPreco(p.valor_total)}</strong>
+              <span class="badge" style="background:rgba(107, 66, 38, 0.08); color:var(--marrom); display:inline-flex; align-items:center; gap:5px; font-size:0.78rem;">
+                ${ehPix
+                  ? `<span style="display:inline-flex; align-items:center; width:15px; height:15px;">${pixSvg}</span>`
+                  : '<span class="material-symbols-outlined" style="font-size:15px;">credit_card</span>'
+                }
+                ${escapeHtml(p.forma_pagamento || 'Pix')}
+              </span>
+            </div>
           </td>
-          <td data-rotulo="Forma">
-            <span class="badge" style="background:rgba(107, 66, 38, 0.08); color:var(--marrom); display:inline-flex; align-items:center; gap:5px; font-size:0.78rem;">
-              ${ehPix
-                ? `<span style="display:inline-flex; align-items:center; width:15px; height:15px;">${pixSvg}</span>`
-                : '<span class="material-symbols-outlined" style="font-size:15px;">credit_card</span>'
-              }
-              ${escapeHtml(p.forma_pagamento || 'Pix')}
-            </span>
-          </td>
-          <td data-rotulo="Pagamento">
-            <button class="badge btn-pagamento-financeiro ${pedidoPago(p) ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${pedidoPago(p)}" title="Clique para alternar status do pagamento">
-              ${pedidoPago(p) ? 'Pago' : 'Pendente'}
-            </button>
-          </td>
-          <td data-rotulo="Encomenda">
-            <span class="badge ${statusInfo.classe}">${escapeHtml(statusInfo.rotulo)}</span>
+          <td data-rotulo="Status">
+            <div class="fin-duo">
+              <button class="badge btn-pagamento-financeiro ${pedidoPago(p) ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${pedidoPago(p)}" title="Clique para alternar status do pagamento">
+                ${pedidoPago(p) ? 'Pago' : 'Pendente'}
+              </button>
+              <span class="badge ${statusInfo.classe}">${escapeHtml(statusInfo.rotulo)}</span>
+            </div>
           </td>
           <td class="fin-acoes" style="text-align:center;">
             <div style="display:inline-flex; gap:6px; align-items:center;">
@@ -1760,6 +1768,8 @@ function renderizarPagamentosAdmin(area) {
   }
 
   document.getElementById('filtroTextoFinanceiro')?.addEventListener('input', renderLinhasFinanceiro);
+  estilizarSelect(document.getElementById('filtroStatusPagamento'));
+  estilizarSelect(document.getElementById('filtroMetodoPagamento'));
   document.getElementById('filtroStatusPagamento')?.addEventListener('change', renderLinhasFinanceiro);
   document.getElementById('filtroMetodoPagamento')?.addEventListener('change', renderLinhasFinanceiro);
   document.getElementById('btnImprimirFinanceiro')?.addEventListener('click', () => {

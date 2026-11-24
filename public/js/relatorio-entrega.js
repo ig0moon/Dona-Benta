@@ -1,7 +1,7 @@
 // ============================================
 // DONA BENTA — js/relatorio-entrega.js
 // Aba "Entregas" do painel: escolhe os pedidos a entregar no dia e imprime
-// um romaneio em formato de cupom (impressora térmica de 80mm ou 58mm).
+// um romaneio (prévia em modal) em formato de cupom (impressora térmica de 80mm ou 58mm).
 // Só aparecem pedidos de entrega em domicílio que ainda não foram entregues
 // (nem cancelados).
 // ============================================
@@ -29,47 +29,45 @@ function rePendentesDeEntrega() {
 function renderizarEntregasAdmin(area) {
   area.innerHTML = `
     <div class="cartao">
-      <div class="fin-topo">
-        <h3>Relatório de entrega</h3>
-        <span class="fin-contagem" id="entContagem"></span>
+      <div class="ent-cabeca">
+        <span class="ent-cabeca-ico material-symbols-outlined" aria-hidden="true">local_shipping</span>
+        <div>
+          <h3>Relatório de entrega</h3>
+          <p>Marque os pedidos que saem para entrega e imprima o romaneio na impressora de cupom. Pedidos já entregues ou cancelados não aparecem.</p>
+        </div>
       </div>
-      <p style="color: var(--marrom-claro); font-size: 0.9rem; margin-bottom: 12px;">
-        Marque os pedidos que saem para entrega e imprima o romaneio na impressora de cupom.
-        Pedidos já entregues ou cancelados não aparecem.
-      </p>
-      <div class="fin-filtros ent-filtros">
-        <label class="ent-campo">
-          <span>Dia da entrega</span>
-          <input type="date" id="entData" value="${reHoje()}">
-        </label>
-        <label class="ent-campo ent-campo-check">
-          <input type="checkbox" id="entTodasDatas"> Todas as datas
-        </label>
-        <select id="entLargura" class="admin-select-filtro" aria-label="Largura do papel">
-          <option value="80">Papel 80mm</option>
-          <option value="58">Papel 58mm</option>
-        </select>
+
+      <div class="ent-barra">
+        <div class="ent-barra-filtros">
+          <div class="ent-campo">
+            <span>Dia da entrega</span>
+            <input type="date" id="entData" value="${reHoje()}">
+          </div>
+          <label class="ent-todas">
+            <input type="checkbox" id="entTodasDatas"> Todas as datas
+          </label>
+        </div>
         <button type="button" class="btn btn-primario fin-relatorio" id="btnImprimirEntrega">
           <span class="material-symbols-outlined" aria-hidden="true">print</span>
           Imprimir selecionados
         </button>
       </div>
-      <label class="ent-selecionar-todos">
-        <input type="checkbox" id="entMarcarTodos"> Selecionar todos
-      </label>
+
+      <div class="ent-lista-topo">
+        <label class="ent-selecionar-todos">
+          <input type="checkbox" id="entMarcarTodos"> Selecionar todos
+        </label>
+        <span class="fin-contagem" id="entContagem"></span>
+      </div>
       <div id="entLista" class="ent-lista"></div>
     </div>
   `;
 
   const inputData = document.getElementById('entData');
+  estilizarData(inputData);
   const todasDatas = document.getElementById('entTodasDatas');
   const marcarTodos = document.getElementById('entMarcarTodos');
   const lista = document.getElementById('entLista');
-
-  try {
-    const salva = localStorage.getItem('db_largura_cupom');
-    if (salva) document.getElementById('entLargura').value = salva;
-  } catch (e) { /* sem armazenamento local */ }
 
   const visiveis = () => {
     const dia = inputData.value;
@@ -91,9 +89,10 @@ function renderizarEntregasAdmin(area) {
 
   const renderLista = () => {
     inputData.disabled = todasDatas.checked;
+    inputData._sincronizarData?.();
     const pedidos = visiveis();
     if (!pedidos.length) {
-      lista.innerHTML = '<p class="ent-vazio">Nenhum pedido de entrega pendente para este dia.</p>';
+      lista.innerHTML = '<div class="ent-vazio"><span class="material-symbols-outlined" aria-hidden="true">inventory_2</span><strong>Nenhum pedido para entregar</strong><span>Não há entregas pendentes para este dia. Tente outra data ou marque “Todas as datas”.</span></div>';
     } else {
       lista.innerHTML = pedidos.map(p => `
         <label class="ent-item">
@@ -127,101 +126,118 @@ function renderizarEntregasAdmin(area) {
       mostrarToast('Selecione pelo menos um pedido.', 'info');
       return;
     }
-    const largura = document.getElementById('entLargura').value;
-    try { localStorage.setItem('db_largura_cupom', largura); } catch (e) { /* sem armazenamento local */ }
-    imprimirCupomEntrega(selecionados, {
-      largura,
-      dia: todasDatas.checked ? null : inputData.value,
-    });
+    abrirModalCupomEntrega(selecionados, { dia: todasDatas.checked ? null : inputData.value });
   });
 
   renderLista();
 }
 
-function htmlCupomEntrega(pedidos, { largura = '80', dia = null } = {}) {
-  const papel = largura === '58' ? 58 : 80;
-  const util = papel === 58 ? 48 : 72; // área imprimível típica
+function htmlCupomEntrega(pedidos, { dia = null } = {}) {
   const agora = new Date();
   const emitido = `${formatarData(agora)} ${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
 
   const blocos = pedidos.map((p, i) => `
-    <div class="ped">
-      <div class="topo"><span>${i + 1}. ${escapeHtml(reNumero(p))}</span><span>${escapeHtml(p.horario_agendado || '')}</span></div>
+    <div class="cupom-ped">
+      <div class="cupom-topo"><span>${i + 1}. ${escapeHtml(reNumero(p))}</span><span>${escapeHtml(p.horario_agendado || '')}</span></div>
       ${dia ? '' : `<div>${escapeHtml(formatarData(p.data_agendada) || 'Sem data')}</div>`}
-      <div class="nome">${escapeHtml(p.perfis?.nome || 'Cliente')}</div>
+      <div class="cupom-nome">${escapeHtml(p.perfis?.nome || 'Cliente')}</div>
       ${p.perfis?.telefone ? `<div>Tel: ${escapeHtml(p.perfis.telefone)}</div>` : ''}
-      <div class="end">${escapeHtml(p.endereco_entrega || 'Endereço não informado')}</div>
-      ${p.observacoes ? `<div class="obs">Obs: ${escapeHtml(p.observacoes)}</div>` : ''}
-      <div class="ass">Recebido: ______________________</div>
+      <div class="cupom-end">${escapeHtml(p.endereco_entrega || 'Endereço não informado')}</div>
+      ${p.observacoes ? `<div class="cupom-obs">Obs: ${escapeHtml(p.observacoes)}</div>` : ''}
+      <div class="cupom-ass">Recebido: ______________________</div>
     </div>
   `).join('');
 
-  return `<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><title>Romaneio de entrega</title>
-<style>
-  @page { size: ${papel}mm auto; margin: 0; }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #fff; color: #000; }
-  body { width: ${util}mm; margin: 0 auto; padding: 2mm 0 6mm;
-         font: ${papel === 58 ? '11px' : '12px'}/1.3 "Courier New", Courier, monospace; }
-  .cab { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 2mm; margin-bottom: 2mm; }
-  .cab b { font-size: 1.25em; display: block; }
-  .ped { border-bottom: 1px dashed #000; padding: 2mm 0; page-break-inside: avoid; break-inside: avoid; }
-  .topo { display: flex; justify-content: space-between; font-weight: bold; }
-  .nome { font-weight: bold; font-size: 1.15em; margin-top: 1mm; text-transform: uppercase; }
-  .end { margin-top: 1mm; word-wrap: break-word; overflow-wrap: anywhere; }
-  .obs { margin-top: 1mm; font-style: italic; overflow-wrap: anywhere; }
-  .ass { margin-top: 3mm; }
-  .rod { text-align: center; margin-top: 2mm; }
-  .barra { display: flex; gap: 8px; justify-content: center; padding: 10px 0 14px; font-family: system-ui, sans-serif; }
-  .barra button { font: 600 15px system-ui, sans-serif; padding: 10px 18px; border-radius: 999px; border: 1px solid #000; background: #fff; color: #000; }
-  .barra button.pri { background: #000; color: #fff; }
-  @media screen { body { width: auto; max-width: ${util}mm; padding: 0 12px 24px; } }
-  @media print { .barra { display: none; } }
-</style></head>
-<body>
-  <div class="barra"><button type="button" class="pri" id="reImprimir">Imprimir</button><button type="button" id="reFechar">Fechar</button></div>
-  <div class="cab">
-    <b>DONA BENTA</b>
-    ROMANEIO DE ENTREGA<br>
-    ${dia ? `Dia ${escapeHtml(formatarData(dia))}<br>` : ''}
-    ${pedidos.length} ${pedidos.length === 1 ? 'pedido' : 'pedidos'}
-  </div>
-  ${blocos}
-  <div class="rod">Emitido em ${escapeHtml(emitido)}</div>
-</body></html>`;
+  return `
+    <div class="cupom-cab">
+      <b>DONA BENTA</b>
+      ROMANEIO DE ENTREGA<br>
+      ${dia ? `Dia ${escapeHtml(formatarData(dia))}<br>` : ''}
+      ${pedidos.length} ${pedidos.length === 1 ? 'pedido' : 'pedidos'}
+    </div>
+    ${blocos}
+    <div class="cupom-rod">Emitido em ${escapeHtml(emitido)}</div>`;
 }
 
-// Abre o cupom numa aba própria e imprime de lá. Imprimir por iframe escondido não serve:
-// no iPhone/Safari o diálogo imprime a página do painel inteira em vez do iframe.
-function imprimirCupomEntrega(pedidos, opcoes) {
-  const html = htmlCupomEntrega(pedidos, opcoes);
-  const aba = window.open('', '_blank'); // precisa ser no clique, senão vira pop-up bloqueado
-  if (aba) {
-    aba.document.open();
-    aba.document.write(html);
-    aba.document.close();
-    aba.document.getElementById('reImprimir')?.addEventListener('click', () => aba.print());
-    aba.document.getElementById('reFechar')?.addEventListener('click', () => aba.close());
-    aba.setTimeout(() => { aba.focus(); aba.print(); }, 400);
-    return;
-  }
+function injetarModalCupomEntrega() {
+  if (document.getElementById('modalCupomEntrega')) return;
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="modal-overlay" id="modalCupomEntrega" role="dialog" aria-modal="true" aria-labelledby="cupomTitulo">
+      <div class="modal-cartao cupom-modal">
+        <div class="modal-cabecalho cupom-modal-cab">
+          <h3 id="cupomTitulo">Romaneio de entrega</h3>
+          <button class="modal-fechar" id="cupomX" aria-label="Fechar"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="cupom-opcoes">
+          <span>Tamanho do papel</span>
+          <select id="cupomLargura" class="admin-select-filtro" aria-label="Tamanho do papel">
+            <option value="80">Papel 80mm</option>
+            <option value="58">Papel 58mm</option>
+          </select>
+        </div>
+        <div class="cupom-previa"><div class="cupom-papel" id="cupomPapel"></div></div>
+        <div class="rf-rodape cupom-rodape">
+          <button type="button" class="btn btn-outline" id="cupomFechar">Fechar</button>
+          <button type="button" class="btn btn-primario" id="cupomImprimir">
+            <span class="material-symbols-outlined" aria-hidden="true">print</span>
+            Imprimir
+          </button>
+        </div>
+      </div>
+    </div>
+  `);
 
-  // Pop-up bloqueado: tenta pelo iframe (funciona no computador).
-  const iframe = document.createElement('iframe');
-  iframe.setAttribute('aria-hidden', 'true');
-  iframe.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0;';
-  document.body.appendChild(iframe);
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-  setTimeout(() => {
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
-    setTimeout(() => iframe.remove(), 60000);
-  }, 250);
-  mostrarToast('Permita pop-ups deste site para imprimir o romaneio no celular.', 'info');
+  const modal = document.getElementById('modalCupomEntrega');
+  const fechar = () => modal.classList.remove('aberto');
+  document.getElementById('cupomX').addEventListener('click', fechar);
+  document.getElementById('cupomFechar').addEventListener('click', fechar);
+  modal.addEventListener('click', (e) => { if (e.target === modal) fechar(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fechar(); });
+
+  const selLargura = document.getElementById('cupomLargura');
+  estilizarSelect(selLargura);
+  selLargura.addEventListener('change', () => {
+    aplicarLarguraCupom(selLargura.value);
+    try { localStorage.setItem('db_largura_cupom', selLargura.value); } catch (err) { /* sem armazenamento local */ }
+  });
+
+  // Imprime a própria página mostrando só o cupom (CSS @media print em tema.css).
+  // Funciona também no celular, onde imprimir por iframe/aba falha.
+  document.getElementById('cupomImprimir').addEventListener('click', () => {
+    const papel = document.getElementById('cupomLargura').value === '58' ? 58 : 80;
+    // @page não pode ficar dentro de @media (o navegador ignora e cai no A4):
+    // vai solto, numa <style> que só existe durante a impressão.
+    const estilo = document.createElement('style');
+    estilo.id = 'cupomPageStyle';
+    // Chrome não aceita altura "auto" no @page (volta para A4): usa a altura real do cupom.
+    const altura = Math.max(40, Math.ceil(document.getElementById('cupomPapel').offsetHeight * 25.4 / 96) + 4);
+    estilo.textContent = `@page { size: ${papel}mm ${altura}mm; margin: 0; }`;
+    document.head.appendChild(estilo);
+    document.body.classList.add('imprimindo-cupom');
+    window.addEventListener('afterprint', () => {
+      document.body.classList.remove('imprimindo-cupom');
+      estilo.remove();
+    }, { once: true });
+    window.print();
+  });
 }
 
-window.renderizarEntregasAdmin = renderizarEntregasAdmin;
+function aplicarLarguraCupom(largura) {
+  const papel = largura === '58' ? 58 : 80;
+  const papelEl = document.getElementById('cupomPapel');
+  papelEl.classList.toggle('cupom-58', papel === 58);
+  papelEl.classList.toggle('cupom-80', papel === 80);
+  document.getElementById('cupomLargura').value = String(papel);
+  document.getElementById('cupomLargura')._cddSincronizar?.();
+}
+
+function abrirModalCupomEntrega(pedidos, opcoes) {
+  injetarModalCupomEntrega();
+  document.getElementById('cupomPapel').innerHTML = htmlCupomEntrega(pedidos, opcoes);
+  let largura = '80';
+  try { largura = localStorage.getItem('db_largura_cupom') || '80'; } catch (e) { /* sem armazenamento local */ }
+  aplicarLarguraCupom(largura);
+  document.getElementById('modalCupomEntrega').classList.add('aberto');
+}
+
+

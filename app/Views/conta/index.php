@@ -9,7 +9,9 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+  <script src="<?= base_url('js/dropdown-filtro.js?v=1.0') ?>"></script>
+  <script src="<?= base_url('js/calendario.js?v=1.0') ?>"></script>
   <script src="<?= base_url('js/relatorio-financeiro.js?v=1.2') ?>"></script>
-  <script src="<?= base_url('js/relatorio-entrega.js?v=1.1') ?>"></script>
-  <script src="<?= base_url('js/conta.js?v=6.2') ?>"></script>
+  <script src="<?= base_url('js/relatorio-entrega.js?v=1.7') ?>"></script>
+  <script src="<?= base_url('js/conta.js?v=6.7') ?>"></script>
 <?= $this->endSection() ?>

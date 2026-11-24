@@ -2023,8 +2023,8 @@ tr.linha-com-dropdown-aberto {
 
 /* Menu Dropdown com opções em DIVs */
 .custom-status-menu {
-  position: absolute;
-  top: calc(100% + 6px);
+  position: fixed;
+  top: 0;
   left: 0;
   min-width: 195px;
   background: var(--branco);
@@ -2053,8 +2053,6 @@ tr.linha-com-dropdown-aberto {
 
 /* Quando abrir para cima (caso esteja no final da tela) */
 .custom-status-menu.abrir-para-cima {
-  top: auto;
-  bottom: calc(100% + 6px);
   transform: translateY(6px) scale(0.98);
 }
 
