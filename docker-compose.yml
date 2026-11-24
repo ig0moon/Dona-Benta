@@ -1,0 +1,58 @@
+# Ambiente local do Dona Benta no Docker Desktop.
+#   docker compose up -d --build   -> sobe o site em http://localhost:8080
+#   docker compose down            -> desliga (os dados do banco ficam no volume)
+#   docker compose down -v         -> desliga e apaga o banco local
+#
+# Usa um MySQL local no lugar do TiDB Cloud. O schema (app/Database/schema_tidb.sql)
+# é carregado automaticamente na primeira vez que o volume do banco é criado.
+# Tokens do Mercado Pago (opcional): crie um arquivo docker.env (já está no .gitignore)
+# com MP_ACCESS_TOKEN=TEST-..., MP_WEBHOOK_SECRET=... etc.
+
+services:
+  app:
+    build: .
+    container_name: dona-benta-app
+    ports:
+      - "8080:10000"
+    environment:
+      CI_ENVIRONMENT: production
+      APP_BASE_URL: http://localhost:8080/
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: dona_benta
+      DB_USER: dona_benta
+      DB_PASS: dona_benta
+      DB_ENCRYPT: "false"
+    env_file:
+      - path: docker.env
+        required: false
+    volumes:
+      # Edições em app/ e public/ aparecem na hora, sem rebuild.
+      - ./app:/var/www/html/app
+      - ./public:/var/www/html/public
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.4
+    container_name: dona-benta-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dona_benta
+      MYSQL_USER: dona_benta
+      MYSQL_PASSWORD: dona_benta
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max-allowed-packet=64M
+    ports:
+      - "3307:3306" # acesso pelo Windows (DBeaver, Workbench...) em localhost:3307
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./app/Database/schema_tidb.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  db_data:
