@@ -2177,10 +2177,6 @@ h1 em, h2 em {
     padding: 10px 12px !important;
     font-size: 0.88rem !important;
   }
-  .ped-tabela .custom-status-menu {
-    left: auto;
-    right: 0;
-  }
   /* Linha "nenhum pedido" */
   .ped-tabela td[colspan] {
     text-align: center;
