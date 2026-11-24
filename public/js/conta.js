@@ -1362,17 +1362,27 @@ function renderizarPedidosAdmin(area) {
       });
 
       if (!estaAberto) {
-        // Verifica se há espaço suficiente abaixo da linha
-        const rect = trigger.getBoundingClientRect();
-        const espacoAbaixo = window.innerHeight - rect.bottom;
-        if (espacoAbaixo < 240) {
-          menu.classList.add('abrir-para-cima');
-        } else {
-          menu.classList.remove('abrir-para-cima');
-        }
-
         dropdown.classList.add('aberto');
         trigger.setAttribute('aria-expanded', 'true');
+
+        // O menu é "fixed" para não ser cortado pelo scroll da tabela; a posição
+        // sai do botão e inverte para cima quando falta espaço embaixo.
+        const rect = trigger.getBoundingClientRect();
+        const altMenu = menu.offsetHeight;
+        const paraCima = window.innerHeight - rect.bottom < altMenu + 12 && rect.top > altMenu + 12;
+        menu.classList.toggle('abrir-para-cima', paraCima);
+        menu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - menu.offsetWidth - 8))}px`;
+        menu.style.top = paraCima ? `${rect.top - altMenu - 6}px` : `${rect.bottom + 6}px`;
+        menu.style.bottom = 'auto';
+        const fecharAoRolar = () => {
+          dropdown.classList.remove('aberto');
+          trigger.setAttribute('aria-expanded', 'false');
+          dropdown.closest('tr')?.classList.remove('linha-com-dropdown-aberto');
+          window.removeEventListener('scroll', fecharAoRolar, true);
+          window.removeEventListener('resize', fecharAoRolar);
+        };
+        window.addEventListener('scroll', fecharAoRolar, true);
+        window.addEventListener('resize', fecharAoRolar);
         dropdown.closest('tr')?.classList.add('linha-com-dropdown-aberto');
       } else {
         dropdown.classList.remove('aberto');
