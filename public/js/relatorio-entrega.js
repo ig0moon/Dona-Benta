@@ -194,8 +194,20 @@ function injetarModalCupomEntrega() {
   // Imprime a própria página mostrando só o cupom (CSS @media print em tema.css).
   // Funciona também no celular, onde imprimir por iframe/aba falha.
   document.getElementById('cupomImprimir').addEventListener('click', () => {
+    const papel = document.getElementById('cupomLargura').value === '58' ? 58 : 80;
+    // @page não pode ficar dentro de @media (o navegador ignora e cai no A4):
+    // vai solto, numa <style> que só existe durante a impressão.
+    const estilo = document.createElement('style');
+    estilo.id = 'cupomPageStyle';
+    // Chrome não aceita altura "auto" no @page (volta para A4): usa a altura real do cupom.
+    const altura = Math.max(40, Math.ceil(document.getElementById('cupomPapel').offsetHeight * 25.4 / 96) + 4);
+    estilo.textContent = `@page { size: ${papel}mm ${altura}mm; margin: 0; }`;
+    document.head.appendChild(estilo);
     document.body.classList.add('imprimindo-cupom');
-    window.addEventListener('afterprint', () => document.body.classList.remove('imprimindo-cupom'), { once: true });
+    window.addEventListener('afterprint', () => {
+      document.body.classList.remove('imprimindo-cupom');
+      estilo.remove();
+    }, { once: true });
     window.print();
   });
 }
@@ -206,14 +218,6 @@ function aplicarLarguraCupom(largura) {
   papelEl.classList.toggle('cupom-58', papel === 58);
   papelEl.classList.toggle('cupom-80', papel === 80);
   document.getElementById('cupomLargura').value = String(papel);
-  let estilo = document.getElementById('cupomPageStyle');
-  if (!estilo) {
-    estilo = document.createElement('style');
-    estilo.id = 'cupomPageStyle';
-    document.head.appendChild(estilo);
-  }
-  // Página = largura do rolo (nada de A4), altura automática.
-  estilo.textContent = `@media print { @page { size: ${papel}mm auto; margin: 0; } }`;
 }
 
 function abrirModalCupomEntrega(pedidos, opcoes) {

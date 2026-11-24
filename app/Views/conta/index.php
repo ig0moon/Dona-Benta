@@ -10,6 +10,6 @@
 
 <?= $this->section('scripts') ?>
   <script src="<?= base_url('js/relatorio-financeiro.js?v=1.2') ?>"></script>
-  <script src="<?= base_url('js/relatorio-entrega.js?v=1.2') ?>"></script>
+  <script src="<?= base_url('js/relatorio-entrega.js?v=1.3') ?>"></script>
   <script src="<?= base_url('js/conta.js?v=6.2') ?>"></script>
 <?= $this->endSection() ?>
