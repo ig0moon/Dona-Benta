@@ -2448,3 +2448,7 @@ table.fin-tabela { min-width: 0; table-layout: auto; }
 .cal-hoje { border: 0; background: transparent; color: var(--dourado-escuro); font: inherit; font-weight: 700; cursor: pointer; padding: 6px 14px; border-radius: 999px; }
 .cal-hoje:hover { background: rgba(242, 166, 90, 0.14); }
 @media (max-width: 640px) { .ent-campo .cal { flex: 1; } }
+
+/* Abas do painel: sem barra de rolagem visível (ainda rola com toque, roda do mouse ou arrastando) */
+.admin-tabs { scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 0; }
+.admin-tabs::-webkit-scrollbar { display: none; }
