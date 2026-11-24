@@ -2370,3 +2370,15 @@ h1 em, h2 em {
 @media (max-width: 640px) {
   .fin-filtros .cdd-btn { font-size: 0.82rem; padding-left: 12px; }
 }
+
+/* Tabela do histórico financeiro: 5 colunas, cabe na largura do cartão sem rolar */
+table.fin-tabela { min-width: 0; table-layout: auto; }
+.fin-tabela th { white-space: normal; line-height: 1.25; padding: 12px 10px; letter-spacing: 0.02em; }
+.fin-tabela td { padding: 14px 10px; }
+.fin-tabela th:nth-child(1), .fin-tabela td:nth-child(1) { width: 17%; }
+.fin-tabela th:last-child, .fin-tabela td.fin-acoes { width: 1%; white-space: nowrap; }
+.fin-duo { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+@media (max-width: 640px) {
+  .fin-duo { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+  .fin-tabela td:nth-child(1) { width: 100%; }
+}

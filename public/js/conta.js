@@ -1598,10 +1598,8 @@ function renderizarPagamentosAdmin(area) {
             <tr>
               <th>Pedido & Data</th>
               <th>Cliente</th>
-              <th>Valor Total</th>
-              <th>Forma</th>
-              <th>Status Pagamento</th>
-              <th>Status Encomenda</th>
+              <th>Valor & Forma</th>
+              <th>Pagamento & Encomenda</th>
               <th style="text-align:center;">Ações</th>
             </tr>
           </thead>
@@ -1675,7 +1673,7 @@ function renderizarPagamentosAdmin(area) {
     }
 
     if (lista.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 24px; color:var(--marrom-claro);">Nenhum pagamento ou compra encontrada para os filtros selecionados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 24px; color:var(--marrom-claro);">Nenhum pagamento ou compra encontrada para os filtros selecionados.</td></tr>';
       return;
     }
 
@@ -1697,24 +1695,24 @@ function renderizarPagamentosAdmin(area) {
             <span style="font-size:0.8rem; color:var(--marrom-claro);">${escapeHtml(p.perfis?.telefone || 'Sem telefone')}</span></span>
           </td>
           <td data-rotulo="Valor">
-            <strong style="font-size:0.95rem; color:var(--dourado-escuro); font-family:var(--fonte-display);">${formatarPreco(p.valor_total)}</strong>
+            <div class="fin-duo">
+              <strong style="font-size:0.95rem; color:var(--dourado-escuro); font-family:var(--fonte-display);">${formatarPreco(p.valor_total)}</strong>
+              <span class="badge" style="background:rgba(107, 66, 38, 0.08); color:var(--marrom); display:inline-flex; align-items:center; gap:5px; font-size:0.78rem;">
+                ${ehPix
+                  ? `<span style="display:inline-flex; align-items:center; width:15px; height:15px;">${pixSvg}</span>`
+                  : '<span class="material-symbols-outlined" style="font-size:15px;">credit_card</span>'
+                }
+                ${escapeHtml(p.forma_pagamento || 'Pix')}
+              </span>
+            </div>
           </td>
-          <td data-rotulo="Forma">
-            <span class="badge" style="background:rgba(107, 66, 38, 0.08); color:var(--marrom); display:inline-flex; align-items:center; gap:5px; font-size:0.78rem;">
-              ${ehPix
-                ? `<span style="display:inline-flex; align-items:center; width:15px; height:15px;">${pixSvg}</span>`
-                : '<span class="material-symbols-outlined" style="font-size:15px;">credit_card</span>'
-              }
-              ${escapeHtml(p.forma_pagamento || 'Pix')}
-            </span>
-          </td>
-          <td data-rotulo="Pagamento">
-            <button class="badge btn-pagamento-financeiro ${pedidoPago(p) ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${pedidoPago(p)}" title="Clique para alternar status do pagamento">
-              ${pedidoPago(p) ? 'Pago' : 'Pendente'}
-            </button>
-          </td>
-          <td data-rotulo="Encomenda">
-            <span class="badge ${statusInfo.classe}">${escapeHtml(statusInfo.rotulo)}</span>
+          <td data-rotulo="Status">
+            <div class="fin-duo">
+              <button class="badge btn-pagamento-financeiro ${pedidoPago(p) ? 'badge-sucesso' : 'badge-alerta'}" data-pedido="${escapeHtml(p.id)}" data-pago="${pedidoPago(p)}" title="Clique para alternar status do pagamento">
+                ${pedidoPago(p) ? 'Pago' : 'Pendente'}
+              </button>
+              <span class="badge ${statusInfo.classe}">${escapeHtml(statusInfo.rotulo)}</span>
+            </div>
           </td>
           <td class="fin-acoes" style="text-align:center;">
             <div style="display:inline-flex; gap:6px; align-items:center;">
